@@ -53,7 +53,7 @@ function cards_tableau_de_bord(): array
             'cards' => [
                 ['titre' => 'Liste des adhérents', 'texte' => 'Rechercher une personne, ouvrir sa fiche.', 'page' => 'adherents.php', 'role' => 'lecteur'],
                 ['titre' => 'Nouvelle inscription', 'texte' => 'Inscrire une personne ou une structure pour la saison.', 'page' => 'ajout_adherent.php', 'role' => 'standard'],
-                ['titre' => 'Les familles', 'texte' => 'Membres et dossiers de chaque famille.', 'page' => 'familles.php', 'role' => 'lecteur'],
+                ['titre' => 'Les familles', 'texte' => 'Membres de chaque famille, saison par saison.', 'page' => 'familles.php', 'role' => 'lecteur'],
             ],
         ],
         [
@@ -70,9 +70,9 @@ function cards_tableau_de_bord(): array
             'role'  => 'standard',
             'cards' => [
                 ['titre' => 'Liste des paiements', 'texte' => 'Paiements enregistrés sur une période.', 'page' => 'paiements.php', 'role' => 'standard'],
-                ['titre' => 'Nouveau paiement', 'texte' => 'Encaisser un paiement sur un dossier.', 'page' => 'ajout_paiement.php', 'role' => 'standard'],
+                ['titre' => 'Nouveau paiement', 'texte' => 'Encaisser un paiement pour une famille ou une structure.', 'page' => 'ajout_paiement.php', 'role' => 'standard'],
                 ['titre' => 'Les tarifs', 'texte' => 'Cotisations et tarifs des activités.', 'page' => 'tarifs.php', 'role' => 'admin'],
-                ['titre' => 'État des paiements', 'texte' => 'Reste à payer et trop-perçu des dossiers de la saison.', 'page' => 'etat_paiements.php', 'role' => 'standard'],
+                ['titre' => 'État des paiements', 'texte' => 'Reste à payer et trop-perçu des familles pour la saison.', 'page' => 'etat_paiements.php', 'role' => 'standard'],
             ],
         ],
     ];

@@ -76,10 +76,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                 <td><a href="<?= e(chemin_site('famille.php?id=' . entier($ligne['id']))) ?>"><?= e($ligne['nom']) ?></a></td>
                                 <td class="small"><?= e($ligne['membres']) ?></td>
                                 <td>
-                                    <?php if (entier($ligne['dossier_id']) > 0) : ?>
-                                        <a class="badge text-bg-success text-decoration-none" href="<?= e(chemin_site('dossier.php?id=' . entier($ligne['dossier_id']))) ?>">Dossier ouvert</a>
+                                    <?php if (entier($ligne['nb_inscrits']) > 0) : ?>
+                                        <span class="badge text-bg-success"><?= entier($ligne['nb_inscrits']) ?> inscrit<?= entier($ligne['nb_inscrits']) > 1 ? 's' : '' ?></span>
                                     <?php else : ?>
-                                        <span class="badge text-bg-secondary">Pas de dossier</span>
+                                        <span class="badge text-bg-secondary">Non inscrite</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>

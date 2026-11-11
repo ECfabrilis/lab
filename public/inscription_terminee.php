@@ -20,7 +20,7 @@ $famille_id = entier($inscrit['famille_id']);
 
 $cards = [
     ['titre' => 'Voir la fiche', 'texte' => 'Fiche de ' . nom_adherent($inscrit) . '.', 'page' => 'adherent.php?id=' . $inscrit_id, 'role' => 'lecteur'],
-    ['titre' => 'Ajouter un paiement', 'texte' => 'Encaisser un paiement sur son dossier.', 'page' => 'ajout_paiement.php?adherent=' . $inscrit_id, 'role' => 'standard'],
+    ['titre' => 'Ajouter un paiement', 'texte' => 'Encaisser un paiement pour la saison.', 'page' => 'ajout_paiement.php?adherent=' . $inscrit_id, 'role' => 'standard'],
     ['titre' => 'Inscrire à une activité', 'texte' => 'Choisir une activité de la saison.', 'page' => 'ajout_inscription.php?adherent=' . $inscrit_id, 'role' => 'standard'],
 ];
 if ($famille_id > 0) {

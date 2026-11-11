@@ -2,7 +2,10 @@
 
 declare(strict_types=1);
 
-// Fiche d'une famille : ses membres et ses dossiers, saison par saison.
+// Fiche d'une famille : ses membres, leur inscription pour la saison affichée
+// (inscrire, retirer), les notes de la saison et le rappel des autres saisons.
+// Le « dossier » (lien famille-saison) est créé automatiquement à la première
+// inscription de la saison ; il n'est jamais montré à l'écran.
 // Consultation : tout utilisateur connecté. Modification : rôle standard au minimum.
 
 require __DIR__ . '/_chemins.php';
@@ -21,6 +24,7 @@ $peut_modifier = role_au_moins('standard') && texte($famille['anonymise_le']) ==
 
 $saison_affichee = saison_courante();
 $saison_affichee_id = entier($saison_affichee['id'] ?? 0);
+$saison_affichee_nom = texte($saison_affichee['nom'] ?? '');
 
 if (est_post()) {
     if (!csrf_valide()) {
@@ -49,30 +53,72 @@ if (est_post()) {
         rediriger($page_fiche);
     }
 
-    // --- Ouverture du dossier de la saison affichée -------------------------
-    if ($action === 'ouvrir_dossier' && $saison_affichee_id > 0) {
-        if (dossier_id_de_famille($famille_id, $saison_affichee_id) > 0) {
-            flash('info', 'Le dossier de cette saison existe déjà.');
+    // --- Inscription d'un membre pour la saison, avec sa dernière adresse connue ---
+    if ($action === 'inscrire_membre' && $saison_affichee_id > 0) {
+        $membre = adherent_par_id(entier(post('adherent_id')));
+        if ($membre === null || entier($membre['famille_id']) !== $famille_id) {
+            flash('erreur', 'Cette personne ne fait pas partie de la famille.');
             rediriger($page_fiche);
+        }
+        $membre_id = entier($membre['id']);
+        $derniere = derniere_adresse_adherent($membre_id) ?? derniere_adresse_famille($famille_id);
+        if ($derniere === null) {
+            flash('erreur', 'Aucune adresse n\'est connue pour cette personne : inscrivez-la depuis sa fiche, en saisissant son adresse.');
+            rediriger('adherent.php?id=' . $membre_id);
+        }
+        $adresse_reprise = [];
+        foreach (['adresse', 'complement', 'code_postal', 'ville', 'etablissement', 'niveau'] as $champ) {
+            $adresse_reprise[$champ] = texte($derniere[$champ] ?? '');
         }
         db()->beginTransaction();
         try {
-            $dossier_id = dossier_obtenir($famille_id, $saison_affichee_id);
+            adresse_enregistrer(dossier_obtenir($famille_id, $saison_affichee_id), $membre_id, $adresse_reprise);
             db()->commit();
         } catch (Throwable $erreur) {
             db()->rollBack();
             throw $erreur;
         }
-        flash('succes', 'Le dossier de la saison ' . texte($saison_affichee['nom'] ?? '') . ' est ouvert. Ajoutez-y les membres concernés.');
-        rediriger('dossier.php?id=' . $dossier_id);
+        flash('succes', texte($membre['prenom']) . ' est inscrit(e) pour la saison ' . $saison_affichee_nom . ', avec sa dernière adresse connue. Vérifiez sur sa fiche qu\'elle est toujours valable.');
+        rediriger($page_fiche);
+    }
+
+    // --- Retrait d'un membre de la saison (sa fiche est conservée) -----------
+    if ($action === 'retirer_membre') {
+        $dossier_id = dossier_id_de_famille($famille_id, $saison_affichee_id);
+        if ($dossier_id > 0 && retirer_de_la_saison($dossier_id, entier(post('adherent_id')))) {
+            flash('succes', 'La personne est retirée de la saison ' . $saison_affichee_nom . '. Sa fiche est conservée.');
+        }
+        rediriger($page_fiche);
+    }
+
+    // --- Notes de la famille pour la saison ----------------------------------
+    if ($action === 'notes') {
+        $dossier_id = dossier_id_de_famille($famille_id, $saison_affichee_id);
+        $notes_saisies = post('notes');
+        if ($dossier_id <= 0) {
+            flash('erreur', 'Les notes se saisissent quand un membre de la famille est inscrit pour la saison.');
+        } elseif (mb_strlen($notes_saisies) > 5000) {
+            flash('erreur', 'Les notes sont trop longues (5 000 caractères au maximum).');
+            ancien_memoriser();
+        } elseif (notes_saison_enregistrer($dossier_id, $notes_saisies)) {
+            flash('succes', 'Les notes sont enregistrées.');
+        } else {
+            flash('info', 'Aucune modification à enregistrer.');
+        }
+        rediriger($page_fiche);
     }
 
     rediriger($page_fiche);
 }
 
 $membres = famille_membres($famille_id, $saison_affichee_id);
-$dossiers = dossiers_de_famille($famille_id);
 $dossier_saison_id = dossier_id_de_famille($famille_id, $saison_affichee_id);
+$notes_saison = $dossier_saison_id > 0 ? texte(dossier_par_id($dossier_saison_id)['notes'] ?? '') : '';
+// Saisons où au moins un membre de la famille est inscrit.
+$saisons_famille = array_values(array_filter(
+    dossiers_de_famille($famille_id),
+    static fn (array $ligne): bool => entier($ligne['nb_adherents']) > 0
+));
 
 $titre_page = 'Famille';
 require DOSSIER_PRIVE . '/includes/header.php';
@@ -83,15 +129,6 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="d-grid gap-2">
             <?php if ($peut_modifier) : ?>
                 <a class="btn btn-primary" href="<?= e(chemin_site('ajout_adherent.php?famille=' . $famille_id)) ?>">Inscrire un nouveau membre</a>
-            <?php endif; ?>
-            <?php if ($dossier_saison_id > 0) : ?>
-                <a class="btn btn-outline-primary" href="<?= e(chemin_site('dossier.php?id=' . $dossier_saison_id)) ?>">Dossier <?= e($saison_affichee['nom'] ?? '') ?></a>
-            <?php elseif ($peut_modifier && $saison_affichee !== null && $membres !== []) : ?>
-                <form class="d-grid" method="post" action="<?= e(chemin_site('famille.php')) ?>">
-                    <?= csrf_champ() ?>
-                    <input type="hidden" name="id" value="<?= $famille_id ?>">
-                    <button class="btn btn-outline-primary" type="submit" name="action" value="ouvrir_dossier">Ouvrir le dossier <?= e($saison_affichee['nom']) ?></button>
-                </form>
             <?php endif; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('familles.php')) ?>">Retour à la liste</a>
         </div>
@@ -108,6 +145,15 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 </div>
             </form>
         <?php endif; ?>
+
+        <?php if ($saisons_famille !== []) : ?>
+            <h2 class="h6 mt-4">Saisons</h2>
+            <ul class="list-unstyled small mb-0">
+                <?php foreach ($saisons_famille as $saison_famille) : ?>
+                    <li><?= e($saison_famille['saison_nom']) ?> : <?= entier($saison_famille['nb_adherents']) ?> inscrit<?= entier($saison_famille['nb_adherents']) > 1 ? 's' : '' ?></li>
+                <?php endforeach; ?>
+            </ul>
+        <?php endif; ?>
     </div>
     <div class="col-md-8 order-md-1">
         <h2 class="h5">Membres</h2>
@@ -118,11 +164,13 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <th scope="col">Nom</th>
                         <th scope="col">Âge</th>
                         <th scope="col">Contact</th>
-                        <th scope="col">Saison <?= e($saison_affichee['nom'] ?? '') ?></th>
+                        <th scope="col">Saison <?= e($saison_affichee_nom) ?></th>
+                        <?php if ($peut_modifier && $saison_affichee !== null) : ?><th scope="col"><span class="visually-hidden">Action</span></th><?php endif; ?>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($membres as $membre) : ?>
+                        <?php $est_inscrit = entier($membre['dans_dossier']) === 1; ?>
                         <tr>
                             <td><a href="<?= e(chemin_site('adherent.php?id=' . entier($membre['id']))) ?>"><?= e($membre['prenom']) ?> <?= e($membre['nom']) ?></a></td>
                             <td><?= age_ans(texte($membre['date_naissance'])) ?> ans</td>
@@ -132,42 +180,48 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                 <?= e($membre['mail']) ?>
                             </td>
                             <td>
-                                <?php if (entier($membre['dans_dossier']) === 1) : ?>
-                                    <span class="badge text-bg-success">Dans le dossier</span>
+                                <?php if ($est_inscrit) : ?>
+                                    <span class="badge text-bg-success">Inscrit(e)</span>
                                 <?php else : ?>
-                                    <span class="badge text-bg-secondary">Absent</span>
+                                    <span class="badge text-bg-secondary">Non inscrit(e)</span>
                                 <?php endif; ?>
                             </td>
+                            <?php if ($peut_modifier && $saison_affichee !== null) : ?>
+                                <td class="text-end">
+                                    <form method="post" action="<?= e(chemin_site('famille.php')) ?>">
+                                        <?= csrf_champ() ?>
+                                        <input type="hidden" name="id" value="<?= $famille_id ?>">
+                                        <input type="hidden" name="adherent_id" value="<?= entier($membre['id']) ?>">
+                                        <?php if ($est_inscrit) : ?>
+                                            <button class="btn btn-sm btn-outline-danger" type="submit" name="action" value="retirer_membre">Retirer de la saison</button>
+                                        <?php else : ?>
+                                            <button class="btn btn-sm btn-outline-primary" type="submit" name="action" value="inscrire_membre">Inscrire pour la saison</button>
+                                        <?php endif; ?>
+                                    </form>
+                                </td>
+                            <?php endif; ?>
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
             </table>
         </div>
 
-        <h2 class="h5">Dossiers</h2>
-        <?php if ($dossiers === []) : ?>
-            <p class="text-body-secondary">Aucun dossier.</p>
-        <?php else : ?>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th scope="col">Saison</th>
-                            <th scope="col">Ouvert le</th>
-                            <th scope="col">Adhérents</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($dossiers as $dossier) : ?>
-                            <tr>
-                                <td><a href="<?= e(chemin_site('dossier.php?id=' . entier($dossier['id']))) ?>"><?= e($dossier['saison_nom']) ?></a></td>
-                                <td><?= e(date_fr($dossier['date_dossier'])) ?></td>
-                                <td><?= entier($dossier['nb_adherents']) ?></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+        <?php if ($dossier_saison_id > 0) : ?>
+            <h2 class="h5">Notes — saison <?= e($saison_affichee_nom) ?></h2>
+            <form method="post" action="<?= e(chemin_site('famille.php')) ?>">
+                <?= csrf_champ() ?>
+                <input type="hidden" name="id" value="<?= $famille_id ?>">
+                <input type="hidden" name="action" value="notes">
+                <fieldset <?= $peut_modifier ? '' : 'disabled' ?>>
+                    <div class="mb-3">
+                        <label class="form-label visually-hidden" for="notes">Notes de la famille pour la saison</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="4" maxlength="5000"><?= e(ancien('notes', $notes_saison)) ?></textarea>
+                    </div>
+                    <?php if ($peut_modifier) : ?>
+                        <button class="btn btn-primary" type="submit">Enregistrer les notes</button>
+                    <?php endif; ?>
+                </fieldset>
+            </form>
         <?php endif; ?>
     </div>
 </div>

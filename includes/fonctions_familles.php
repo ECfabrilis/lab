@@ -45,7 +45,8 @@ function familles_rechercher(string $recherche, int $saison_id, int $page = 1): 
     $lignes = db_lignes(
         'SELECT f.id, f.nom,
                 (SELECT GROUP_CONCAT(a.prenom ORDER BY a.date_naissance SEPARATOR \', \') FROM adherents a WHERE a.famille_id = f.id) AS membres,
-                (SELECT d.id FROM dossiers d WHERE d.famille_id = f.id AND d.saison_id = ?) AS dossier_id'
+                (SELECT COUNT(*) FROM dossiers d JOIN dossiers_adherents da ON da.dossier_id = d.id
+                  WHERE d.famille_id = f.id AND d.saison_id = ?) AS nb_inscrits'
         . $ou . ' ORDER BY f.nom, f.id LIMIT ? OFFSET ?',
         [$saison_id, ...$parametres, FAMILLES_PAR_PAGE, (max(1, $page) - 1) * FAMILLES_PAR_PAGE]
     );
@@ -149,7 +150,7 @@ function dossier_obtenir_pour_adherent(array $adherent, int $saison_id): int
         [$structure_id, $saison_id, date('Y-m-d'), entier($_SESSION['utilisateur_id'] ?? 0)]
     );
     $dossier_id = entier(db()->lastInsertId());
-    journaliser('creation', 'dossiers', $dossier_id, 'Ouverture du dossier d\'une structure', null, [
+    journaliser('creation', 'dossiers', $dossier_id, 'Première inscription de la structure pour la saison', null, [
         'structure_id' => $structure_id,
         'saison_id'    => $saison_id,
     ]);
@@ -285,11 +286,47 @@ function dossier_obtenir(int $famille_id, int $saison_id): int
         [$famille_id, $saison_id, date('Y-m-d'), entier($_SESSION['utilisateur_id'] ?? 0)]
     );
     $dossier_id = entier(db()->lastInsertId());
-    journaliser('creation', 'dossiers', $dossier_id, 'Ouverture d\'un dossier', null, [
+    journaliser('creation', 'dossiers', $dossier_id, 'Première inscription de la famille pour la saison', null, [
         'famille_id' => $famille_id,
         'saison_id'  => $saison_id,
     ]);
     return $dossier_id;
+}
+
+/**
+ * Enregistre les notes d'un dossier (affichées « Notes » de la famille ou de
+ * la structure pour la saison).
+ *
+ * @return bool false s'il n'y avait rien à modifier
+ */
+function notes_saison_enregistrer(int $dossier_id, string $notes): bool
+{
+    $notes_actuelles = texte(db_valeur('SELECT notes FROM dossiers WHERE id = ?', [$dossier_id]));
+    if ($notes === $notes_actuelles) {
+        return false;
+    }
+    db_executer(
+        'UPDATE dossiers SET notes = ?, modification_par = ? WHERE id = ?',
+        [nul_si_vide($notes), entier($_SESSION['utilisateur_id'] ?? 0), $dossier_id]
+    );
+    journaliser('modification', 'dossiers', $dossier_id, 'Modification des notes de la saison', ['notes' => $notes_actuelles], ['notes' => $notes]);
+    return true;
+}
+
+/**
+ * Retire un adhérent d'une saison : il sort du dossier, sa fiche est conservée.
+ *
+ * @return bool false s'il n'était pas inscrit pour cette saison
+ */
+function retirer_de_la_saison(int $dossier_id, int $adherent_id): bool
+{
+    $ancienne = adresse_du_dossier($dossier_id, $adherent_id);
+    if ($ancienne === null) {
+        return false;
+    }
+    db_executer('DELETE FROM dossiers_adherents WHERE dossier_id = ? AND adherent_id = ?', [$dossier_id, $adherent_id]);
+    journaliser('suppression', 'dossiers_adherents', $adherent_id, 'Retrait de l\'adhérent de la saison', $ancienne);
+    return true;
 }
 
 /**

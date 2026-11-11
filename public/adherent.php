@@ -94,6 +94,28 @@ if (est_post()) {
         rediriger($page_fiche);
     }
 
+    // --- Structure : notes de la saison et retrait de la saison --------------
+    // (pour une personne, ces deux actions sont sur la fiche de sa famille)
+    if ($est_structure && ($action === 'notes' || $action === 'retirer_saison')) {
+        $dossier_id = dossier_id_de_adherent($fiche, $saison_affichee_id);
+        $notes_saisies = post('notes');
+        if ($dossier_id <= 0) {
+            flash('erreur', 'Cette structure n\'est pas inscrite pour la saison.');
+        } elseif ($action === 'retirer_saison') {
+            if (retirer_de_la_saison($dossier_id, $fiche_id)) {
+                flash('succes', 'La structure est retirée de la saison ' . texte($saison_affichee['nom'] ?? '') . '. Sa fiche est conservée.');
+            }
+        } elseif (mb_strlen($notes_saisies) > 5000) {
+            flash('erreur', 'Les notes sont trop longues (5 000 caractères au maximum).');
+            ancien_memoriser();
+        } elseif (notes_saison_enregistrer($dossier_id, $notes_saisies)) {
+            flash('succes', 'Les notes sont enregistrées.');
+        } else {
+            flash('info', 'Aucune modification à enregistrer.');
+        }
+        rediriger($page_fiche);
+    }
+
     rediriger($page_fiche);
 }
 
@@ -130,6 +152,13 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="d-grid gap-2">
             <?php if ($peut_modifier) : ?>
                 <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#fenetreFiche">Modifier la fiche</button>
+            <?php endif; ?>
+            <?php if ($peut_modifier && $est_structure && $adresse_saison !== null) : ?>
+                <form class="d-grid" method="post" action="<?= e(chemin_site('adherent.php')) ?>">
+                    <?= csrf_champ() ?>
+                    <input type="hidden" name="id" value="<?= $fiche_id ?>">
+                    <button class="btn btn-outline-danger" type="submit" name="action" value="retirer_saison">Retirer de la saison <?= e($saison_affichee['nom'] ?? '') ?></button>
+                </form>
             <?php endif; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('adherents.php')) ?>">Retour à la liste</a>
         </div>
@@ -191,10 +220,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?php endif; ?>
         <?php else : ?>
             <?php // ----- Dossier de la saison affichée ----- ?>
-            <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2 mb-3">
-                <h2 class="h5 mb-0">Dossier <?= e($saison_affichee['nom']) ?></h2>
-                <a href="<?= e(chemin_site('dossier.php?id=' . $dossier_saison_id)) ?>">Ouvrir le dossier</a>
-            </div>
+            <h2 class="h5 mb-3">Saison <?= e($saison_affichee['nom']) ?></h2>
 
             <div class="border rounded p-3 mb-3">
                 <div class="d-flex justify-content-between align-items-start gap-2">
@@ -235,7 +261,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <a class="small" href="<?= e(chemin_site('famille.php?id=' . $famille_id)) ?>">Voir la famille</a>
                     </div>
                     <?php if ($autres_membres === []) : ?>
-                        <p class="text-body-secondary mb-0">Seule personne de la famille dans ce dossier.</p>
+                        <p class="text-body-secondary mb-0">Seule personne de la famille inscrite cette saison.</p>
                     <?php else : ?>
                         <ul class="list-unstyled mb-0">
                             <?php foreach ($autres_membres as $membre) : ?>
@@ -256,12 +282,26 @@ require DOSSIER_PRIVE . '/includes/header.php';
 
             <div class="border rounded p-3 mb-3">
                 <h3 class="h6">Paiements</h3>
-                <p class="text-body-secondary mb-0">Les paiements du dossier, le reste à payer et le trop-perçu s'afficheront ici (étape 3 : cotisations et paiements).</p>
+                <p class="text-body-secondary mb-0">Les paiements <?= $est_structure ? 'de la structure' : 'de la famille' ?>, le reste à payer et le trop-perçu s'afficheront ici (étape 3 : cotisations et paiements).</p>
             </div>
 
-            <?php if (texte($dossier_saison['notes'] ?? '') !== '') : ?>
+            <?php if ($est_structure && $peut_modifier) : ?>
+                <form class="border rounded p-3" method="post" action="<?= e(chemin_site('adherent.php')) ?>">
+                    <?= csrf_champ() ?>
+                    <input type="hidden" name="id" value="<?= $fiche_id ?>">
+                    <input type="hidden" name="action" value="notes">
+                    <h3 class="h6"><label for="notes">Notes</label></h3>
+                    <textarea class="form-control mb-3" id="notes" name="notes" rows="3" maxlength="5000"><?= e($fenetre_a_rouvrir === 'notes' ? ancien('notes') : ($dossier_saison['notes'] ?? '')) ?></textarea>
+                    <button class="btn btn-outline-primary btn-sm" type="submit">Enregistrer les notes</button>
+                </form>
+            <?php elseif (texte($dossier_saison['notes'] ?? '') !== '') : ?>
                 <div class="border rounded p-3">
-                    <h3 class="h6">Notes du dossier</h3>
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <h3 class="h6">Notes</h3>
+                        <?php if ($peut_modifier) : ?>
+                            <a class="small" href="<?= e(chemin_site('famille.php?id=' . $famille_id)) ?>">Modifier sur la fiche famille</a>
+                        <?php endif; ?>
+                    </div>
                     <p class="mb-0"><?= nl2br(e($dossier_saison['notes'] ?? '')) ?></p>
                 </div>
             <?php endif; ?>

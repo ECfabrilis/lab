@@ -97,6 +97,43 @@ function envoyer_invitation(int $utilisateur_id, string $prenom, string $mail): 
     return envoyer_courriel($mail, 'Votre compte — ' . $nom_association, $texte);
 }
 
+/**
+ * Adresses qui reçoivent la confirmation d'inscription : celle de l'adhérent
+ * et celle de son responsable (personne mineure), quand elles sont renseignées.
+ *
+ * @param array<string, mixed> $fiche fiche de l'adhérent
+ * @return list<string> adresses sans doublon
+ */
+function destinataires_confirmation(array $fiche): array
+{
+    $adresses = [];
+    foreach ([texte($fiche['mail'] ?? ''), texte($fiche['responsable_mail'] ?? '')] as $adresse) {
+        if ($adresse !== '' && !in_array(mb_strtolower($adresse), array_map('mb_strtolower', $adresses), true)) {
+            $adresses[] = $adresse;
+        }
+    }
+    return $adresses;
+}
+
+/**
+ * Courriel de confirmation d'inscription pour une saison.
+ * L'adhérent est salué par son prénom ; son responsable (ou le contact d'une
+ * structure) reçoit un message qui nomme la personne inscrite.
+ *
+ * @param array<string, mixed> $fiche fiche de l'adhérent inscrit
+ */
+function envoyer_confirmation_inscription(string $destinataire, array $fiche, string $saison_nom): bool
+{
+    $nom_association = parametre('nom_association', 'l\'association');
+    $prenom = texte($fiche['prenom'] ?? '');
+    $pour_adherent = $prenom !== '' && mb_strtolower($destinataire) === mb_strtolower(texte($fiche['mail'] ?? ''));
+    $texte = ($pour_adherent
+            ? "Bonjour $prenom,\n\nVotre inscription à $nom_association pour la saison $saison_nom est enregistrée."
+            : "Bonjour,\n\nL'inscription de " . nom_adherent($fiche) . " à $nom_association pour la saison $saison_nom est enregistrée.")
+        . "\n\nÀ bientôt,\n$nom_association";
+    return envoyer_courriel($destinataire, 'Confirmation d\'inscription — ' . $nom_association, $texte);
+}
+
 /** Courriel « mot de passe oublié » (lien valable 1 heure). */
 function envoyer_lien_mdp_oublie(int $utilisateur_id, string $prenom, string $mail): bool
 {

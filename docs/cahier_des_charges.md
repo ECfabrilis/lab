@@ -45,6 +45,8 @@ Modèle conservé : **famille → dossier (par saison) → adhérents → inscri
 - Une famille peut être une personne seule.
 - Le **dossier** regroupe, pour une saison, les adhésions, inscriptions, paiements et réductions de la famille.
 - Les **paiements sont toujours rattachés à un dossier**.
+- Le dossier est une notion **interne** : il sert au fonctionnement de l'application mais **n'apparaît jamais à l'écran** (ni le mot, ni un lien, ni une page). L'interface parle de la famille (ou de la structure) « pour la saison » : inscrit(e) pour la saison, notes de la saison, paiements de la famille. Le dossier est créé automatiquement à la première inscription de la saison. Sur la fiche famille, chaque membre peut être **inscrit pour la saison** ou **retiré de la saison**, et les notes de la saison s'y modifient (pour une structure : sur sa fiche).
+- La **liste des adhérents** affiche par défaut les adhérents inscrits pour la saison affichée (à la connexion : la saison en cours) ; la recherche peut être élargie à toutes les saisons.
 
 ### 3.2 Fiche adhérent
 
@@ -237,11 +239,12 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 - *Adresse** et complément d'adresse : vérification en direct auprès de l'API BAN. Une indication en petit sous le champ dit si l'adresse est **certifiée** ou non. À partir des coordonnées, une deuxième indication donne le **quartier**, le **quartier prioritaire (QP)** et le **quartier de la politique de la ville (QPV)**. Le code postal saisi à l'étape 1 oriente la recherche ; l'adresse certifiée corrige le code postal et la commune si besoin.
 - *Contact* : courriel, téléphone, **consentement aux communications** (case à cocher, enregistrée avec la date).
 - *Si la personne a moins de 18 ans* (à la date du jour) : un **responsable** est demandé (nom, courriel, téléphone) ; l'**établissement scolaire / niveau** (facultatif) est proposé.
-- *Notes du dossier* : texte libre ; elles appartiennent au **dossier** (famille et saison), pas à la personne.
+- *Notes* : texte libre ; elles concernent la **famille pour la saison** (en base : le dossier), pas la personne.
 
 **Étape 4 — Validation**
 - Récapitulatif de toutes les informations, avec un lien « modifier » pour chaque partie.
 - Si l'adresse n'est **pas certifiée**, l'enregistrement n'est possible qu'après une **confirmation explicite** (case à cocher). Quartier et QPV sont alors laissés vides.
+- **Confirmation par courriel** : une case « Envoyer une confirmation d'inscription par courriel », cochée par défaut, s'affiche si une adresse est connue. Après la validation, le courriel part à l'adhérent **et** à son responsable (personne mineure), pour chaque adresse renseignée. Un échec d'envoi n'annule pas l'inscription : un avertissement s'affiche.
 - La validation utilise le jeton anti-double envoi.
 
 **Après la validation**, l'utilisateur choisit entre :
@@ -271,7 +274,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 | Les activités | Liste des activités ; Nouvelle activité ; Secteurs d'activité | liste : tous ; nouvelle activité : `standard` au moins ; secteurs : `admin` |
 | Les paiements (partie entière réservée à `standard` au moins) | Liste des paiements ; Nouveau paiement ; Les tarifs ; État des paiements | tarifs : `admin` ; les autres : `standard` au moins |
 
-« État des paiements » : vue d'ensemble des dossiers de la saison avec reste à payer ou trop-perçu (voir section 7).
+« État des paiements » : vue d'ensemble des familles et structures de la saison avec reste à payer ou trop-perçu (voir section 7).
 
 **Paramètres** (`admin`) : quatre parties, également en cards.
 

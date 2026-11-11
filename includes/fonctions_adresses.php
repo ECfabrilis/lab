@@ -318,7 +318,7 @@ function adresse_ecrire(int $dossier_id, int $adherent_id, array $valeurs): void
         $ancienne === null ? 'creation' : 'modification',
         'dossiers_adherents',
         $adherent_id,
-        ($ancienne === null ? 'Ajout de l\'adhérent au dossier ' : 'Modification de l\'adresse dans le dossier ') . $dossier_id,
+        $ancienne === null ? 'Inscription de l\'adhérent pour la saison' : 'Modification de l\'adresse de la saison',
         $ancienne,
         ['dossier_id' => $dossier_id] + $valeurs
     );

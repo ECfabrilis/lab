@@ -197,6 +197,27 @@ if (est_post()) {
         $nouvel_id = inscription_enregistrer($brouillon, $saison_affichee_id);
         inscription_oublier();
         flash('succes', nom_adherent($fiche) . ' est inscrit(e) pour la saison ' . texte($saison_affichee['nom']) . '.');
+
+        // Confirmation par courriel (à l'adhérent et à son responsable) : un
+        // échec d'envoi n'annule pas l'inscription, déjà enregistrée.
+        if (post('envoyer_confirmation') === '1') {
+            $envoyes = [];
+            $echecs = [];
+            foreach (destinataires_confirmation($fiche) as $destinataire) {
+                if (envoyer_confirmation_inscription($destinataire, $fiche, texte($saison_affichee['nom']))) {
+                    $envoyes[] = $destinataire;
+                } else {
+                    $echecs[] = $destinataire;
+                }
+            }
+            if ($envoyes !== []) {
+                journaliser('envoi', 'adherents', $nouvel_id, 'Envoi de la confirmation d\'inscription par courriel', null, ['destinataires' => implode(', ', $envoyes)]);
+                flash('succes', 'La confirmation d\'inscription est envoyée à ' . implode(' et à ', $envoyes) . '.');
+            }
+            if ($echecs !== []) {
+                flash('avertissement', 'La confirmation d\'inscription n\'a pas pu être envoyée à ' . implode(' ni à ', $echecs) . '. L\'inscription, elle, est bien enregistrée.');
+            }
+        }
         rediriger('inscription_terminee.php?id=' . $nouvel_id);
     }
 
@@ -244,6 +265,7 @@ $doublons_exacts = $etape === 4 && !$est_structure
     ? adherent_doublons($fiche['nom'], $fiche['prenom'], $fiche['date_naissance'])
     : [];
 $adresse_certifiee = entier($brouillon['adresse']['est_validee'] ?? 0) === 1;
+$destinataires_confirmation = $etape === 4 ? destinataires_confirmation($fiche) : [];
 
 $titre_page = 'Nouvelle inscription';
 require DOSSIER_PRIVE . '/includes/header.php';
@@ -434,11 +456,11 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 </div>
             <?php endif; ?>
 
-            <h2 class="h5">Notes du dossier</h2>
+            <h2 class="h5">Notes</h2>
             <div class="mb-4">
-                <label class="form-label visually-hidden" for="notes">Notes du dossier</label>
+                <label class="form-label visually-hidden" for="notes">Notes</label>
                 <textarea class="form-control" id="notes" name="notes" rows="3" maxlength="5000" aria-describedby="aide_notes"><?= e($contact['notes'] ?? '') ?></textarea>
-                <div class="form-text" id="aide_notes">Les notes concernent le dossier <?= $est_structure ? 'de la structure' : 'de la famille' ?> pour la saison, pas la personne.</div>
+                <div class="form-text" id="aide_notes">Les notes concernent <?= $est_structure ? 'la structure' : 'toute la famille' ?> pour la saison, pas seulement cette personne.</div>
             </div>
 
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('ajout_adherent.php?etape=' . ($est_structure ? 1 : 2))) ?>">Retour</a>
@@ -507,7 +529,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <dt class="col-sm-4">Scolarité</dt>
                     <dd class="col-sm-8"><?= e(trim(texte($brouillon['adresse']['etablissement'] ?? '') . ' ' . texte($brouillon['adresse']['niveau'] ?? '')) ?: '—') ?></dd>
                 <?php endif; ?>
-                <dt class="col-sm-4">Notes du dossier</dt>
+                <dt class="col-sm-4">Notes</dt>
                 <dd class="col-sm-8"><?= ($contact['notes'] ?? '') !== '' ? nl2br(e($contact['notes'])) : '—' ?></dd>
             </dl>
         </div>
@@ -536,6 +558,13 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <input class="form-check-input" type="checkbox" id="confirmer_doublon" name="confirmer_doublon" value="1" required>
                         <label class="form-check-label" for="confirmer_doublon">Ce n'est pas la même personne : créer une deuxième fiche.</label>
                     </div>
+                </div>
+            <?php endif; ?>
+            <?php if ($destinataires_confirmation !== []) : ?>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="envoyer_confirmation" name="envoyer_confirmation" value="1" checked aria-describedby="aide_confirmation">
+                    <label class="form-check-label" for="envoyer_confirmation">Envoyer une confirmation d'inscription par courriel</label>
+                    <div class="form-text" id="aide_confirmation">Envoyée à <?= e(implode(' et à ', $destinataires_confirmation)) ?>.</div>
                 </div>
             <?php endif; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('ajout_adherent.php?etape=3')) ?>">Retour</a>

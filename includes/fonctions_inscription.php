@@ -315,14 +315,7 @@ function inscription_enregistrer(array $brouillon, int $saison_id): int
         adresse_ecrire($dossier_id, $adherent_id, $brouillon['adresse']);
 
         // Les notes appartiennent au dossier (famille et saison), pas à la personne.
-        $notes_actuelles = texte(db_valeur('SELECT notes FROM dossiers WHERE id = ?', [$dossier_id]));
-        if ($notes !== $notes_actuelles) {
-            db_executer(
-                'UPDATE dossiers SET notes = ?, modification_par = ? WHERE id = ?',
-                [nul_si_vide($notes), entier($_SESSION['utilisateur_id'] ?? 0), $dossier_id]
-            );
-            journaliser('modification', 'dossiers', $dossier_id, 'Modification des notes du dossier', ['notes' => $notes_actuelles], ['notes' => $notes]);
-        }
+        notes_saison_enregistrer($dossier_id, $notes);
         db()->commit();
     } catch (Throwable $erreur) {
         db()->rollBack();
