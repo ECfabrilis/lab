@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-// Accueil après connexion.
+// Tableau de bord : les choix de l'application, présentés en cards selon le rôle.
 
 require __DIR__ . '/_chemins.php';
 require DOSSIER_PRIVE . '/includes/init.php';
@@ -10,9 +10,8 @@ require DOSSIER_PRIVE . '/includes/init.php';
 exiger_connexion();
 
 $moi = utilisateur_courant() ?? [];
-$saison_affichee = saison_courante();
 
-$titre_page = 'Accueil';
+$titre_page = 'Tableau de bord';
 require DOSSIER_PRIVE . '/includes/header.php';
 
 $rappel_sauvegarde = role_au_moins('admin') && sauvegarde_en_retard();
@@ -26,26 +25,5 @@ $rappel_sauvegarde = role_au_moins('admin') && sauvegarde_en_retard();
     </div>
 <?php endif; ?>
 
-<div class="row g-3">
-    <div class="col-md-6">
-        <div class="border rounded p-3 h-100">
-            <h2 class="h5">Saison affichée</h2>
-            <?php if ($saison_affichee !== null) : ?>
-                <p class="mb-1 fs-5"><?= e($saison_affichee['nom']) ?>
-                    <span class="badge text-bg-secondary"><?= e(libelle_etat_saison(etat_saison(texte($saison_affichee['date_debut']), texte($saison_affichee['date_fin'])))) ?></span>
-                </p>
-                <p class="mb-0 text-body-secondary">Du <?= e(date_fr($saison_affichee['date_debut'])) ?> au <?= e(date_fr($saison_affichee['date_fin'])) ?></p>
-            <?php else : ?>
-                <p class="mb-0">Aucune saison n'est créée.</p>
-            <?php endif; ?>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="border rounded p-3 h-100">
-            <h2 class="h5">Adhérents</h2>
-            <p class="text-body-secondary">Familles, adhérents et dossiers de la saison. Les activités, les inscriptions et les paiements arriveront aux étapes suivantes.</p>
-            <a class="btn btn-outline-primary" href="<?= e(chemin_site('adherents.php')) ?>">Voir les adhérents</a>
-        </div>
-    </div>
-</div>
+<?php afficher_cards(cards_tableau_de_bord()); ?>
 <?php require DOSSIER_PRIVE . '/includes/footer.php'; ?>

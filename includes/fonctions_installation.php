@@ -194,16 +194,18 @@ function installation_importer_reference(PDO $pdo): void
 }
 
 /**
- * Remplit codes_postaux à partir du fichier CSV de La Poste (sql/019HexaSmal.csv).
+ * Remplit codes_postaux à partir du fichier CSV de La Poste (sql/019HexaSmal.csv par défaut).
  * Colonnes : code INSEE ; commune ; code postal ; libellé d'acheminement ; ligne 5.
  *
+ * @param string $chemin    autre fichier au même format (mise à jour depuis les paramètres)
+ * @param bool   $remplacer true : la table est vidée avant l'import, dans la même transaction
  * @return int nombre de lignes lues
  */
-function installation_importer_codes_postaux(PDO $pdo): int
+function installation_importer_codes_postaux(PDO $pdo, string $chemin = '', bool $remplacer = false): int
 {
-    $fichier = fopen(DOSSIER_PRIVE . '/sql/019HexaSmal.csv', 'r');
+    $fichier = fopen($chemin !== '' ? $chemin : DOSSIER_PRIVE . '/sql/019HexaSmal.csv', 'r');
     if ($fichier === false) {
-        throw new RuntimeException('Fichier illisible : 019HexaSmal.csv');
+        throw new RuntimeException('Fichier des codes postaux illisible.');
     }
     fgets($fichier); // ligne d'en-tête
 
@@ -222,10 +224,14 @@ function installation_importer_codes_postaux(PDO $pdo): int
 
     $pdo->beginTransaction();
     try {
+        if ($remplacer) {
+            $pdo->exec('DELETE FROM codes_postaux');
+        }
         while (($ligne = fgets($fichier)) !== false) {
             // Le fichier de La Poste est en ISO-8859-1.
             $colonnes = explode(';', trim(mb_convert_encoding($ligne, 'UTF-8', 'ISO-8859-1')));
-            if (count($colonnes) < 4 || $colonnes[0] === '') {
+            // Une ligne valable a un code INSEE et un code postal de 5 chiffres.
+            if (count($colonnes) < 4 || $colonnes[0] === '' || preg_match('/^\d{5}$/', $colonnes[2]) !== 1) {
                 continue;
             }
             array_push($lot, $colonnes[0], $colonnes[1], $colonnes[2], $colonnes[3], $colonnes[4] ?? '');

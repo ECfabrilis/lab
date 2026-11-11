@@ -208,3 +208,32 @@ $utilities: map-merge(
 .list-group {
   --bs-list-group-bg: transparent;
 }
+
+// Card d'une fonction qui n'existe pas encore : grisée, sans effet au survol.
+.card-a-venir {
+  opacity: 0.6;
+
+  &:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+// Barre sous l'en-tête (saison et utilisateur), à la couleur principale.
+.barre-contexte {
+  background-color: var(--bs-primary);
+  color: var(--couleur-texte-sur-principale, #fff);
+
+  .form-select {
+    width: auto;
+  }
+}
+
+// Liste de propositions ouverte sous un champ (code postal, commune, adresse,
+// recherche) : fond plein pour rester lisible par-dessus la page, et hauteur
+// limitée avec défilement quand les propositions sont nombreuses.
+.liste-propositions {
+  --bs-list-group-bg: var(--bs-body-bg);
+  max-height: 18rem;
+  overflow-y: auto;
+}

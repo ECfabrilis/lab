@@ -51,12 +51,15 @@ Le projet est séparé en une partie publique et une partie privée.
 - Fonctions réutilisables dans `includes/mes_fonctions.php` ; fonctions propres à un domaine dans `includes/fonctions_<domaine>.php` (jamais deux fichiers de même nom dans deux dossiers).
 - Pages : fichiers à la racine de `public/`, noms en minuscules avec underscore : liste `xxxs.php`, fiche `xxx.php`, création `ajout_xxx.php`.
 - **Formulaires : Post/Redirect/Get.** Le traitement du POST est en haut de la page, avant tout HTML, et se termine toujours par `rediriger()` (303), y compris en cas d'erreur. Jamais de page affichée directement en réponse à un POST.
+- **Exception : les aides à la saisie** (`public/api_*.php`, appelées par le JavaScript des formulaires) répondent en JSON à un POST, sans redirection. Elles commencent par `api_exiger('standard')` (connexion, rôle, jeton CSRF).
+- **Menu, tableau de bord et paramètres** (cahier des charges, section 12.3) : les choix sont des cards décrites dans `includes/fonctions_navigation.php`. Pour ajouter un choix, on y ajoute une ligne ; une card dont la page n'existe pas encore s'affiche « À venir » et s'active quand la page est créée.
+- **Formulaire d'inscription** (section 12.2) : `ajout_adherent.php`, 4 étapes gardées en session (`includes/fonctions_inscription.php`) ; rien n'est écrit en base avant la validation finale.
 - Chaque formulaire contient `csrf_champ()` ; les formulaires de création ajoutent `jeton_unique_champ('nom')` (anti-double envoi). Les valeurs saisies sont réaffichées avec `ancien()` (jamais les mots de passe).
 - Messages à l'utilisateur : `flash($type, $message)` avant une redirection ; types `succes`, `avertissement`, `erreur`, `info`.
 - **Tout texte venant d'un utilisateur ou de la base passe par `e()`** avant d'être écrit dans la page.
 - Requêtes SQL : toujours préparées (PDO, `ATTR_EMULATE_PREPARES => false`), jamais de concaténation de valeurs.
 - Mots de passe : `password_hash(PASSWORD_DEFAULT)` ; longueur minimale 8. Jamais de mot de passe en clair dans la base, les journaux ou les messages.
-- Noms de variables de pages : ne jamais réutiliser ceux posés par `header.php` (`$u`, `$menu`, `$logo`, `$nom_asso`, `$saison`, `$saisons`, `$libelles_roles`, `$messages`, `$retour_saison`). Une page ne lit pas non plus ces variables (PHPStan ne suit pas l'inclusion) : elle appelle les fonctions (`utilisateur_courant()`, `saison_courante()`, `saisons_liste()`, `libelles_roles()`).
+- Noms de variables de pages : ne jamais réutiliser ceux posés par `header.php` (`$u`, `$menu`, `$logo`, `$nom_asso`, `$saison`, `$saisons`, `$libelles_roles`, `$messages`, `$retour_saison`, `$css_couleur`). Une page ne lit pas non plus ces variables (PHPStan ne suit pas l'inclusion) : elle appelle les fonctions (`utilisateur_courant()`, `saison_courante()`, `saisons_liste()`, `libelles_roles()`).
 - Pas de script ni de style écrits dans les pages : la politique de sécurité du contenu (CSP) les bloque. Le JavaScript va dans `public/js/`, les styles dans le SCSS.
 - HTML/Bootstrap : un `.row` va dans un `.container` ou dans un `.col`, sans décoration (fond, bordure) sur le `.row` lui-même ; le décor va sur une `div` parente.
 - Mise en page des listes : colonne principale à gauche (`col-md-8`), colonne des actions à droite (`col-md-4`, `#menuLateral`) ; en dessous de `md`, la colonne d'actions passe en premier.
@@ -75,6 +78,7 @@ Le projet est séparé en une partie publique et une partie privée.
 - Nommage : `snake_case`, noms de tables au pluriel, sans accents ; clés étrangères systématiques ; `ON DELETE RESTRICT` pour les paiements (annulation par un indicateur, jamais par suppression).
 - Données rattachées à une saison par `saison_id` ; clés composites (secteur, saison) et (tarif, saison) pour garantir la cohérence.
 - RGPD : anonymisation des familles inactives après 3 ans ; purge des journaux après 1 an.
+- Une **structure** (association, école…) est une ligne de `adherents` avec `est_structure = 1`, sans famille ; son dossier est rattaché par `dossiers.structure_id`.
 - Quartier, quartier prioritaire (QP) et quartier de la politique de la ville (QPV) de l'adresse sont conservés en **instantané** (texte) au moment de la saisie.
 
 ## Règles métier

@@ -18,9 +18,13 @@ require_once DOSSIER_PRIVE . '/includes/fonctions_utilisateurs.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_saisons.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_courriel.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_sauvegarde.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_navigation.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_apparence.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_familles.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_adherents.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_adresses.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_reference.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_inscription.php';
 
 // Bibliothèques installées par Composer (PHPMailer)
 if (is_file(DOSSIER_PRIVE . '/vendor/autoload.php')) {

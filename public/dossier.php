@@ -20,6 +20,9 @@ if ($dossier === null) {
 }
 $page_fiche = 'dossier.php?id=' . $dossier_id;
 $famille_id = entier($dossier['famille_id']);
+// Dossier d'une structure : pas de famille, un seul adhérent (la structure elle-même).
+$est_structure = entier($dossier['structure_id']) > 0;
+$titulaire = $est_structure ? 'structure ' . texte($dossier['structure_nom']) : 'famille ' . texte($dossier['famille_nom']);
 $peut_modifier = role_au_moins('standard');
 
 if (est_post()) {
@@ -55,7 +58,7 @@ if (est_post()) {
     // --- Ajout d'un membre de la famille, avec sa dernière adresse connue ----
     if ($action === 'ajouter_membre') {
         $membre = adherent_par_id(entier(post('adherent_id')));
-        if ($membre === null || entier($membre['famille_id']) !== $famille_id) {
+        if ($membre === null || $est_structure || entier($membre['famille_id']) !== $famille_id) {
             flash('erreur', 'Cette personne ne fait pas partie de la famille.');
             rediriger($page_fiche);
         }
@@ -91,7 +94,7 @@ if (est_post()) {
 
 $membres = dossier_membres($dossier_id);
 $presents = array_map(static fn (array $membre): int => entier($membre['id']), $membres);
-$absents = array_values(array_filter(
+$absents = $est_structure ? [] : array_values(array_filter(
     famille_membres($famille_id),
     static fn (array $membre): bool => !in_array(entier($membre['id']), $presents, true)
 ));
@@ -99,14 +102,18 @@ $absents = array_values(array_filter(
 $titre_page = 'Dossier';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-4">Dossier <?= e($dossier['saison_nom']) ?> — famille <?= e($dossier['famille_nom']) ?></h1>
+<h1 class="h3 mb-4">Dossier <?= e($dossier['saison_nom']) ?> — <?= e($titulaire) ?></h1>
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2">
-            <?php if ($peut_modifier) : ?>
-                <a class="btn btn-primary" href="<?= e(chemin_site('ajout_adherent.php?famille=' . $famille_id)) ?>">Ajouter un nouveau membre</a>
+            <?php if (!$est_structure) : ?>
+                <?php if ($peut_modifier) : ?>
+                    <a class="btn btn-primary" href="<?= e(chemin_site('ajout_adherent.php?famille=' . $famille_id)) ?>">Inscrire un nouveau membre</a>
+                <?php endif; ?>
+                <a class="btn btn-outline-primary" href="<?= e(chemin_site('famille.php?id=' . $famille_id)) ?>">Famille <?= e($dossier['famille_nom']) ?></a>
+            <?php else : ?>
+                <a class="btn btn-outline-primary" href="<?= e(chemin_site('adherent.php?id=' . entier($dossier['structure_id']))) ?>">Fiche de la structure</a>
             <?php endif; ?>
-            <a class="btn btn-outline-primary" href="<?= e(chemin_site('famille.php?id=' . $famille_id)) ?>">Famille <?= e($dossier['famille_nom']) ?></a>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('adherents.php')) ?>">Retour à la liste</a>
         </div>
 
@@ -150,13 +157,13 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <tbody>
                         <?php foreach ($membres as $membre) : ?>
                             <tr>
-                                <td><a href="<?= e(chemin_site('adherent.php?id=' . entier($membre['id']))) ?>"><?= e($membre['prenom']) ?> <?= e($membre['nom']) ?></a></td>
-                                <td><?= age_ans(texte($membre['date_naissance'])) ?> ans</td>
+                                <td><a href="<?= e(chemin_site('adherent.php?id=' . entier($membre['id']))) ?>"><?= e(nom_adherent($membre)) ?></a></td>
+                                <td><?= $est_structure ? '—' : age_ans(texte($membre['date_naissance'])) . ' ans' ?></td>
                                 <td class="small">
                                     <?= e($membre['adresse']) ?><?= texte($membre['complement']) !== '' ? ', ' . e($membre['complement']) : '' ?><br>
                                     <?= e($membre['code_postal']) ?> <?= e($membre['ville']) ?>
                                     <?php if (entier($membre['est_validee']) !== 1) : ?>
-                                        <span class="badge text-bg-warning">Non reconnue</span>
+                                        <span class="badge text-bg-warning">Non certifiée</span>
                                     <?php endif; ?>
                                     <?php if (texte($membre['quartier']) !== '') : ?>
                                         <br><span class="text-body-secondary">Quartier : <?= e($membre['quartier']) ?></span>

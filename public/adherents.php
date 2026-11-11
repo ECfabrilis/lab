@@ -43,14 +43,17 @@ require DOSSIER_PRIVE . '/includes/header.php';
     <div class="col-md-4 order-md-2" id="menuLateral">
         <?php if (role_au_moins('standard')) : ?>
             <div class="d-grid gap-2 mb-3">
-                <a class="btn btn-primary" href="<?= e(chemin_site('ajout_adherent.php')) ?>">Nouvel adhérent</a>
+                <a class="btn btn-primary" href="<?= e(chemin_site('ajout_adherent.php')) ?>">Nouvelle inscription</a>
             </div>
         <?php endif; ?>
         <form method="post" action="<?= e(chemin_site('adherents.php')) ?>">
             <?= csrf_champ() ?>
             <div class="mb-3">
                 <label class="form-label" for="recherche">Rechercher</label>
-                <input class="form-control" type="search" id="recherche" name="recherche" maxlength="100" value="<?= e($recherche) ?>" placeholder="Nom, prénom, courriel, téléphone">
+                <input class="form-control" type="search" id="recherche" name="recherche" maxlength="100" autocomplete="off"
+                       data-recherche-url="<?= e(chemin_site('api_adherents.php')) ?>" data-recherche-fiche="<?= e(chemin_site('adherent.php?id=')) ?>"
+                       value="<?= e($recherche) ?>" placeholder="Nom, prénom, courriel, téléphone" aria-describedby="aide_recherche">
+                <div class="form-text" id="aide_recherche">Dès 3 lettres du nom ou du prénom, des propositions s'affichent.</div>
             </div>
             <div class="mb-3">
                 <label class="form-label" for="perimetre">Parmi</label>
@@ -96,13 +99,18 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <?php foreach ($resultat['lignes'] as $ligne) : ?>
                             <tr>
                                 <td>
-                                    <a href="<?= e(chemin_site('adherent.php?id=' . entier($ligne['id']))) ?>"><?= e($ligne['nom']) ?> <?= e($ligne['prenom']) ?></a>
+                                    <a href="<?= e(chemin_site('adherent.php?id=' . entier($ligne['id']))) ?>"><?= e(trim(texte($ligne['nom']) . ' ' . texte($ligne['prenom']))) ?></a>
                                     <?php if ($perimetre === 'tous' && entier($ligne['dans_saison']) !== 1) : ?>
                                         <span class="badge text-bg-secondary">Hors saison</span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= age_ans(texte($ligne['date_naissance'])) ?> ans</td>
-                                <td><a href="<?= e(chemin_site('famille.php?id=' . entier($ligne['famille_id']))) ?>"><?= e($ligne['famille_nom']) ?></a></td>
+                                <?php if (entier($ligne['est_structure']) === 1) : ?>
+                                    <td>—</td>
+                                    <td><span class="badge text-bg-secondary">Structure</span></td>
+                                <?php else : ?>
+                                    <td><?= age_ans(texte($ligne['date_naissance'])) ?> ans</td>
+                                    <td><a href="<?= e(chemin_site('famille.php?id=' . entier($ligne['famille_id']))) ?>"><?= e($ligne['famille_nom']) ?></a></td>
+                                <?php endif; ?>
                                 <td><?= e(trim(texte($ligne['code_postal']) . ' ' . texte($ligne['ville']))) ?></td>
                                 <td class="small">
                                     <?= e($ligne['tel']) ?>

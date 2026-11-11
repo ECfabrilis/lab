@@ -14,7 +14,7 @@ $famille_id = entier(est_post() ? post('id') : ($_GET['id'] ?? 0));
 $famille = famille_par_id($famille_id);
 if ($famille === null) {
     flash('erreur', 'Cette famille n\'existe pas.');
-    rediriger('adherents.php');
+    rediriger('familles.php');
 }
 $page_fiche = 'famille.php?id=' . $famille_id;
 $peut_modifier = role_au_moins('standard') && texte($famille['anonymise_le']) === '';
@@ -82,7 +82,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2">
             <?php if ($peut_modifier) : ?>
-                <a class="btn btn-primary" href="<?= e(chemin_site('ajout_adherent.php?famille=' . $famille_id)) ?>">Ajouter un membre</a>
+                <a class="btn btn-primary" href="<?= e(chemin_site('ajout_adherent.php?famille=' . $famille_id)) ?>">Inscrire un nouveau membre</a>
             <?php endif; ?>
             <?php if ($dossier_saison_id > 0) : ?>
                 <a class="btn btn-outline-primary" href="<?= e(chemin_site('dossier.php?id=' . $dossier_saison_id)) ?>">Dossier <?= e($saison_affichee['nom'] ?? '') ?></a>
@@ -93,7 +93,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <button class="btn btn-outline-primary" type="submit" name="action" value="ouvrir_dossier">Ouvrir le dossier <?= e($saison_affichee['nom']) ?></button>
                 </form>
             <?php endif; ?>
-            <a class="btn btn-outline-secondary" href="<?= e(chemin_site('adherents.php')) ?>">Retour à la liste</a>
+            <a class="btn btn-outline-secondary" href="<?= e(chemin_site('familles.php')) ?>">Retour à la liste</a>
         </div>
 
         <?php if ($peut_modifier) : ?>

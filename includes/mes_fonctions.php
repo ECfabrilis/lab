@@ -25,6 +25,25 @@ function entier(mixed $valeur): int
     return is_numeric($valeur) ? (int) $valeur : 0;
 }
 
+/**
+ * Texte ramené à sa forme la plus simple pour comparer deux noms :
+ * minuscules, sans accents, sans ponctuation ni espaces en double.
+ */
+function texte_simplifie(string $texte): string
+{
+    $texte = mb_strtolower(trim($texte));
+    $texte = strtr($texte, [
+        'à' => 'a', 'â' => 'a', 'ä' => 'a', 'á' => 'a', 'ã' => 'a', 'å' => 'a',
+        'ç' => 'c', 'é' => 'e', 'è' => 'e', 'ê' => 'e', 'ë' => 'e',
+        'î' => 'i', 'ï' => 'i', 'í' => 'i', 'ì' => 'i', 'ñ' => 'n',
+        'ô' => 'o', 'ö' => 'o', 'ó' => 'o', 'ò' => 'o', 'õ' => 'o',
+        'ù' => 'u', 'û' => 'u', 'ü' => 'u', 'ú' => 'u', 'ÿ' => 'y', 'ý' => 'y',
+        'œ' => 'oe', 'æ' => 'ae', 'ß' => 'ss',
+    ]);
+    $texte = preg_replace('/[^a-z0-9]+/', ' ', $texte) ?? '';
+    return trim($texte);
+}
+
 /** Échappe un texte avant de l'écrire dans la page. */
 function e(mixed $valeur): string
 {

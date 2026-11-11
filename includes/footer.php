@@ -13,5 +13,7 @@ ancien_oublier();
 <script src="<?= e(chemin_site('js/bootstrap.bundle.min.js')) ?>"></script>
 <script src="<?= e(chemin_site('js/bddv3.js')) ?>"></script>
 <script src="<?= e(chemin_site('js/adresse.js')) ?>"></script>
+<script src="<?= e(chemin_site('js/inscription.js')) ?>"></script>
+<script src="<?= e(chemin_site('js/recherche.js')) ?>"></script>
 </body>
 </html>

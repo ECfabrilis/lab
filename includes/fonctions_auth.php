@@ -209,3 +209,19 @@ function utilisateur_par_jeton(string $jeton): ?array
         [hash('sha256', $jeton), date('Y-m-d H:i:s')]
     );
 }
+
+/**
+ * Protège une petite page d'aide à la saisie (réponse JSON à un envoi POST) :
+ * utilisateur connecté, rôle minimal, jeton CSRF. Sinon, réponse 403 et arrêt.
+ * Ces pages ne suivent pas Post/Redirect/Get : elles n'affichent rien, elles
+ * répondent à une demande faite par le JavaScript d'un formulaire.
+ */
+function api_exiger(string $role = 'standard'): void
+{
+    header('Content-Type: application/json; charset=utf-8');
+    if (utilisateur_courant() === null || !role_au_moins($role) || !est_post() || !csrf_valide()) {
+        http_response_code(403);
+        echo json_encode(['erreur' => 'Accès refusé.']);
+        exit;
+    }
+}

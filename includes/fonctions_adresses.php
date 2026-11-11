@@ -17,24 +17,45 @@ const API_ADRESSE_URL = 'https://data.geopf.fr/geocodage/search';
 const API_ADRESSE_SCORE_MIN = 0.7;
 
 /**
- * Codes postaux qui commencent par les chiffres saisis.
+ * Codes postaux et communes proposés pendant la saisie :
+ *   - des chiffres (3 au moins) : les codes postaux qui commencent ainsi ;
+ *     avec les 5 chiffres, toutes les communes du code postal sont renvoyées ;
+ *   - des lettres (3 au moins) : les communes dont le nom commence ainsi.
  *
  * @return list<array{code_postal: string, ville: string}>
  */
-function codes_postaux_chercher(string $debut): array
+function codes_postaux_chercher(string $saisie): array
 {
-    if (preg_match('/^\d{2,5}$/', $debut) !== 1) {
+    $saisie = trim($saisie);
+    if (preg_match('/^\d{3,5}$/', $saisie) === 1) {
+        // Code complet : la liste doit être entière pour pouvoir choisir sa commune.
+        $limite = strlen($saisie) === 5 ? 300 : 15;
+        $lignes = db_lignes(
+            'SELECT DISTINCT code_postal, libelle_acheminement
+               FROM codes_postaux
+              WHERE code_postal LIKE ?
+              ORDER BY code_postal, libelle_acheminement
+              LIMIT ' . $limite,
+            [$saisie . '%']
+        );
+    } elseif (mb_strlen($saisie) >= 3 && preg_match('/\d/', $saisie) !== 1) {
+        // La Poste écrit les communes en majuscules, sans accent ni tiret, et « ST » pour « SAINT ».
+        // Les noms les plus courts sont proposés d'abord (« PARIS » avant « PARIGNARGUES »).
+        $nom = mb_strtoupper(texte_simplifie($saisie));
+        $abrege = preg_replace(['/^SAINTE /', '/^SAINT /'], ['STE ', 'ST '], $nom . ' ') ?? $nom;
+        $lignes = db_lignes(
+            'SELECT DISTINCT code_postal, libelle_acheminement
+               FROM codes_postaux
+              WHERE libelle_acheminement LIKE ? OR libelle_acheminement LIKE ?
+              ORDER BY CHAR_LENGTH(libelle_acheminement), libelle_acheminement, code_postal
+              LIMIT 60',
+            [$nom . '%', rtrim($abrege) . '%']
+        );
+    } else {
         return [];
     }
+
     $resultats = [];
-    $lignes = db_lignes(
-        'SELECT DISTINCT code_postal, libelle_acheminement
-           FROM codes_postaux
-          WHERE code_postal LIKE ?
-          ORDER BY code_postal, libelle_acheminement
-          LIMIT 12',
-        [$debut . '%']
-    );
     foreach ($lignes as $ligne) {
         $resultats[] = ['code_postal' => texte($ligne['code_postal']), 'ville' => texte($ligne['libelle_acheminement'])];
     }
@@ -189,8 +210,11 @@ function erreurs_adresse(array $saisie): array
 /**
  * Cherche l'adresse officielle et ses coordonnées.
  * Une adresse déjà validée dans la base est réutilisée sans nouvel appel à l'API.
+ * Le code postal oriente la recherche ; si l'adresse n'y est pas trouvée, elle
+ * est cherchée dans la commune indiquée : l'adresse certifiée corrige alors le
+ * code postal et la commune.
  *
- * @return array{adresse: string, ville: string, est_validee: int, latitude: ?float, longitude: ?float}
+ * @return array{adresse: string, code_postal: string, ville: string, est_validee: int, latitude: ?float, longitude: ?float}
  */
 function adresse_resoudre(string $adresse, string $code_postal, string $ville): array
 {
@@ -204,6 +228,7 @@ function adresse_resoudre(string $adresse, string $code_postal, string $ville): 
     if ($connue !== null) {
         return [
             'adresse'     => texte($connue['adresse']),
+            'code_postal' => $code_postal,
             'ville'       => texte($connue['ville']),
             'est_validee' => 1,
             'latitude'    => (float) texte($connue['latitude']),
@@ -211,35 +236,38 @@ function adresse_resoudre(string $adresse, string $code_postal, string $ville): 
         ];
     }
 
-    $resultats = adresse_api_chercher($adresse . ' ' . $code_postal . ' ' . $ville, $code_postal, 1);
-    $premier = $resultats[0] ?? null;
-    // On n'accepte qu'une adresse trouvée au numéro près, dans le bon code postal.
-    if (
-        $premier !== null && $premier['type'] === 'housenumber'
-        && $premier['score'] >= API_ADRESSE_SCORE_MIN && $premier['code_postal'] === $code_postal
-    ) {
+    // On n'accepte qu'une adresse trouvée au numéro près, avec une note suffisante.
+    $accepter = static fn (?array $resultat): bool => $resultat !== null
+        && ($resultat['type'] ?? '') === 'housenumber'
+        && ($resultat['score'] ?? 0.0) >= API_ADRESSE_SCORE_MIN;
+
+    $premier = (adresse_api_chercher($adresse . ' ' . $ville, $code_postal, 1) ?? [])[0] ?? null;
+    if (!$accepter($premier)) {
+        // Sans le code postal saisi (peut-être faux) : l'adresse est cherchée dans la commune.
+        $premier = (adresse_api_chercher($adresse . ' ' . $ville, '', 1) ?? [])[0] ?? null;
+    }
+    if ($premier !== null && $accepter($premier) && preg_match('/^\d{5}$/', $premier['code_postal']) === 1) {
         return [
             'adresse'     => $premier['adresse'],
+            'code_postal' => $premier['code_postal'],
             'ville'       => $premier['ville'],
             'est_validee' => 1,
             'latitude'    => $premier['latitude'],
             'longitude'   => $premier['longitude'],
         ];
     }
-    return ['adresse' => $adresse, 'ville' => $ville, 'est_validee' => 0, 'latitude' => null, 'longitude' => null];
+    return ['adresse' => $adresse, 'code_postal' => $code_postal, 'ville' => $ville, 'est_validee' => 0, 'latitude' => null, 'longitude' => null];
 }
 
 /**
- * Enregistre l'adresse et la scolarité d'un adhérent dans un dossier
- * (l'adhérent est ajouté au dossier s'il n'y était pas).
- * L'adresse est vérifiée auprès de l'API et les quartiers sont calculés.
+ * Prépare l'adresse à enregistrer : vérification auprès de l'API, calcul des
+ * quartiers. Une adresse non certifiée n'a ni coordonnées ni quartier.
  *
  * @param array<string, string> $saisie champs déjà vérifiés par erreurs_adresse()
- * @return bool true si l'adresse a été reconnue au numéro près
+ * @return array<string, string|int|float|null> valeurs des colonnes de dossiers_adherents
  */
-function adresse_enregistrer(int $dossier_id, int $adherent_id, array $saisie): bool
+function adresse_preparer(array $saisie): array
 {
-    $ancienne = adresse_du_dossier($dossier_id, $adherent_id);
     $resolue = adresse_resoudre($saisie['adresse'], $saisie['code_postal'], $saisie['ville']);
 
     $quartiers = ['quartier' => null, 'est_qp' => 0, 'qp_code' => null, 'qp_nom' => null, 'est_qpv' => 0, 'qpv_code' => null, 'qpv_nom' => null];
@@ -249,10 +277,10 @@ function adresse_enregistrer(int $dossier_id, int $adherent_id, array $saisie): 
         $quartiers_le = date('Y-m-d H:i:s');
     }
 
-    $valeurs = [
+    return [
         'adresse'       => $resolue['adresse'],
         'complement'    => nul_si_vide($saisie['complement']),
-        'code_postal'   => $saisie['code_postal'],
+        'code_postal'   => $resolue['code_postal'],
         'ville'         => $resolue['ville'],
         'est_validee'   => $resolue['est_validee'],
         'latitude'      => $resolue['latitude'],
@@ -268,7 +296,17 @@ function adresse_enregistrer(int $dossier_id, int $adherent_id, array $saisie): 
         'etablissement' => nul_si_vide($saisie['etablissement']),
         'niveau'        => nul_si_vide($saisie['niveau']),
     ];
+}
 
+/**
+ * Écrit dans un dossier l'adresse préparée par adresse_preparer()
+ * (l'adhérent est ajouté au dossier s'il n'y était pas).
+ *
+ * @param array<string, string|int|float|null> $valeurs
+ */
+function adresse_ecrire(int $dossier_id, int $adherent_id, array $valeurs): void
+{
+    $ancienne = adresse_du_dossier($dossier_id, $adherent_id);
     $colonnes = array_keys($valeurs);
     db_executer(
         'INSERT INTO dossiers_adherents (dossier_id, adherent_id, ' . implode(', ', $colonnes) . ')
@@ -276,7 +314,6 @@ function adresse_enregistrer(int $dossier_id, int $adherent_id, array $saisie): 
          ON DUPLICATE KEY UPDATE ' . implode(', ', array_map(static fn (string $c): string => $c . ' = VALUES(' . $c . ')', $colonnes)),
         [$dossier_id, $adherent_id, ...array_values($valeurs)]
     );
-
     journaliser(
         $ancienne === null ? 'creation' : 'modification',
         'dossiers_adherents',
@@ -285,7 +322,35 @@ function adresse_enregistrer(int $dossier_id, int $adherent_id, array $saisie): 
         $ancienne,
         ['dossier_id' => $dossier_id] + $valeurs
     );
-    return $resolue['est_validee'] === 1;
+}
+
+/**
+ * Vérifie puis enregistre l'adresse et la scolarité d'un adhérent dans un dossier.
+ *
+ * @param array<string, string> $saisie champs déjà vérifiés par erreurs_adresse()
+ * @return bool true si l'adresse a été certifiée (trouvée au numéro près)
+ */
+function adresse_enregistrer(int $dossier_id, int $adherent_id, array $saisie): bool
+{
+    $valeurs = adresse_preparer($saisie);
+    adresse_ecrire($dossier_id, $adherent_id, $valeurs);
+    return $valeurs['est_validee'] === 1;
+}
+
+/**
+ * Phrase qui résume le quartier, le QP et le QPV d'une adresse préparée ou enregistrée.
+ *
+ * @param array<string, mixed> $adresse
+ */
+function quartiers_resume(array $adresse): string
+{
+    if (entier($adresse['est_validee'] ?? 0) !== 1) {
+        return '';
+    }
+    $morceaux = ['Quartier : ' . (texte($adresse['quartier'] ?? '') !== '' ? texte($adresse['quartier']) : 'hors des quartiers connus')];
+    $morceaux[] = 'QP : ' . (entier($adresse['est_qp'] ?? 0) === 1 ? texte($adresse['qp_nom'] ?? '') : 'non');
+    $morceaux[] = 'QPV : ' . (entier($adresse['est_qpv'] ?? 0) === 1 ? texte($adresse['qpv_nom'] ?? '') : 'non');
+    return implode(' — ', $morceaux);
 }
 
 /**
@@ -347,9 +412,10 @@ function derniere_adresse_famille(int $famille_id): ?array
  * Les propositions (code postal, adresse) sont ajoutées par js/adresse.js.
  * Le code postal est placé avant l'adresse : il limite les propositions d'adresses à la commune.
  *
- * @param array<string, mixed> $defauts valeurs affichées quand rien n'a été saisi
+ * @param array<string, mixed> $defauts   valeurs affichées quand rien n'a été saisi
+ * @param bool                 $scolarite true pour proposer l'établissement scolaire et le niveau (moins de 18 ans)
  */
-function afficher_champs_adresse(array $defauts): void
+function afficher_champs_adresse(array $defauts, bool $scolarite = true): void
 {
     ?>
     <div class="row g-3 mb-3">
@@ -359,28 +425,33 @@ function afficher_champs_adresse(array $defauts): void
                    data-suggestions="code_postal" data-url="<?= e(chemin_site('api_codes_postaux.php')) ?>"
                    value="<?= e(ancien('code_postal', $defauts['code_postal'] ?? '')) ?>" required>
         </div>
-        <div class="col-sm-8">
+        <div class="col-sm-8 position-relative">
             <label class="form-label" for="ville">Ville</label>
-            <input class="form-control" type="text" id="ville" name="ville" maxlength="100" value="<?= e(ancien('ville', $defauts['ville'] ?? '')) ?>" required>
+            <input class="form-control" type="text" id="ville" name="ville" maxlength="100" autocomplete="off"
+                   data-suggestions="ville" data-url="<?= e(chemin_site('api_codes_postaux.php')) ?>"
+                   value="<?= e(ancien('ville', $defauts['ville'] ?? '')) ?>" required>
         </div>
         <div class="col-sm-12 position-relative">
             <label class="form-label" for="adresse">Adresse (numéro et voie)</label>
             <input class="form-control" type="text" id="adresse" name="adresse" maxlength="255" autocomplete="off"
                    data-suggestions="adresse" data-url="<?= e(chemin_site('api_adresse.php')) ?>"
-                   value="<?= e(ancien('adresse', $defauts['adresse'] ?? '')) ?>" required>
+                   value="<?= e(ancien('adresse', $defauts['adresse'] ?? '')) ?>" required aria-describedby="etat_adresse">
+            <div class="form-text" id="etat_adresse" data-etat-adresse></div>
         </div>
         <div class="col-sm-12">
             <label class="form-label" for="complement">Complément <span class="text-body-secondary">(bâtiment, étage, chez… — facultatif)</span></label>
             <input class="form-control" type="text" id="complement" name="complement" maxlength="255" value="<?= e(ancien('complement', $defauts['complement'] ?? '')) ?>">
         </div>
-        <div class="col-sm-8">
-            <label class="form-label" for="etablissement">Établissement scolaire <span class="text-body-secondary">(facultatif)</span></label>
-            <input class="form-control" type="text" id="etablissement" name="etablissement" maxlength="150" value="<?= e(ancien('etablissement', $defauts['etablissement'] ?? '')) ?>">
-        </div>
-        <div class="col-sm-4">
-            <label class="form-label" for="niveau">Niveau <span class="text-body-secondary">(facultatif)</span></label>
-            <input class="form-control" type="text" id="niveau" name="niveau" maxlength="50" value="<?= e(ancien('niveau', $defauts['niveau'] ?? '')) ?>">
-        </div>
+        <?php if ($scolarite) : ?>
+            <div class="col-sm-8">
+                <label class="form-label" for="etablissement">Établissement scolaire <span class="text-body-secondary">(facultatif)</span></label>
+                <input class="form-control" type="text" id="etablissement" name="etablissement" maxlength="150" value="<?= e(ancien('etablissement', $defauts['etablissement'] ?? '')) ?>">
+            </div>
+            <div class="col-sm-4">
+                <label class="form-label" for="niveau">Niveau <span class="text-body-secondary">(facultatif)</span></label>
+                <input class="form-control" type="text" id="niveau" name="niveau" maxlength="50" value="<?= e(ancien('niveau', $defauts['niveau'] ?? '')) ?>">
+            </div>
+        <?php endif; ?>
     </div>
     <?php
 }

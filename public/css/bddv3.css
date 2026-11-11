@@ -13204,3 +13204,25 @@ textarea.form-control-lg {
 .list-group {
   --bs-list-group-bg: transparent;
 }
+
+.card-a-venir {
+  opacity: 0.6;
+}
+.card-a-venir:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+.barre-contexte {
+  background-color: var(--bs-primary);
+  color: var(--couleur-texte-sur-principale, #fff);
+}
+.barre-contexte .form-select {
+  width: auto;
+}
+
+.liste-propositions {
+  --bs-list-group-bg: var(--bs-body-bg);
+  max-height: 18rem;
+  overflow-y: auto;
+}

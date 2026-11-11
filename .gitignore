@@ -21,3 +21,8 @@ sauvegardes/*
 
 # Réglages locaux de Claude Code
 .claude/settings.local.json
+
+# Feuille de style de la couleur principale, générée par l'application
+public/css/couleur.css
+# Logo envoyé depuis les options
+public/img/logo_association.*

@@ -12,6 +12,12 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Fenêtre (modal) à rouvrir d'elle-même : après une erreur de saisie, le
+    // formulaire qu'elle contient est réaffiché avec les valeurs saisies.
+    document.querySelectorAll('.modal[data-ouvrir-auto]').forEach(function (fenetre) {
+        bootstrap.Modal.getOrCreateInstance(fenetre).show();
+    });
+
     // Boutons utiles seulement quand JavaScript est désactivé.
     document.querySelectorAll('[data-masquer-si-js]').forEach(function (bouton) {
         bouton.classList.add('d-none');
