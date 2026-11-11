@@ -1,0 +1,14 @@
+{
+  "name": "bddv3",
+  "private": true,
+  "scripts": {
+    "css": "sass --quiet-deps --silence-deprecation=import --no-source-map scss/bddv3.scss:public/css/bddv3.css scss/connexion.scss:public/css/connexion.css",
+    "watch": "sass --watch --quiet-deps --silence-deprecation=import --no-source-map scss/bddv3.scss:public/css/bddv3.css scss/connexion.scss:public/css/connexion.css"
+  },
+  "dependencies": {
+    "bootstrap": "5.3.8"
+  },
+  "devDependencies": {
+    "sass": "^1.108.1"
+  }
+}

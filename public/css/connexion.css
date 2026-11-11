@@ -1,0 +1,51 @@
+html,
+body {
+  height: 100%;
+}
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+  -webkit-text-fill-color: var(--bs-body-color) !important;
+}
+
+.form-signin,
+.form-mdpoubli,
+.form-mdpmodif {
+  max-width: 330px;
+  padding: 1rem;
+}
+.form-signin .form-floating:focus-within,
+.form-mdpoubli .form-floating:focus-within,
+.form-mdpmodif .form-floating:focus-within {
+  z-index: 2;
+}
+
+.form-signin input[type=email],
+.form-mdpoubli input[type=email] {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+.form-signin input[type=password],
+.form-mdpoubli input[type=text] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.form-mdpmodif input[type=password]#mdpmodif {
+  margin-bottom: -1px;
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.form-mdpmodif .mdpverif input[type=password] {
+  margin-bottom: 10px;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 5px;
+  border-bottom-left-radius: 5px;
+}

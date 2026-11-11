@@ -1,0 +1,210 @@
+// ==========================================
+// 1. OUTILS ET FONCTIONS BOOTSTRAP
+// ==========================================
+@import "../node_modules/bootstrap/scss/functions";
+
+// ==========================================
+// 2. VARIABLES ET TEINTES PERSONNALISÉES
+// ==========================================
+$fabrilisrose : #e6195e;
+$fabrilisvert : #00a651;
+$fabrilisbleu : #00aeef;
+$fabrilisteal : #00b3b8;
+
+// Couleur principale à définir, par défaut le bleu bootstrap
+// $primary: $fabrilisbleu;
+
+// Famille de polices àdéfinir, par défaut "Noto Sans"
+// $font-family-base: "Noto Sans", Tahoma, Geneva, Verdana, sans-serif;
+
+// Déclinaisons des teintes
+$fabrilisrose-100: tint-color($fabrilisrose, 80%);
+$fabrilisrose-200: tint-color($fabrilisrose, 60%);
+$fabrilisrose-300: tint-color($fabrilisrose, 40%);
+$fabrilisrose-400: tint-color($fabrilisrose, 20%);
+$fabrilisrose-500: $fabrilisrose;
+$fabrilisrose-600: shade-color($fabrilisrose, 20%);
+$fabrilisrose-700: shade-color($fabrilisrose, 40%);
+$fabrilisrose-800: shade-color($fabrilisrose, 60%);
+$fabrilisrose-900: shade-color($fabrilisrose, 80%);
+
+$fabrilisroses: (
+  "fabrilisrose-100": $fabrilisrose-100,
+  "fabrilisrose-200": $fabrilisrose-200,
+  "fabrilisrose-300": $fabrilisrose-300,
+  "fabrilisrose-400": $fabrilisrose-400,
+  "fabrilisrose-500": $fabrilisrose-500,
+  "fabrilisrose-600": $fabrilisrose-600,
+  "fabrilisrose-700": $fabrilisrose-700,
+  "fabrilisrose-800": $fabrilisrose-800,
+  "fabrilisrose-900": $fabrilisrose-900
+) !default;
+
+$fabrilisvert-100: tint-color($fabrilisvert, 80%);
+$fabrilisvert-200: tint-color($fabrilisvert, 60%);
+$fabrilisvert-300: tint-color($fabrilisvert, 40%);
+$fabrilisvert-400: tint-color($fabrilisvert, 20%);
+$fabrilisvert-500: $fabrilisvert;
+$fabrilisvert-600: shade-color($fabrilisvert, 20%);
+$fabrilisvert-700: shade-color($fabrilisvert, 40%);
+$fabrilisvert-800: shade-color($fabrilisvert, 60%);
+$fabrilisvert-900: shade-color($fabrilisvert, 80%);
+
+$fabrilisverts: (
+  "fabrilisvert-100": $fabrilisvert-100,
+  "fabrilisvert-200": $fabrilisvert-200,
+  "fabrilisvert-300": $fabrilisvert-300,
+  "fabrilisvert-400": $fabrilisvert-400,
+  "fabrilisvert-500": $fabrilisvert-500,
+  "fabrilisvert-600": $fabrilisvert-600,
+  "fabrilisvert-700": $fabrilisvert-700,
+  "fabrilisvert-800": $fabrilisvert-800,
+  "fabrilisvert-900": $fabrilisvert-900
+) !default;
+
+$fabrilisbleu-100: tint-color($fabrilisbleu, 80%);
+$fabrilisbleu-200: tint-color($fabrilisbleu, 60%);
+$fabrilisbleu-300: tint-color($fabrilisbleu, 40%);
+$fabrilisbleu-400: tint-color($fabrilisbleu, 20%);
+$fabrilisbleu-500: $fabrilisbleu;
+$fabrilisbleu-600: shade-color($fabrilisbleu, 20%);
+$fabrilisbleu-700: shade-color($fabrilisbleu, 40%);
+$fabrilisbleu-800: shade-color($fabrilisbleu, 60%);
+$fabrilisbleu-900: shade-color($fabrilisbleu, 80%);
+
+$fabrilisbleus: (
+  "fabrilisbleu-100": $fabrilisbleu-100,
+  "fabrilisbleu-200": $fabrilisbleu-200,
+  "fabrilisbleu-300": $fabrilisbleu-300,
+  "fabrilisbleu-400": $fabrilisbleu-400,
+  "fabrilisbleu-500": $fabrilisbleu-500,
+  "fabrilisbleu-600": $fabrilisbleu-600,
+  "fabrilisbleu-700": $fabrilisbleu-700,
+  "fabrilisbleu-800": $fabrilisbleu-800,
+  "fabrilisbleu-900": $fabrilisbleu-900
+) !default;
+
+$fabrilisteal-100: tint-color($fabrilisteal, 80%);
+$fabrilisteal-200: tint-color($fabrilisteal, 60%);
+$fabrilisteal-300: tint-color($fabrilisteal, 40%);
+$fabrilisteal-400: tint-color($fabrilisteal, 20%);
+$fabrilisteal-500: $fabrilisteal;
+$fabrilisteal-600: shade-color($fabrilisteal, 20%);
+$fabrilisteal-700: shade-color($fabrilisteal, 40%);
+$fabrilisteal-800: shade-color($fabrilisteal, 60%);
+$fabrilisteal-900: shade-color($fabrilisteal, 80%);
+
+$fabrilisteals: (
+  "fabrilisteal-100": $fabrilisteal-100,
+  "fabrilisteal-200": $fabrilisteal-200,
+  "fabrilisteal-300": $fabrilisteal-300,
+  "fabrilisteal-400": $fabrilisteal-400,
+  "fabrilisteal-500": $fabrilisteal-500,
+  "fabrilisteal-600": $fabrilisteal-600,
+  "fabrilisteal-700": $fabrilisteal-700,
+  "fabrilisteal-800": $fabrilisteal-800,
+  "fabrilisteal-900": $fabrilisteal-900
+) !default;
+
+// ==========================================
+// 3. VARIABLES, MAPS & MIXINS BOOTSTRAP
+// ==========================================
+@import "../node_modules/bootstrap/scss/variables";
+@import "../node_modules/bootstrap/scss/variables-dark";
+@import "../node_modules/bootstrap/scss/maps";
+@import "../node_modules/bootstrap/scss/mixins";
+@import "../node_modules/bootstrap/scss/utilities";
+
+// ==========================================
+// 4. FUSION DES COULEURS DANS LES UTILITAIRES
+// ==========================================
+$colors: map-merge($colors, (
+  "fabrilisrose": $fabrilisrose,
+  "fabrilisvert": $fabrilisvert,
+  "fabrilisbleu": $fabrilisbleu,
+  "fabrilisteal": $fabrilisteal
+));
+
+$all-colors: map-merge-multiple($fabrilisroses, $fabrilisverts, $fabrilisbleus, $fabrilisteals, $blues, $indigos, $purples, $pinks, $reds, $oranges, $yellows, $greens, $teals, $cyans);
+
+$utilities: map-merge(
+  $utilities,
+  (
+    "color": map-merge(
+      map-get($utilities, "color"),
+      (
+        values: map-merge(
+          map-get(map-get($utilities, "color"), "values"),
+          $all-colors
+        ),
+      )
+    ),
+    "background-color": map-merge(
+      map-get($utilities, "background-color"),
+      (
+        values: map-merge(
+          map-get(map-get($utilities, "background-color"), "values"),
+          $all-colors
+        ),
+      )
+    ),
+    "width": map-merge(
+      map-get($utilities, "width"),
+      (responsive: true),
+    ),
+  )
+);
+
+// ==========================================
+// 5. STYLES DE BASE, LAYOUT & COMPOSANTS
+// ==========================================
+@import "../node_modules/bootstrap/scss/root";
+@import "../node_modules/bootstrap/scss/reboot";
+@import "../node_modules/bootstrap/scss/type";
+@import "../node_modules/bootstrap/scss/images";
+@import "../node_modules/bootstrap/scss/containers";
+@import "../node_modules/bootstrap/scss/grid";
+@import "../node_modules/bootstrap/scss/tables";
+@import "../node_modules/bootstrap/scss/forms";
+@import "../node_modules/bootstrap/scss/buttons";
+@import "../node_modules/bootstrap/scss/transitions";
+@import "../node_modules/bootstrap/scss/dropdown";
+@import "../node_modules/bootstrap/scss/button-group";
+@import "../node_modules/bootstrap/scss/nav";
+@import "../node_modules/bootstrap/scss/navbar";
+@import "../node_modules/bootstrap/scss/card";
+@import "../node_modules/bootstrap/scss/accordion";
+@import "../node_modules/bootstrap/scss/breadcrumb";
+@import "../node_modules/bootstrap/scss/pagination";
+@import "../node_modules/bootstrap/scss/badge";
+@import "../node_modules/bootstrap/scss/alert";
+@import "../node_modules/bootstrap/scss/progress";
+@import "../node_modules/bootstrap/scss/list-group";
+@import "../node_modules/bootstrap/scss/close";
+@import "../node_modules/bootstrap/scss/toasts";
+@import "../node_modules/bootstrap/scss/modal";
+@import "../node_modules/bootstrap/scss/tooltip";
+@import "../node_modules/bootstrap/scss/popover";
+@import "../node_modules/bootstrap/scss/carousel";
+@import "../node_modules/bootstrap/scss/spinners";
+@import "../node_modules/bootstrap/scss/offcanvas";
+@import "../node_modules/bootstrap/scss/placeholders";
+@import "../node_modules/bootstrap/scss/helpers";
+
+// Génération de l'API d'utilitaires (avec vos couleurs fusionnées)
+@import "../node_modules/bootstrap/scss/utilities/api";
+
+// ==========================================
+// 6. STYLES PERSONNALISÉS
+// ==========================================
+.card {
+  transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+}
+.list-group {
+  --bs-list-group-bg: transparent;
+}

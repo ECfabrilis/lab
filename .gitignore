@@ -1,0 +1,23 @@
+# Dépendances (réinstallées par npm install / composer install)
+node_modules/
+vendor/
+
+# Configuration locale et identifiants sensibles
+config.php
+.env
+public/_chemins.php
+test_mail_local.php
+
+# Journaux et sauvegardes de la base (données personnelles)
+logs/*
+!logs/.gitkeep
+sauvegardes/*
+!sauvegardes/.gitkeep
+*.sql.gz
+
+# Fichiers générés
+*.css.map
+.phpunit.cache/
+
+# Réglages locaux de Claude Code
+.claude/settings.local.json

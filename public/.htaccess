@@ -1,0 +1,13 @@
+# Dossier public de l'application
+Options -Indexes
+DirectoryIndex index.php
+
+# Les fichiers techniques (_chemins.php, modèles) ne s'ouvrent pas depuis le navigateur.
+<FilesMatch "^_">
+    Require all denied
+</FilesMatch>
+
+# Fichiers cachés (.git, .env...) : jamais servis.
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>

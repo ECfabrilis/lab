@@ -1,0 +1,10 @@
+parameters:
+    level: 9
+    paths:
+        - includes
+        - public
+        - config.exemple.php
+    excludePaths:
+        - public/_chemins.php (?)
+    bootstrapFiles:
+        - public/_chemins.exemple.php
