@@ -1,7 +1,7 @@
-# En local (WAMP), tout le projet est sous la racine web : seul le dossier
-# public/ doit être accessible depuis le navigateur. La partie privée
-# (includes, config.php, sql, logs, sauvegardes) est interdite.
-# Sur Hostinger, la partie privée est hors de public_html : ce fichier n'y sert pas.
+# En local (WAMP) comme sur Hostinger, tout le projet est sous la racine web :
+# seul le dossier public/ doit être accessible depuis le navigateur. La partie
+# privée (includes, config.php, sql, logs, sauvegardes, .git) est interdite.
+# Ce fichier est la seule protection de la partie privée : ne pas le supprimer.
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^(?!public/) - [F]

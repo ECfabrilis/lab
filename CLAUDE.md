@@ -35,14 +35,13 @@ Le projet est séparé en une partie publique et une partie privée.
 | | Pages publiques | Partie privée |
 |---|---|---|
 | Local (WAMP) | `<projet>/public/` | `<projet>/` (includes, config.php, sql, logs) |
-| Hostinger | `public_html/<sous-dossier>/` | `<dossier du domaine>/app_bddv3/` (à côté de `public_html`) |
+| Hostinger | `public_html/<dossier>/public/` (cible du sous-domaine) | `public_html/<dossier>/` (clone du dépôt) |
 
-- **`public/_chemins.php`** définit `DOSSIER_PRIVE` (chemin de la partie privée). Toutes les pages le chargent en premier, puis font `require DOSSIER_PRIVE . '/includes/init.php';`.
-  - Local : `define('DOSSIER_PRIVE', dirname(__DIR__));`
-  - Hostinger, pages dans `public_html/<sous-dossier>/` : `define('DOSSIER_PRIVE', dirname(__DIR__, 2) . '/app_bddv3');` (`__DIR__` = le sous-dossier ; 1 niveau = `public_html`, 2 niveaux = le dossier du domaine). Ajouter 1 par niveau de sous-dossier supplémentaire.
-- `_chemins.php` n'est pas versionné (il diffère selon l'environnement) ; le modèle `_chemins.exemple.php` l'est. Ne jamais l'écraser lors d'un déploiement.
-- Le site est dans un **sous-dossier** : les liens internes ne doivent jamais commencer par `/` ; ils passent par `chemin_site()`, qui s'appuie sur `APP_URL`.
-- **Déploiement** : deux dossiers à mettre à jour (`public/` → `public_html/<sous-dossier>/`, le reste → `app_bddv3/`). Pas de Node en production : le CSS compilé est versionné.
+- Sur Hostinger comme en local, tout le projet est sous la racine web : **le `.htaccess` de la racine du projet** interdit tout ce qui n'est pas `public/`. C'est la seule protection de la partie privée (journaux, sauvegardes, `.git`) : ne jamais le supprimer ni l'affaiblir.
+- **`public/_chemins.php`** définit `DOSSIER_PRIVE` (chemin de la partie privée). Toutes les pages le chargent en premier, puis font `require DOSSIER_PRIVE . '/includes/init.php';`. Dans les deux environnements : `define('DOSSIER_PRIVE', dirname(__DIR__));`
+- `_chemins.php` n'est pas versionné (il peut différer selon l'environnement) ; le modèle `_chemins.exemple.php` l'est. Ne jamais l'écraser lors d'un déploiement.
+- En local, le site est dans un **sous-dossier** : les liens internes ne doivent jamais commencer par `/` ; ils passent par `chemin_site()`, qui s'appuie sur `APP_URL`.
+- **Déploiement** (`docs/deploiement.md`) : la fonction « Git » du panneau Hostinger copie la branche `main` du dépôt dans `public_html/<dossier>/` (bouton « Déployer »). `vendor/` n'est pas versionné : il s'installe à part (`composer install --no-dev`). Les migrations SQL restent à passer à la main, avant le déploiement. Pas de Node en production : le CSS compilé est versionné.
 
 ## Conventions de code
 

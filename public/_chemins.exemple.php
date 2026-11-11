@@ -8,11 +8,8 @@ declare(strict_types=1);
  *
  * DOSSIER_PRIVE = dossier qui contient includes/, config.php, sql/, logs/, sauvegardes/.
  *
- * Local (WAMP), pages dans <projet>/public/ :
- *     define('DOSSIER_PRIVE', dirname(__DIR__));
- *
- * Hostinger, pages dans public_html/<sous-dossier>/ :
- *     define('DOSSIER_PRIVE', dirname(__DIR__, 2) . '/app_bddv3');
- *     (ajouter 1 par niveau de sous-dossier supplémentaire)
+ * En local (WAMP) comme sur Hostinger, les pages sont dans <projet>/public/ et
+ * la partie privée dans <projet>/ : la ligne ci-dessous convient telle quelle.
+ * Elle ne change que si la partie privée est placée ailleurs.
  */
 define('DOSSIER_PRIVE', dirname(__DIR__));
