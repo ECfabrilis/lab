@@ -2,8 +2,8 @@
 -- bddv3 : structure de la base — schéma de référence
 -- Cible : MariaDB 11.8, InnoDB, utf8mb4 / utf8mb4_unicode_ci
 --
--- État : étape 0 (socle). Les étapes suivantes ajoutent leurs tables par un
--- fichier daté dans sql/migrations/, puis ce fichier est mis à jour.
+-- État : étape 1 (familles et adhérents). Chaque étape ajoute ses tables par un
+-- fichier daté dans sql/migrations/, et ce fichier est mis à jour.
 --
 -- Ce script est exécuté par install.php (étape 3). Il ne supprime rien :
 -- chaque table est créée seulement si elle n'existe pas.
@@ -175,4 +175,106 @@ CREATE TABLE IF NOT EXISTS `codes_postaux` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_cp_code_insee_ligne5` (`code_postal`, `code_insee`, `ligne_5`),
   KEY `idx_cp_commune` (`commune`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 8. Familles, adhérents, dossiers (étape 1)
+--    Modèle : famille -> dossier (par saison) -> adhérents.
+--    dossiers_adherents : un adhérent dans le dossier d une saison, avec son
+--    adresse de la saison, l instantané des quartiers et sa scolarité.
+--    anonymise_le : renseigné lors de l anonymisation (RGPD, 3 ans).
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `familles` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nom`          VARCHAR(100) NOT NULL,
+  `anonymise_le` DATETIME DEFAULT NULL,
+  `date_crea`    DATETIME NOT NULL DEFAULT current_timestamp(),
+  `creation_par` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_familles_nom` (`nom`),
+  KEY `idx_familles_creation_par` (`creation_par`),
+  CONSTRAINT `fk_familles_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `adherents` (
+  `id`                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `famille_id`        INT UNSIGNED NOT NULL,
+  `nom`               VARCHAR(100) NOT NULL,
+  `prenom`            VARCHAR(100) NOT NULL,
+  `sexe`              ENUM('F','H','A') NOT NULL COMMENT 'F = femme, H = homme, A = autre',
+  `date_naissance`    DATE NOT NULL,
+  `nationalite_iso3`  VARCHAR(10) DEFAULT NULL COMMENT 'Code du pays (table pays) ; le continent s en deduit',
+  `mail`              VARCHAR(150) DEFAULT NULL,
+  `tel`               VARCHAR(20) DEFAULT NULL,
+  `responsable_nom`   VARCHAR(150) DEFAULT NULL COMMENT 'Nom et prenom du responsable adulte (adherent mineur)',
+  `responsable_mail`  VARCHAR(150) DEFAULT NULL,
+  `responsable_tel`   VARCHAR(20) DEFAULT NULL,
+  `est_benevole`      TINYINT(1) NOT NULL DEFAULT 0,
+  `a_consenti`        TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'Consentement aux communications (export Google Contacts)',
+  `consentement_le`   DATETIME DEFAULT NULL COMMENT 'Date a laquelle le consentement a ete donne',
+  `anonymise_le`      DATETIME DEFAULT NULL,
+  `date_crea`         DATETIME NOT NULL DEFAULT current_timestamp(),
+  `date_modif`        DATETIME DEFAULT NULL ON UPDATE current_timestamp(),
+  `creation_par`      INT UNSIGNED NOT NULL,
+  `modification_par`  INT UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_adherents_famille` (`famille_id`),
+  KEY `idx_adherents_nom` (`nom`, `prenom`),
+  KEY `idx_adherents_nationalite` (`nationalite_iso3`),
+  KEY `idx_adherents_creation_par` (`creation_par`),
+  KEY `idx_adherents_modification_par` (`modification_par`),
+  CONSTRAINT `fk_adherents_famille` FOREIGN KEY (`famille_id`) REFERENCES `familles` (`id`),
+  CONSTRAINT `fk_adherents_nationalite` FOREIGN KEY (`nationalite_iso3`) REFERENCES `pays` (`iso3`),
+  CONSTRAINT `fk_adherents_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`),
+  CONSTRAINT `fk_adherents_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `dossiers` (
+  `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `famille_id`       INT UNSIGNED NOT NULL,
+  `saison_id`        INT UNSIGNED NOT NULL,
+  `date_dossier`     DATE NOT NULL,
+  `notes`            TEXT DEFAULT NULL,
+  `date_crea`        DATETIME NOT NULL DEFAULT current_timestamp(),
+  `date_modif`       DATETIME DEFAULT NULL ON UPDATE current_timestamp(),
+  `creation_par`     INT UNSIGNED NOT NULL,
+  `modification_par` INT UNSIGNED DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_dossiers_famille_saison` (`famille_id`, `saison_id`),
+  KEY `idx_dossiers_saison` (`saison_id`),
+  KEY `idx_dossiers_creation_par` (`creation_par`),
+  KEY `idx_dossiers_modification_par` (`modification_par`),
+  CONSTRAINT `fk_dossiers_famille` FOREIGN KEY (`famille_id`) REFERENCES `familles` (`id`),
+  CONSTRAINT `fk_dossiers_saison` FOREIGN KEY (`saison_id`) REFERENCES `saisons` (`id`),
+  CONSTRAINT `fk_dossiers_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`),
+  CONSTRAINT `fk_dossiers_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `dossiers_adherents` (
+  `dossier_id`    INT UNSIGNED NOT NULL,
+  `adherent_id`   INT UNSIGNED NOT NULL,
+  `adresse`       VARCHAR(255) NOT NULL COMMENT 'Numero et voie',
+  `complement`    VARCHAR(255) DEFAULT NULL COMMENT 'Batiment, escalier, etage, chez...',
+  `code_postal`   CHAR(5) NOT NULL,
+  `ville`         VARCHAR(100) NOT NULL,
+  `est_validee`   TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = adresse trouvee au numero pres par l API Adresse (BAN)',
+  `latitude`      DECIMAL(9,6) DEFAULT NULL,
+  `longitude`     DECIMAL(9,6) DEFAULT NULL,
+  `quartier`      VARCHAR(150) DEFAULT NULL COMMENT 'Quartier de la ville (instantane)',
+  `est_qp`        TINYINT(1) NOT NULL DEFAULT 0,
+  `qp_code`       VARCHAR(50) DEFAULT NULL,
+  `qp_nom`        VARCHAR(150) DEFAULT NULL,
+  `est_qpv`       TINYINT(1) NOT NULL DEFAULT 0,
+  `qpv_code`      VARCHAR(50) DEFAULT NULL,
+  `qpv_nom`       VARCHAR(150) DEFAULT NULL,
+  `quartiers_le`  DATETIME DEFAULT NULL COMMENT 'Date du calcul des quartiers',
+  `etablissement` VARCHAR(150) DEFAULT NULL COMMENT 'Etablissement scolaire pour cette saison',
+  `niveau`        VARCHAR(50) DEFAULT NULL COMMENT 'Niveau scolaire pour cette saison',
+  `date_crea`     DATETIME NOT NULL DEFAULT current_timestamp(),
+  `date_modif`    DATETIME DEFAULT NULL ON UPDATE current_timestamp(),
+  PRIMARY KEY (`dossier_id`, `adherent_id`),
+  KEY `idx_da_adherent` (`adherent_id`),
+  KEY `idx_da_code_postal` (`code_postal`),
+  CONSTRAINT `fk_da_dossier` FOREIGN KEY (`dossier_id`) REFERENCES `dossiers` (`id`),
+  CONSTRAINT `fk_da_adherent` FOREIGN KEY (`adherent_id`) REFERENCES `adherents` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

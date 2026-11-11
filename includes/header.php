@@ -11,7 +11,8 @@ declare(strict_types=1);
  *                  (connexion, mot de passe oublié, choix du mot de passe).
  *
  * Variables posées ici, à ne pas réutiliser dans les pages :
- *   $u, $menu, $logo, $nom_asso, $saison, $saisons, $libelles_roles, $messages.
+ *   $u, $menu, $logo, $nom_asso, $saison, $saisons, $libelles_roles, $messages,
+ *   $retour_saison.
  *
  * @var string $titre_page
  */
@@ -26,10 +27,20 @@ $saisons = $u === null ? [] : saisons_liste();
 $saison = $u === null ? null : saison_courante();
 $messages = flash_lire();
 
+// Page où revenir après un changement de saison : la page en cours, avec son identifiant.
+$retour_saison = page_courante();
+foreach (['id', 'famille'] as $parametre_retour) {
+    if (entier($_GET[$parametre_retour] ?? 0) > 0) {
+        $retour_saison .= '?' . $parametre_retour . '=' . entier($_GET[$parametre_retour] ?? 0);
+        break;
+    }
+}
+
 // Menu principal : chaque entrée est visible à partir d'un rôle minimal.
 $menu = [];
 foreach ([
     ['page' => 'index.php', 'libelle' => 'Accueil', 'role' => 'lecteur'],
+    ['page' => 'adherents.php', 'libelle' => 'Adhérents', 'role' => 'lecteur'],
     ['page' => 'utilisateurs.php', 'libelle' => 'Utilisateurs', 'role' => 'admin'],
     ['page' => 'saisons.php', 'libelle' => 'Saisons', 'role' => 'admin'],
     ['page' => 'parametres.php', 'libelle' => 'Paramètres', 'role' => 'admin'],
@@ -85,7 +96,7 @@ foreach ([
             <?php if ($saisons !== []) : ?>
                 <form class="d-flex align-items-center gap-2 me-lg-3 my-2 my-lg-0" method="post" action="<?= e(chemin_site('changer_saison.php')) ?>">
                     <?= csrf_champ() ?>
-                    <input type="hidden" name="retour" value="<?= e(page_courante() . (entier($_GET['id'] ?? 0) > 0 ? '?id=' . entier($_GET['id'] ?? 0) : '')) ?>">
+                    <input type="hidden" name="retour" value="<?= e($retour_saison) ?>">
                     <label class="form-label mb-0 text-nowrap" for="choixSaison">Saison</label>
                     <select class="form-select form-select-sm" id="choixSaison" name="saison_id" data-envoi-auto>
                         <?php foreach ($saisons as $saison_menu) : ?>

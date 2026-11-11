@@ -12,5 +12,6 @@ ancien_oublier();
 </main>
 <script src="<?= e(chemin_site('js/bootstrap.bundle.min.js')) ?>"></script>
 <script src="<?= e(chemin_site('js/bddv3.js')) ?>"></script>
+<script src="<?= e(chemin_site('js/adresse.js')) ?>"></script>
 </body>
 </html>

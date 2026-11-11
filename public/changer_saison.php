@@ -11,7 +11,7 @@ exiger_connexion();
 
 // Page de retour : uniquement une page du site, éventuellement avec son identifiant.
 $retour = post('retour');
-if (preg_match('/^[a-z_]+\.php(\?id=\d+)?$/', $retour) !== 1 || !is_file(__DIR__ . '/' . explode('?', $retour)[0])) {
+if (preg_match('/^[a-z_]+\.php(\?(id|famille)=\d+)?$/', $retour) !== 1 || !is_file(__DIR__ . '/' . explode('?', $retour)[0])) {
     $retour = 'index.php';
 }
 

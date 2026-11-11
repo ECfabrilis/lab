@@ -56,7 +56,7 @@ Le projet est séparé en une partie publique et une partie privée.
 - **Tout texte venant d'un utilisateur ou de la base passe par `e()`** avant d'être écrit dans la page.
 - Requêtes SQL : toujours préparées (PDO, `ATTR_EMULATE_PREPARES => false`), jamais de concaténation de valeurs.
 - Mots de passe : `password_hash(PASSWORD_DEFAULT)` ; longueur minimale 8. Jamais de mot de passe en clair dans la base, les journaux ou les messages.
-- Noms de variables de pages : ne jamais réutiliser ceux posés par `header.php` (`$u`, `$menu`, `$logo`, `$nom_asso`, `$saison`, `$saisons`, `$libelles_roles`, `$messages`). Une page ne lit pas non plus ces variables (PHPStan ne suit pas l'inclusion) : elle appelle les fonctions (`utilisateur_courant()`, `saison_courante()`, `saisons_liste()`, `libelles_roles()`).
+- Noms de variables de pages : ne jamais réutiliser ceux posés par `header.php` (`$u`, `$menu`, `$logo`, `$nom_asso`, `$saison`, `$saisons`, `$libelles_roles`, `$messages`, `$retour_saison`). Une page ne lit pas non plus ces variables (PHPStan ne suit pas l'inclusion) : elle appelle les fonctions (`utilisateur_courant()`, `saison_courante()`, `saisons_liste()`, `libelles_roles()`).
 - Pas de script ni de style écrits dans les pages : la politique de sécurité du contenu (CSP) les bloque. Le JavaScript va dans `public/js/`, les styles dans le SCSS.
 - HTML/Bootstrap : un `.row` va dans un `.container` ou dans un `.col`, sans décoration (fond, bordure) sur le `.row` lui-même ; le décor va sur une `div` parente.
 - Mise en page des listes : colonne principale à gauche (`col-md-8`), colonne des actions à droite (`col-md-4`, `#menuLateral`) ; en dessous de `md`, la colonne d'actions passe en premier.

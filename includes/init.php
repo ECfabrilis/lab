@@ -18,6 +18,9 @@ require_once DOSSIER_PRIVE . '/includes/fonctions_utilisateurs.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_saisons.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_courriel.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_sauvegarde.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_familles.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_adherents.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_adresses.php';
 
 // Bibliothèques installées par Composer (PHPMailer)
 if (is_file(DOSSIER_PRIVE . '/vendor/autoload.php')) {

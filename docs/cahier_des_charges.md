@@ -212,6 +212,81 @@ Règles :
 - En cas d'erreur à une étape, on peut reprendre sans repartir de zéro ; les tables existantes ne sont jamais écrasées sans confirmation explicite.
 - Les mises à jour ultérieures de structure passent par des fichiers de migration datés (voir `CLAUDE.md`), pas par `install.php`.
 
+### 12.2 Formulaire d'inscription (`ajout_adherent.php`)
+
+Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs, pas de doublons. Les champs marqués * sont obligatoires.
+
+**Principes**
+- Les informations saisies sont gardées côté serveur (session) entre les étapes ; **rien n'est écrit en base avant la validation finale**, qui enregistre tout en une seule opération. Chaque étape suit Post/Redirect/Get : le bouton « page précédente » du navigateur ne redemande jamais de renvoyer le formulaire.
+- Les aides à la saisie (doublons, codes postaux, adresse) sont du JavaScript (`public/js/`) qui interroge de petites pages réservées aux utilisateurs connectés ayant le droit de saisie (`standard` ou `admin`) ; elles renvoient du JSON et sont protégées par le jeton CSRF.
+- Un brouillon abandonné est simplement oublié à la fin de la session.
+
+**Choix du type de personne.** Quatre boutons : **Homme**, **Femme**, **Autre**, **Association / Structure**. Pour une structure, le formulaire demande un **nom de structure** au lieu de nom et prénom, ne demande ni date de naissance, ni nationalité, ni mention bénévole, ni famille (une structure a son propre dossier) ; le code postal, l'adresse et les contacts restent demandés.
+
+**Étape 1 — Bénévolat, identité, code postal**
+- *Bénévolat* : bouton on/off « est bénévole ».
+- *Identité* : nom*, prénom*, sexe* (via les boutons), date de naissance*, nationalité.
+- *Doublons* : pendant la saisie du nom, du prénom et de la date de naissance, une liste d'adhérents proches s'affiche dans la colonne de droite. Est « proche » une personne qui a **la même date de naissance**, ou **un nom et un prénom presque identiques** (sans tenir compte des accents ni des majuscules) ; 5 propositions au maximum, avec la famille et la dernière saison. Cliquer sur une proposition ouvre sa fiche et permet de **l'inscrire pour la saison en cours** au lieu de créer une deuxième fiche.
+- *Code postal** : une liste de communes est proposée dès 3 chiffres. À 4 chiffres, si un seul code postal correspond, le code et la commune sont remplis sans clic (exemple : « 6542 » → « 65420 » et « IBOS »). Si plusieurs communes partagent le code, on propose le choix.
+
+**Étape 2 — Famille** (sauf structure)
+- Trois choix : **créer une nouvelle famille** avec cet adhérent ; **choisir** une famille parmi celles dont le nom est proche de celui de l'adhérent ; **rechercher** une famille.
+- Si une famille existante est choisie, son **adresse et son téléphone sont proposés par défaut** à l'étape suivante.
+
+**Étape 3 — Adresse, contact, notes**
+- *Adresse** et complément d'adresse : vérification en direct auprès de l'API BAN. Une indication en petit sous le champ dit si l'adresse est **certifiée** ou non. À partir des coordonnées, une deuxième indication donne le **quartier**, le **quartier prioritaire (QP)** et le **quartier de la politique de la ville (QPV)**. Le code postal saisi à l'étape 1 oriente la recherche ; l'adresse certifiée corrige le code postal et la commune si besoin.
+- *Contact* : courriel, téléphone, **consentement aux communications** (case à cocher, enregistrée avec la date).
+- *Si la personne a moins de 18 ans* (à la date du jour) : un **responsable** est demandé (nom, courriel, téléphone) ; l'**établissement scolaire / niveau** (facultatif) est proposé.
+- *Notes du dossier* : texte libre ; elles appartiennent au **dossier** (famille et saison), pas à la personne.
+
+**Étape 4 — Validation**
+- Récapitulatif de toutes les informations, avec un lien « modifier » pour chaque partie.
+- Si l'adresse n'est **pas certifiée**, l'enregistrement n'est possible qu'après une **confirmation explicite** (case à cocher). Quartier et QPV sont alors laissés vides.
+- La validation utilise le jeton anti-double envoi.
+
+**Après la validation**, l'utilisateur choisit entre :
+1. voir la fiche de l'adhérent ;
+2. ajouter un paiement pour cet adhérent ;
+3. inscrire cet adhérent à une activité ;
+4. inscrire une autre personne dans la même famille (formulaire prérempli avec la famille, son adresse et son téléphone) ;
+5. faire une nouvelle inscription (formulaire vide).
+
+### 12.3 Menu, tableau de bord et paramètres
+
+**Menu principal** (dans l'en-tête, à côté du logo) : trois entrées seulement.
+
+| Entrée | Accès |
+|---|---|
+| Tableau de bord (`index.php`) | tous |
+| Statistiques | tous |
+| Paramètres | `admin` |
+
+**Barre sous l'en-tête** : elle contient la **saison** (affichage et changement de saison) et l'**utilisateur** (son nom, accès à son profil, déconnexion). L'en-tête au-dessus ne garde que le logo et le menu. Sur téléphone, la barre reste lisible (éléments empilés ou réduits).
+
+**Tableau de bord** : trois parties, chacune présentée sous forme de **cards Bootstrap** cliquables.
+
+| Partie | Choix | Accès |
+|---|---|---|
+| Les adhérents | Liste des adhérents ; Nouvelle inscription ; Les familles | liste et familles : tous ; nouvelle inscription : `standard` au moins |
+| Les activités | Liste des activités ; Nouvelle activité ; Secteurs d'activité | liste : tous ; nouvelle activité : `standard` au moins ; secteurs : `admin` |
+| Les paiements (partie entière réservée à `standard` au moins) | Liste des paiements ; Nouveau paiement ; Les tarifs ; État des paiements | tarifs : `admin` ; les autres : `standard` au moins |
+
+« État des paiements » : vue d'ensemble des dossiers de la saison avec reste à payer ou trop-perçu (voir section 7).
+
+**Paramètres** (`admin`) : quatre parties, également en cards.
+
+| Partie | Choix |
+|---|---|
+| Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
+| Options | Nom de la structure ; Logo ; Couleur |
+| La base de données | Saisons ; Sauvegarde ; Logs ; Données de référence (pays, quartiers, QP, QPV, codes postaux) ; RGPD (anonymisation) |
+| Configuration | Paramètres des mails (avec l'essai d'envoi) |
+
+**Règles**
+- Une card que l'utilisateur n'a pas le droit d'utiliser **n'est pas affichée** ; une partie sans aucune card visible disparaît. Le droit est **toujours revérifié côté serveur** sur chaque page, pas seulement par le masquage.
+- Les listes de choix sont **extensibles** : on peut ajouter des cards au fur et à mesure (notamment dans les parties Options, Base de données et Configuration) sans changer la mise en page.
+- La couleur choisie dans Options s'applique à l'ensemble de l'application ; le logo et le nom de la structure servent aussi aux documents PDF (section 8).
+
 Accessibilité : écrans utilisables sur tablette ; pages de consultation (liste d'inscrits, coordonnées) lisibles sur téléphone.
 
 ---
@@ -237,8 +312,8 @@ Chaque étape est livrable et testable : écrans, base de données, droits et do
 
 | # | Étape | Contenu |
 |---|---|---|
-| 0 | Socle | Dépôt, outils, **`install.php` (section 12.1)**, connexion, utilisateurs, mot de passe oublié, saisons, paramètres, mise en page, sauvegarde |
-| 1 | Familles et adhérents | Famille, dossier, adhérents, responsable de mineur, adresse BAN, recherche |
+| 0 | Socle | Dépôt, outils, **`install.php` (section 12.1)**, **menu, tableau de bord et paramètres (section 12.3)**, connexion, utilisateurs, mot de passe oublié, saisons, paramètres, mise en page, sauvegarde |
+| 1 | Familles et adhérents | Famille, dossier, adhérents, structures, responsable de mineur, adresse BAN, recherche, **formulaire d'inscription (section 12.2)** |
 | 2 | Activités et inscriptions | Secteurs, types, tarifs, activités, inscriptions, places, liste d'attente |
 | 3 | Cotisations et paiements | Cotisation, réductions, paiements, reste à payer, reçu PDF — **première mise en service possible** |
 | 4 | Documents | Listes de participants, émargement, attestations |

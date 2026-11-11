@@ -42,8 +42,9 @@ $rappel_sauvegarde = role_au_moins('admin') && sauvegarde_en_retard();
     </div>
     <div class="col-md-6">
         <div class="border rounded p-3 h-100">
-            <h2 class="h5">À venir</h2>
-            <p class="mb-0 text-body-secondary">Les familles et adhérents, les activités, les inscriptions et les paiements arriveront aux étapes suivantes.</p>
+            <h2 class="h5">Adhérents</h2>
+            <p class="text-body-secondary">Familles, adhérents et dossiers de la saison. Les activités, les inscriptions et les paiements arriveront aux étapes suivantes.</p>
+            <a class="btn btn-outline-primary" href="<?= e(chemin_site('adherents.php')) ?>">Voir les adhérents</a>
         </div>
     </div>
 </div>
