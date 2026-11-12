@@ -98,9 +98,7 @@ function cards_parametres(): array
             'titre' => 'Options',
             'role'  => 'admin',
             'cards' => [
-                ['titre' => 'Nom de la structure', 'texte' => 'Nom et adresse, repris sur les documents.', 'page' => 'options.php#nom', 'role' => 'admin'],
-                ['titre' => 'Logo', 'texte' => 'Image affichée dans l\'en-tête et sur les documents.', 'page' => 'options.php#logo_titre', 'role' => 'admin'],
-                ['titre' => 'Couleur', 'texte' => 'Couleur principale de l\'application.', 'page' => 'options.php#couleur_titre', 'role' => 'admin'],
+                ['titre' => 'Options d\'affichage', 'texte' => 'Nom de la structure, logo et couleur principale.', 'page' => 'options.php', 'role' => 'admin'],
             ],
         ],
         [
@@ -109,7 +107,7 @@ function cards_parametres(): array
             'cards' => [
                 ['titre' => 'Saisons', 'texte' => 'Créer et modifier les saisons.', 'page' => 'saisons.php', 'role' => 'admin'],
                 ['titre' => 'Sauvegarde', 'texte' => 'Exporter la base et télécharger les sauvegardes.', 'page' => 'sauvegarde.php', 'role' => 'admin'],
-                ['titre' => 'Logs', 'texte' => 'Journal des actions faites dans l\'application.', 'page' => 'journal.php', 'role' => 'admin'],
+                ['titre' => 'Logs', 'texte' => 'Journal des actions de la saison en cours.', 'page' => 'journal.php', 'role' => 'admin'],
                 ['titre' => 'Données de référence', 'texte' => 'Pays, quartiers, QP, QPV, codes postaux : consulter et mettre à jour.', 'page' => 'donnees_reference.php', 'role' => 'admin'],
                 ['titre' => 'RGPD', 'texte' => 'Anonymisation des familles inactives.', 'page' => 'rgpd.php', 'role' => 'admin'],
             ],

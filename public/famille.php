@@ -39,7 +39,7 @@ if (est_post()) {
 
     // --- Nom de la famille ---------------------------------------------------
     if ($action === 'renommer') {
-        $nom_saisi = post('nom_famille');
+        $nom_saisi = nom_normaliser(post('nom_famille'));
         if ($nom_saisi === '' || mb_strlen($nom_saisi) > 100) {
             flash('erreur', 'Le nom de la famille est obligatoire (100 caractères au maximum).');
             ancien_memoriser();

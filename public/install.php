@@ -303,13 +303,6 @@ if (est_post()) {
                 $erreurs[] = $erreur_mdp;
             }
         }
-        if ($faut_saison) {
-            $verification = verifier_saison(post('saison_nom'), post('saison_debut'), post('saison_fin'));
-            $erreurs = array_merge($erreurs, $verification['erreurs']);
-            if ($verification['erreurs'] === [] && $verification['est_passee'] && post('saison_passee_ok') !== '1') {
-                $erreurs[] = 'Cette saison est déjà terminée : cochez la case de confirmation pour la créer quand même.';
-            }
-        }
         if ($erreurs !== []) {
             foreach ($erreurs as $erreur) {
                 flash('erreur', $erreur);
@@ -325,8 +318,10 @@ if (est_post()) {
                 journaliser('creation', 'utilisateurs', $admin_id, 'Installation : premier administrateur', null, ['prenom' => post('prenom'), 'mail' => post('mail'), 'role' => 'admin']);
             }
             if ($faut_saison) {
-                db_executer('INSERT INTO saisons (nom, date_debut, date_fin) VALUES (?, ?, ?)', [post('saison_nom'), post('saison_debut'), post('saison_fin')]);
-                journaliser('creation', 'saisons', entier($pdo_install->lastInsertId()), 'Installation : première saison « ' . post('saison_nom') . ' »');
+                // La saison en cours est créée sans rien demander (1er septembre → 31 août).
+                $premiere_saison = saison_habituelle();
+                db_executer('INSERT INTO saisons (nom, date_debut, date_fin) VALUES (?, ?, ?)', [$premiere_saison['nom'], $premiere_saison['date_debut'], $premiere_saison['date_fin']]);
+                journaliser('creation', 'saisons', entier($pdo_install->lastInsertId()), 'Installation : première saison « ' . $premiere_saison['nom'] . ' »', null, $premiere_saison);
             }
             parametre_enregistrer('nom_association', $nom_association);
             db_executer("INSERT IGNORE INTO parametres (cle, valeur) VALUES ('adresse_association', ''), ('logo', 'img/logo-cefia75.png')");
@@ -347,7 +342,14 @@ if (est_post()) {
             install_rediriger();
         }
         unset($_SESSION['install_etape']);
-        flash('succes', 'Installation terminée. Vous pouvez vous connecter. Pensez à supprimer install.php du serveur.');
+        // L'assistant ne sert plus : il se supprime lui-même si le serveur le permet.
+        // (Même s'il reste, il est verrouillé par INSTALLATION_TERMINEE.)
+        if (@unlink(__FILE__)) {
+            flash('succes', 'Installation terminée. Vous pouvez vous connecter. Le fichier install.php a été supprimé du serveur.');
+        } else {
+            flash('succes', 'Installation terminée. Vous pouvez vous connecter.');
+            flash('avertissement', 'Le fichier install.php n\'a pas pu être supprimé automatiquement : pensez à le supprimer du serveur.');
+        }
         install_rediriger('connexion.php');
     }
 
@@ -619,23 +621,10 @@ if ($verrouille) {
                     <?php endif; ?>
 
                     <?php if ($faut_saison_affichage) : ?>
-                        <div class="col-12"><h3 class="h6 mt-2 mb-0">Première saison</h3></div>
-                        <div class="col-md-4">
-                            <label class="form-label" for="saison_nom">Nom</label>
-                            <input class="form-control" type="text" id="saison_nom" name="saison_nom" maxlength="50" placeholder="2026-2027" value="<?= e(ancien('saison_nom')) ?>" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label" for="saison_debut">Date de début</label>
-                            <input class="form-control" type="date" id="saison_debut" name="saison_debut" value="<?= e(ancien('saison_debut')) ?>" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label" for="saison_fin">Date de fin</label>
-                            <input class="form-control" type="date" id="saison_fin" name="saison_fin" value="<?= e(ancien('saison_fin')) ?>" required>
-                        </div>
+                        <?php $saison_prevue = saison_habituelle(); ?>
                         <div class="col-12">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="saison_passee_ok" name="saison_passee_ok" value="1" <?= ancien('saison_passee_ok') === '1' ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="saison_passee_ok">Je confirme la création d'une saison déjà terminée (à cocher seulement dans ce cas).</label>
+                            <div class="alert alert-info mb-0">
+                                La saison en cours, « <?= e($saison_prevue['nom']) ?> » (du <?= e(date_fr($saison_prevue['date_debut'])) ?> au <?= e(date_fr($saison_prevue['date_fin'])) ?>), sera créée automatiquement.
                             </div>
                         </div>
                     <?php else : ?>

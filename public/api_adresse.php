@@ -22,6 +22,10 @@ if (post('verifier') === '1') {
         exit;
     }
     $adresse = adresse_preparer($saisie);
+    if ($adresse['est_validee'] !== 1 && adresse_api_indisponible()) {
+        echo json_encode(['certifiee' => false, 'indisponible' => true, 'message' => MESSAGE_API_ADRESSE_INDISPONIBLE], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
     echo json_encode([
         'certifiee'   => $adresse['est_validee'] === 1,
         'adresse'     => $adresse['adresse'],
@@ -35,8 +39,8 @@ if (post('verifier') === '1') {
 // --- Propositions pendant la frappe ----------------------------------------------
 $propositions = adresse_api_chercher(post('q'), post('code_postal'));
 if ($propositions === null) {
-    http_response_code(502);
-    echo json_encode(['erreur' => 'Le service d\'adresses ne répond pas.']);
+    // Le formulaire reste utilisable : pas de proposition, et une indication sous le champ.
+    echo json_encode(['resultats' => [], 'indisponible' => true, 'message' => MESSAGE_API_ADRESSE_INDISPONIBLE], JSON_UNESCAPED_UNICODE);
     exit;
 }
 

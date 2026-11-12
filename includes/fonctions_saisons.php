@@ -54,6 +54,27 @@ function libelle_etat_saison(string $etat): string
 }
 
 /**
+ * Saison habituelle à une date donnée : du 1er septembre au 31 août.
+ * À partir du 1er septembre de l'année N : saison « N-(N+1) » ; avant : « (N-1)-N ».
+ *
+ * @param string|null $date date AAAA-MM-JJ (aujourd'hui par défaut)
+ * @return array{nom: string, date_debut: string, date_fin: string}
+ */
+function saison_habituelle(?string $date = null): array
+{
+    $jour = new DateTimeImmutable($date ?? 'today');
+    $annee = (int) $jour->format('Y');
+    if ((int) $jour->format('n') < 9) {
+        $annee--;
+    }
+    return [
+        'nom'        => $annee . '-' . ($annee + 1),
+        'date_debut' => $annee . '-09-01',
+        'date_fin'   => ($annee + 1) . '-08-31',
+    ];
+}
+
+/**
  * Saison affichée : celle choisie dans le menu, sinon la saison en cours,
  * sinon la plus récente. Null s'il n'existe aucune saison.
  *
@@ -77,6 +98,43 @@ function saison_courante(): ?array
         'SELECT id, nom, date_debut, date_fin FROM saisons WHERE date_debut <= ? ORDER BY date_debut DESC LIMIT 1',
         [$aujourdhui]
     ) ?? db_ligne('SELECT id, nom, date_debut, date_fin FROM saisons ORDER BY date_debut LIMIT 1');
+}
+
+/** Délai après le début d'une saison avant d'effacer le journal des saisons précédentes. */
+const JOURNAL_DELAI_PURGE = '+1 month';
+
+/**
+ * Remise à zéro du journal (logs_bdd) à chaque nouvelle saison : un mois après
+ * le début de la saison en cours, les actions antérieures à ce début sont
+ * effacées. Appelée à chaque connexion ; ne fait rien si la purge de cette
+ * saison est déjà faite (paramètre « logs_purges_saison »).
+ *
+ * @return int nombre de lignes effacées
+ */
+function journal_purger_saisons_passees(): int
+{
+    $aujourdhui = date('Y-m-d');
+    // La saison réellement en cours, et non celle choisie à l'affichage.
+    $en_cours = db_ligne(
+        'SELECT id, nom, date_debut FROM saisons WHERE date_debut <= ? AND date_fin >= ?',
+        [$aujourdhui, $aujourdhui]
+    );
+    if ($en_cours === null || parametre('logs_purges_saison') === texte($en_cours['id'])) {
+        return 0;
+    }
+    $debut = texte($en_cours['date_debut']);
+    if ($aujourdhui < (new DateTimeImmutable($debut))->modify(JOURNAL_DELAI_PURGE)->format('Y-m-d')) {
+        return 0;
+    }
+    $effacees = db_executer('DELETE FROM logs_bdd WHERE date_action < ?', [$debut . ' 00:00:00'])->rowCount();
+    parametre_enregistrer('logs_purges_saison', texte($en_cours['id']));
+    journaliser(
+        'suppression',
+        'logs_bdd',
+        null,
+        'Remise à zéro du journal pour la saison ' . texte($en_cours['nom']) . ' : ' . $effacees . ' ligne(s) antérieure(s) au ' . date_fr($debut) . ' effacée(s)'
+    );
+    return $effacees;
 }
 
 /**

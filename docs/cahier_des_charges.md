@@ -47,16 +47,18 @@ Modèle conservé : **famille → dossier (par saison) → adhérents → inscri
 - Les **paiements sont toujours rattachés à un dossier**.
 - Le dossier est une notion **interne** : il sert au fonctionnement de l'application mais **n'apparaît jamais à l'écran** (ni le mot, ni un lien, ni une page). L'interface parle de la famille (ou de la structure) « pour la saison » : inscrit(e) pour la saison, notes de la saison, paiements de la famille. Le dossier est créé automatiquement à la première inscription de la saison. Sur la fiche famille, chaque membre peut être **inscrit pour la saison** ou **retiré de la saison**, et les notes de la saison s'y modifient (pour une structure : sur sa fiche).
 - La **liste des adhérents** affiche par défaut les adhérents inscrits pour la saison affichée (à la connexion : la saison en cours) ; la recherche peut être élargie à toutes les saisons.
+- **Recherche** : dès 3 lettres, des propositions s'affichent pendant la frappe ; le texte est cherché **n'importe où** dans le nom ou le prénom (« pond » propose DUPOND, « arti » propose MARTIN).
+- **Filtres de la liste** : première lettre du nom, bénévoles uniquement, quartier, quartier prioritaire (QP), QPV ; nombre par page au choix (50 par défaut, 100, 200 ou 500). Quartier, QP et QPV sont ceux de l'adresse de la saison affichée.
 
 ### 3.2 Fiche adhérent
 
 | Champ | Obligatoire | Remarques |
 |---|---|---|
-| Nom, prénom | oui | |
+| Nom, prénom | oui | enregistrés avec le nom en majuscules (DUPOND) et le prénom avec une majuscule initiale (Jean-Pierre) ; le nom d'une famille est aussi en majuscules, celui d'une structure reste tel que saisi |
 | Sexe | oui | |
 | Date de naissance | oui | l'âge est calculé, jamais saisi |
-| Nationalité | non | liste de pays ; le continent est déduit (statistiques) |
-| Adresse | oui | vérifiée par l'API Adresse (BAN) |
+| Nationalité | non | liste de pays, **France par défaut** dans le formulaire d'inscription ; le continent est déduit (statistiques) |
+| Adresse | oui | vérifiée par l'API Adresse (BAN, Géoplateforme) ; si le service ne répond pas, une indication le dit (« Géoplateforme est indisponible, l'adresse ne sera pas vérifiée ») et la saisie reste possible |
 | Code postal | oui | proposé à partir d'une table |
 | Quartier, quartier prioritaire (QP), QPV | calculés | déterminés automatiquement depuis l'adresse, conservés en **instantané** (API BAN) |
 | Courriel, téléphone | non | |
@@ -76,7 +78,7 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 ## 4. Saisons
 
 - Pas de chevauchement ; **une seule saison à venir** à la fois ; saisons passées possibles avec confirmation ; durée maximale 2 ans ; nom unique.
-- L'installation crée la première saison.
+- L'installation crée la première saison **sans rien demander** : la saison en cours, du 1er septembre au 31 août (à partir du 1er septembre de l'année N : saison « N-(N+1) » ; avant : saison « (N-1)-N »).
 - Les tarifs, activités et cotisations sont rattachés à une saison.
 
 ---
@@ -182,7 +184,8 @@ Indicateurs issus du rapport d'activité 2025 :
 
 - Données personnelles de mineurs et de personnes en situation de fragilité : accès par compte, journal des actions, pas de données dans les URL.
 - **Consentement** explicite pour les communications / Google Contacts, enregistré avec la date.
-- **Anonymisation** des familles inactives après 3 ans ; **purge des journaux** après 1 an.
+- **Anonymisation** des familles inactives après 3 ans.
+- **Journal des actions (logs)** : conservé pour la saison en cours et **remis à zéro à chaque nouvelle saison**. Un mois après le début de la saison, à la première connexion, les actions antérieures à ce début sont effacées (sans export : les sauvegardes de la base en gardent la trace).
 - **Sauvegardes** : export de la base **toutes les semaines** (recommandation : au minimum), en plus des sauvegardes de l'hébergeur ; une copie hors hébergeur.
 - Droit d'accès / effacement : fonction « anonymiser cette famille » réservée aux admins.
 
@@ -206,11 +209,11 @@ Un assistant d'installation, à lancer une seule fois sur chaque environnement (
 2. **Courriel (PHPMailer)** : serveur SMTP, port, chiffrement, identifiant, mot de passe, adresse et nom d'expéditeur ; adresse publique du site (`APP_URL`). Un envoi d'essai est proposé.
 3. **Création de la structure** : toutes les tables, à partir de `sql/structure.sql`.
 4. **Remplissage des tables de référence** : pays, quartiers, quartiers prioritaires (QP), QPV, codes postaux, à partir de fichiers fournis dans `sql/` (les sources officielles sont à rassembler avant l'étape de développement correspondante).
-5. **Premier administrateur** (prénom, courriel, mot de passe) et **première saison**.
+5. **Premier administrateur** (prénom, courriel, mot de passe) et **première saison**, créée automatiquement (voir section 4).
 
 Règles :
 - L'assistant **écrit `config.php`** dans la partie privée (jamais dans `public/`), avec des droits restreints ; les mots de passe saisis ne sont ni affichés de nouveau ni journalisés.
-- **Verrouillage** : `config.php` est écrit dès la fin de l'étape 2, avec le réglage `INSTALLATION_TERMINEE` à `false`, ce qui permet de reprendre une installation interrompue. Ce réglage passe à `true` à la fin de l'étape 5 : `install.php` refuse alors de s'exécuter. La documentation recommande de supprimer `install.php` du serveur une fois l'installation terminée.
+- **Verrouillage** : `config.php` est écrit dès la fin de l'étape 2, avec le réglage `INSTALLATION_TERMINEE` à `false`, ce qui permet de reprendre une installation interrompue. Ce réglage passe à `true` à la fin de l'étape 5 : `install.php` refuse alors de s'exécuter. Une fois l'installation réussie, `install.php` **se supprime lui-même** du serveur si c'est possible ; sinon un message demande de le supprimer à la main.
 - En cas d'erreur à une étape, on peut reprendre sans repartir de zéro ; les tables existantes ne sont jamais écrasées sans confirmation explicite.
 - Les mises à jour ultérieures de structure passent par des fichiers de migration datés (voir `CLAUDE.md`), pas par `install.php`.
 
@@ -281,7 +284,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 | Partie | Choix |
 |---|---|
 | Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
-| Options | Nom de la structure ; Logo ; Couleur |
+| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) |
 | La base de données | Saisons ; Sauvegarde ; Logs ; Données de référence (pays, quartiers, QP, QPV, codes postaux) ; RGPD (anonymisation) |
 | Configuration | Paramètres des mails (avec l'essai d'envoi) |
 

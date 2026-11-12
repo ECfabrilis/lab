@@ -88,7 +88,9 @@ if (est_post()) {
             throw $erreur;
         }
         flash('succes', 'L\'adresse de la saison ' . texte($saison_affichee['nom'] ?? '') . ' est enregistrée.');
-        if (!$adresse_reconnue) {
+        if (!$adresse_reconnue && adresse_api_indisponible()) {
+            flash('avertissement', MESSAGE_API_ADRESSE_INDISPONIBLE . ' Le quartier n\'a pas pu être déterminé.');
+        } elseif (!$adresse_reconnue) {
             flash('avertissement', 'L\'adresse n\'est pas certifiée (elle n\'a pas été trouvée au numéro près) : le quartier n\'a pas pu être déterminé.');
         }
         rediriger($page_fiche);

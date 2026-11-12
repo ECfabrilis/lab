@@ -1,6 +1,6 @@
 // Recherche d'adhérents : dès 3 caractères saisis, une liste de propositions
-// (nom ou prénom) s'affiche sous le champ. Cliquer sur une proposition ouvre
-// la fiche. Le bouton « Rechercher » reste disponible pour la liste complète.
+// (n'importe où dans le nom ou le prénom) s'affiche sous le champ. Cliquer sur
+// une proposition ouvre la fiche. Le bouton « Rechercher » reste disponible pour la liste complète.
 //
 // Champ attendu : <input data-recherche-url="..." data-recherche-fiche="...">
 

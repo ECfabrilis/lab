@@ -60,7 +60,11 @@ d'hébergement ou de réglage du domaine.
    `https://mon_application.monsite.com/install.php` et suivre les 5 étapes
    (adresse du site : `https://mon_application.monsite.com`). L'assistant crée
    toutes les tables à partir de `sql/structure.sql` : aucune migration n'est à
-   passer sur une base neuve.
+   passer sur une base neuve. À la fin, il crée la saison en cours et supprime
+   lui-même `install.php` du serveur (un message le signale s'il n'y arrive
+   pas : le supprimer alors à la main). Chaque déploiement recopie ce fichier
+   depuis le dépôt : il reste verrouillé (403) tant que `config.php` indique
+   une installation terminée.
 
 7. **Contrôler la protection** de la partie privée. Ces deux adresses doivent
    répondre « 403 Forbidden » :

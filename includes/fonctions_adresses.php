@@ -63,6 +63,22 @@ function codes_postaux_chercher(string $saisie): array
 }
 
 /**
+ * Dit si le service d'adresses (Géoplateforme) n'a pas répondu pendant cette
+ * requête. adresse_api_chercher() le signale en passant true.
+ */
+function adresse_api_indisponible(bool $signaler = false): bool
+{
+    static $indisponible = false;
+    if ($signaler) {
+        $indisponible = true;
+    }
+    return $indisponible;
+}
+
+/** Message affiché quand le service d'adresses ne répond pas. */
+const MESSAGE_API_ADRESSE_INDISPONIBLE = 'Géoplateforme est indisponible, l\'adresse ne sera pas vérifiée.';
+
+/**
  * Interroge l'API Adresse.
  *
  * @return list<array{libelle: string, adresse: string, code_postal: string, ville: string, type: string, score: float, latitude: float, longitude: float}>|null
@@ -83,6 +99,7 @@ function adresse_api_chercher(string $recherche, string $code_postal = '', int $
     $donnees = $reponse === null ? null : json_decode($reponse, true);
     if (!is_array($donnees) || !is_array($donnees['features'] ?? null)) {
         journal_fichier('api_adresse.log', 'Pas de réponse exploitable de l\'API Adresse.');
+        adresse_api_indisponible(true);
         return null;
     }
 

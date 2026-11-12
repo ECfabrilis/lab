@@ -12,12 +12,15 @@
 // code postal.
 //
 // Adresse : une indication sous le champ (élément [data-etat-adresse]) dit si
-// l'adresse est certifiée, et donne le quartier, le QP et le QPV.
+// l'adresse est certifiée, et donne le quartier, le QP et le QPV. Si le service
+// d'adresses (Géoplateforme) ne répond pas, l'indication le signale.
 //
 // Sans JavaScript, le formulaire fonctionne quand même : l'adresse est vérifiée
 // par le serveur à l'enregistrement.
 
 document.addEventListener('DOMContentLoaded', function () {
+    var MESSAGE_INDISPONIBLE = 'Géoplateforme est indisponible, l\'adresse ne sera pas vérifiée.';
+
     function jeton(formulaire) {
         return formulaire.elements.csrf ? formulaire.elements.csrf.value : '';
     }
@@ -62,6 +65,13 @@ document.addEventListener('DOMContentLoaded', function () {
             .then(function (json) {
                 if (etat.dataset.verifie !== cle) {
                     return; // la saisie a changé entre-temps
+                }
+                if (json.indisponible) {
+                    // Le service d'adresses ne répond pas : on le dit, la saisie reste possible.
+                    etat.dataset.verifie = '';
+                    etat.className = 'form-text text-warning-emphasis';
+                    etat.textContent = json.message || MESSAGE_INDISPONIBLE;
+                    return;
                 }
                 if (typeof json.certifiee === 'undefined') {
                     etat.className = 'form-text';
@@ -195,6 +205,11 @@ document.addEventListener('DOMContentLoaded', function () {
             demander(champ.dataset.url, donnees, demandeEnCours.signal)
                 .then(function (json) {
                     var resultats = Array.isArray(json.resultats) ? json.resultats : [];
+                    var etat = formulaire.querySelector('[data-etat-adresse]');
+                    if (type === 'adresse' && json.indisponible && etat) {
+                        etat.className = 'form-text text-warning-emphasis';
+                        etat.textContent = json.message || MESSAGE_INDISPONIBLE;
+                    }
                     // Code postal : à 4 ou 5 chiffres, une seule possibilité est remplie sans clic.
                     if (type === 'code_postal' && texte.length >= 4 && resultats.length === 1 && champ.value.trim() === texte) {
                         choisir(resultats[0]);

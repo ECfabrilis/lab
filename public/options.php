@@ -93,10 +93,10 @@ $logo_actuel = chemin_site(parametre('logo', 'img/logo-cefia75.png'));
 
 $couleur_actuelle = parametre('couleur', COULEUR_DEFAUT);
 
-$titre_page = 'Options';
+$titre_page = 'Options d\'affichage';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-4">Options</h1>
+<h1 class="h3 mb-4">Options d'affichage</h1>
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <p class="mb-2">Logo actuel</p>

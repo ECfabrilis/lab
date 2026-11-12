@@ -72,8 +72,9 @@ if (est_post()) {
     if ($action === 'etape1') {
         $brouillon['identite'] = [
             'est_benevole'     => post('est_benevole') === '1' ? '1' : '0',
-            'nom'              => post('nom'),
-            'prenom'           => post('prenom'),
+            // Personne : nom en majuscules, prénom avec une majuscule initiale. Structure : nom tel que saisi.
+            'nom'              => $est_structure ? post('nom') : nom_normaliser(post('nom')),
+            'prenom'           => prenom_normaliser(post('prenom')),
             'date_naissance'   => post('date_naissance'),
             'nationalite_iso3' => post('nationalite_iso3'),
             'code_postal'      => post('code_postal'),
@@ -155,6 +156,8 @@ if (est_post()) {
             $brouillon['contact']['adresse'] = texte($brouillon['adresse']['adresse']);
             $brouillon['contact']['code_postal'] = texte($brouillon['adresse']['code_postal']);
             $brouillon['contact']['ville'] = texte($brouillon['adresse']['ville']);
+        } elseif (adresse_api_indisponible()) {
+            flash('avertissement', MESSAGE_API_ADRESSE_INDISPONIBLE);
         }
         $brouillon['etape_faite'] = 3;
         inscription_garder($brouillon);

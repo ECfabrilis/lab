@@ -27,7 +27,7 @@ Le projet est séparé en une partie publique et une partie privée.
 - **Partie privée** (hors de `public/`) : `includes/` (fonctions), `config.php` (secrets), `sql/`, `logs/`, `sauvegardes/`, `docs/`.
 - `config.php` n'est jamais versionné ni lu par Claude : il contient les mots de passe.
 - `config.php` est **écrit par l'assistant d'installation**, jamais à la main. Il renvoie un tableau (`return [...]`) ; un réglage se lit avec `config('CLE')`, jamais par une constante ni un `require` direct. La liste des réglages et leur rôle sont dans le modèle versionné `config.exemple.php` : tout nouveau réglage y est ajouté.
-- **Installation** : `public/install.php` (cahier des charges, section 12.1), en 5 étapes, à lancer une fois par environnement. Tant que le réglage `INSTALLATION_TERMINEE` n'est pas à `true`, `init.php` renvoie toutes les pages vers l'assistant ; ensuite `install.php` refuse de s'exécuter (403). Les tables déjà présentes ne sont jamais modifiées sans confirmation.
+- **Installation** : `public/install.php` (cahier des charges, section 12.1), en 5 étapes, à lancer une fois par environnement. Tant que le réglage `INSTALLATION_TERMINEE` n'est pas à `true`, `init.php` renvoie toutes les pages vers l'assistant ; ensuite `install.php` refuse de s'exécuter (403) ; à la fin d'une installation réussie il se supprime lui-même si possible (en local, ne pas committer cette suppression : `git restore public/install.php`). Les tables déjà présentes ne sont jamais modifiées sans confirmation.
 - Une seule porte d'entrée de démarrage : `includes/init.php` (session sécurisée, en-têtes de sécurité, chargement des fonctions).
 
 **Emplacement selon l'environnement** (le chemin diffère, le code ne change pas) :
@@ -77,7 +77,8 @@ Le projet est séparé en une partie publique et une partie privée.
 - Schéma de référence : `sql/structure.sql` et `sql/donnees_reference.sql`. Toute modification de structure passe par un fichier de migration daté, jamais par une modification directe de la base.
 - Nommage : `snake_case`, noms de tables au pluriel, sans accents ; clés étrangères systématiques ; `ON DELETE RESTRICT` pour les paiements (annulation par un indicateur, jamais par suppression).
 - Données rattachées à une saison par `saison_id` ; clés composites (secteur, saison) et (tarif, saison) pour garantir la cohérence.
-- RGPD : anonymisation des familles inactives après 3 ans ; purge des journaux après 1 an.
+- RGPD : anonymisation des familles inactives après 3 ans ; le journal (`logs_bdd`) ne couvre que la saison en cours : un mois après le début d'une saison, les lignes antérieures sont effacées à la première connexion (`journal_purger_saisons_passees()`).
+- Noms enregistrés en majuscules (`nom_normaliser()`), prénoms avec une majuscule initiale (`prenom_normaliser()`) ; le nom d'une structure reste tel que saisi.
 - Une **structure** (association, école…) est une ligne de `adherents` avec `est_structure = 1`, sans famille ; son dossier est rattaché par `dossiers.structure_id`.
 - Quartier, quartier prioritaire (QP) et quartier de la politique de la ville (QPV) de l'adresse sont conservés en **instantané** (texte) au moment de la saisie.
 

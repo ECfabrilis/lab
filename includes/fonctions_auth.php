@@ -139,6 +139,7 @@ function tenter_connexion(string $mail, string $mdp): string
         [date('Y-m-d H:i:s'), $id]
     );
     journaliser('connexion', 'utilisateurs', $id, 'Connexion');
+    journal_purger_saisons_passees();
     return 'ok';
 }
 

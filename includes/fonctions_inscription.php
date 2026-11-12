@@ -49,7 +49,7 @@ function inscription_brouillon_vide(): array
 {
     return [
         'type'              => '',
-        'identite'          => ['est_benevole' => '0', 'nom' => '', 'prenom' => '', 'date_naissance' => '', 'nationalite_iso3' => '', 'code_postal' => '', 'ville' => ''],
+        'identite'          => ['est_benevole' => '0', 'nom' => '', 'prenom' => '', 'date_naissance' => '', 'nationalite_iso3' => NATIONALITE_DEFAUT, 'code_postal' => '', 'ville' => ''],
         'famille_choix'     => '',
         'famille_id'        => 0,
         'famille_recherche' => '',

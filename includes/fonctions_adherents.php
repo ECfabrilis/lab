@@ -15,6 +15,12 @@ const AGE_MAJORITE = 18;
 /** Nombre d'adhérents affichés par page dans la liste. */
 const ADHERENTS_PAR_PAGE = 50;
 
+/** Nombres d'adhérents par page proposés dans la liste. */
+const ADHERENTS_PAR_PAGE_CHOIX = [50, 100, 200, 500];
+
+/** Nationalité proposée par défaut dans le formulaire d'inscription (code du pays). */
+const NATIONALITE_DEFAUT = 'FRA';
+
 /** Nombre maximal d'adhérents proches proposés pendant une inscription. */
 const DOUBLONS_PROPOSES_MAX = 5;
 
@@ -52,6 +58,18 @@ function est_mineur(string $date_naissance): bool
 function nom_adherent(array $adherent): string
 {
     return trim(texte($adherent['prenom'] ?? '') . ' ' . texte($adherent['nom'] ?? ''));
+}
+
+/** Nom de personne ou de famille tel qu'il est enregistré : entièrement en majuscules (DUPOND). */
+function nom_normaliser(string $nom): string
+{
+    return mb_strtoupper(trim($nom));
+}
+
+/** Prénom tel qu'il est enregistré : une majuscule au début de chaque partie (Jean-Pierre). */
+function prenom_normaliser(string $prenom): string
+{
+    return mb_convert_case(trim($prenom), MB_CASE_TITLE);
 }
 
 /**
@@ -122,12 +140,13 @@ function adherent_saisie_vide(bool $est_structure = false): array
 function adherent_saisie(bool $est_structure = false): array
 {
     $saisie = adherent_saisie_vide($est_structure);
-    $saisie['nom'] = post('nom');
+    // Personne : nom en majuscules. Structure : nom tel que saisi.
+    $saisie['nom'] = $est_structure ? post('nom') : nom_normaliser(post('nom'));
     $saisie['mail'] = post('mail');
     $saisie['tel'] = post('tel');
     $saisie['a_consenti'] = post('a_consenti') === '1' ? '1' : '0';
     if (!$est_structure) {
-        $saisie['prenom'] = post('prenom');
+        $saisie['prenom'] = prenom_normaliser(post('prenom'));
         $saisie['sexe'] = post('sexe');
         $saisie['date_naissance'] = post('date_naissance');
         $saisie['nationalite_iso3'] = post('nationalite_iso3');
@@ -465,15 +484,40 @@ function modifier_adherent(array $actuel, array $saisie): bool
  * Recherche d'adhérents (personnes et structures) par nom, prénom, famille, courriel ou téléphone.
  * Chaque mot saisi doit être trouvé dans l'un de ces champs.
  *
+ * Filtres : première lettre du nom, bénévoles seulement, quartier, QP, QPV.
+ * Le quartier, le QP et le QPV sont ceux de l'adresse de la saison indiquée :
+ * une personne qui n'y est pas inscrite ne peut pas y répondre.
+ *
  * @param bool $saison_seule true : seulement les adhérents présents dans un dossier de la saison
+ * @param array{lettre?: string, benevoles?: bool, quartier?: string, qp?: bool, qpv?: bool} $filtres
+ * @param int $par_page nombre de lignes par page
  * @return array{total: int, lignes: list<array<string, mixed>>}
  */
-function adherents_rechercher(string $recherche, int $saison_id, bool $saison_seule, int $page = 1): array
+function adherents_rechercher(string $recherche, int $saison_id, bool $saison_seule, int $page = 1, array $filtres = [], int $par_page = ADHERENTS_PAR_PAGE): array
 {
     $conditions = ['a.anonymise_le IS NULL'];
     $parametres = [];
     if ($saison_seule) {
         $conditions[] = 'da.adherent_id IS NOT NULL';
+    }
+    $lettre = $filtres['lettre'] ?? '';
+    if (preg_match('/^[A-Z]$/', $lettre) === 1) {
+        // La comparaison de la base ignore les accents : « E » trouve aussi « É ».
+        $conditions[] = 'a.nom LIKE ?';
+        $parametres[] = $lettre . '%';
+    }
+    if ($filtres['benevoles'] ?? false) {
+        $conditions[] = 'a.est_benevole = 1';
+    }
+    if (($filtres['quartier'] ?? '') !== '') {
+        $conditions[] = 'da.quartier = ?';
+        $parametres[] = $filtres['quartier'];
+    }
+    if ($filtres['qp'] ?? false) {
+        $conditions[] = 'da.est_qp = 1';
+    }
+    if ($filtres['qpv'] ?? false) {
+        $conditions[] = 'da.est_qpv = 1';
     }
     $mots = preg_split('/\s+/', $recherche, -1, PREG_SPLIT_NO_EMPTY);
     foreach (array_slice($mots === false ? [] : $mots, 0, 5) as $mot) {
@@ -492,7 +536,8 @@ function adherents_rechercher(string $recherche, int $saison_id, bool $saison_se
 
     $total = entier(db_valeur('SELECT COUNT(*)' . $base, $parametres));
 
-    array_push($parametres, ADHERENTS_PAR_PAGE, (max(1, $page) - 1) * ADHERENTS_PAR_PAGE);
+    $par_page = max(1, $par_page);
+    array_push($parametres, $par_page, (max(1, $page) - 1) * $par_page);
     $lignes = db_lignes(
         'SELECT a.id, a.est_structure, a.nom, a.prenom, a.date_naissance, a.mail, a.tel, a.famille_id, f.nom AS famille_nom,
                 d.id AS dossier_id, da.code_postal, da.ville, (da.adherent_id IS NOT NULL) AS dans_saison'
@@ -503,8 +548,31 @@ function adherents_rechercher(string $recherche, int $saison_id, bool $saison_se
 }
 
 /**
+ * Quartiers des adresses enregistrées pour une saison (choix du filtre de la liste).
+ *
+ * @return list<string>
+ */
+function adherents_quartiers(int $saison_id): array
+{
+    $quartiers = [];
+    $lignes = db_lignes(
+        'SELECT DISTINCT da.quartier
+           FROM dossiers_adherents da
+           JOIN dossiers d ON d.id = da.dossier_id
+          WHERE d.saison_id = ? AND da.quartier IS NOT NULL AND da.quartier <> \'\'
+          ORDER BY da.quartier',
+        [$saison_id]
+    );
+    foreach ($lignes as $ligne) {
+        $quartiers[] = texte($ligne['quartier']);
+    }
+    return $quartiers;
+}
+
+/**
  * Propositions pendant la frappe dans la recherche d'adhérents : chaque mot
- * saisi doit commencer un mot du nom ou du prénom (8 propositions au maximum).
+ * saisi doit se trouver dans le nom ou le prénom, à n'importe quel endroit
+ * (8 propositions au maximum).
  *
  * @param bool $saison_seule true : seulement les adhérents présents dans un dossier de la saison
  * @return list<array{id: int, nom: string, detail: string}>
@@ -523,9 +591,9 @@ function adherents_suggestions(string $recherche, int $saison_id, bool $saison_s
     $mots = preg_split('/\s+/', $recherche, -1, PREG_SPLIT_NO_EMPTY);
     foreach (array_slice($mots === false ? [] : $mots, 0, 4) as $mot) {
         $mot = addcslashes($mot, '%_\\');
-        // Début du nom ou du prénom, ou début d'un mot à l'intérieur (nom composé).
-        $conditions[] = '(a.nom LIKE ? OR a.nom LIKE ? OR a.nom LIKE ? OR a.prenom LIKE ? OR a.prenom LIKE ? OR a.prenom LIKE ?)';
-        array_push($parametres, $mot . '%', '% ' . $mot . '%', '%-' . $mot . '%', $mot . '%', '% ' . $mot . '%', '%-' . $mot . '%');
+        // N'importe où dans le nom ou le prénom : « pond » trouve DUPOND, « arti » trouve MARTIN.
+        $conditions[] = '(a.nom LIKE ? OR a.prenom LIKE ?)';
+        array_push($parametres, '%' . $mot . '%', '%' . $mot . '%');
     }
     $lignes = db_lignes(
         'SELECT a.id, a.est_structure, a.nom, a.prenom, a.date_naissance, f.nom AS famille_nom
