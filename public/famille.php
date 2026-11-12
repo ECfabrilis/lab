@@ -85,7 +85,9 @@ if (est_post()) {
     // --- Retrait d'un membre de la saison (sa fiche est conservée) -----------
     if ($action === 'retirer_membre') {
         $dossier_id = dossier_id_de_famille($famille_id, $saison_affichee_id);
-        if ($dossier_id > 0 && retirer_de_la_saison($dossier_id, entier(post('adherent_id')))) {
+        if ($dossier_id > 0 && inscriptions_actives_nb($dossier_id, entier(post('adherent_id'))) > 0) {
+            flash('erreur', 'Cette personne a des inscriptions en cours à des activités de la saison : annulez-les d\'abord.');
+        } elseif ($dossier_id > 0 && retirer_de_la_saison($dossier_id, entier(post('adherent_id')))) {
             flash('succes', 'La personne est retirée de la saison ' . $saison_affichee_nom . '. Sa fiche est conservée.');
         }
         rediriger($page_fiche);

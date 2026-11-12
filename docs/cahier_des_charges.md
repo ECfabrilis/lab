@@ -101,22 +101,48 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 | Champ | Remarques |
 |---|---|
 | Nom | |
-| Type | atelier, sortie loisirs, sortie culturelle, évènement, séjour |
-| Secteur | **un seul** secteur par activité (liste modifiable par un admin) |
-| Tarif | **un seul** tarif par activité et par saison |
-| Date de début | obligatoire |
+| Type | **un seul** type par activité. Liste créée à l'installation (atelier, sortie loisirs, sortie culturelle, évènement, séjour), modifiable par un admin dans les paramètres |
+| Secteur | **un seul** secteur par activité (liste modifiable par un admin) ; dans le formulaire, il se choisit juste après le nom |
+| Référent | obligatoire ; texte libre (un référent n'a pas forcément de compte dans l'application) |
+| Récurrence | obligatoire : ponctuel, régulier ou vacances |
+| Tarif | **un seul** tarif par activité et par saison, de type « forfait » ou « autre » ; sans tarif, l'activité est gratuite (c'est le cas d'une activité qui ne demande que l'adhésion) |
+| Date de début | obligatoire, dans la saison de l'activité |
 | Date de fin | facultative |
 | Places limitées | facultatif ; nombre de places |
 | Liste d'attente | facultative |
-| Nombre d'accompagnateurs | facultatif |
+| Nombre d'accompagnateurs | facultatif ; simple information, ils ne prennent pas de places |
 | Description | texte libre facultatif, pour préciser des détails |
 | Sans adhésion | oui/non |
 
 Pas de gestion d'horaires, de séances ni de lieu. Les séances et heures d'animation sont suivies dans un calendrier, **hors de la base** : rien n'est stocké dans l'application.
 
+**Secteurs et types** : deux listes **communes à toutes les saisons**. Un secteur ou un type peut être rendu **inactif** (il n'est plus proposé pour les nouvelles activités ; celles qui l'utilisent le gardent) ; il ne se **supprime** que si aucune activité ne l'utilise. Un secteur a une **description** facultative.
+
+**Tarifs** : un tarif est une ligne nommée d'une saison (exemple : « Atelier annuel — 120 € ») ; plusieurs activités peuvent le partager. Un tarif ne se supprime que si aucune activité ne l'utilise.
+
+| Champ | Remarques |
+|---|---|
+| Nom | unique dans la saison |
+| Type | obligatoire : **forfait**, **adhésion** ou **autre**. Les tarifs « adhésion » sont réservés aux cotisations (section 5) : une activité ne peut pas en choisir un |
+| Montant individuel | obligatoire |
+| Montant familial | facultatif ; il vaut pour **toute la famille** (exemple : centre de loisirs, 5 € par enfant ou 10 € pour l'ensemble des enfants) |
+| Description | texte libre facultatif |
+
+Une activité ne se **supprime** que si elle est vide (aucune inscription, même annulée). Son nombre de places ne peut pas descendre sous les places déjà prises.
+
+**Activité déjà créée ?** À la création, l'application cherche dans la saison une activité au **nom presque identique** (sans tenir compte des accents ni des majuscules, à une ou deux lettres près) et aux **dates similaires** (périodes qui se chevauchent, ou débuts à 7 jours d'écart au plus). Si elle en trouve une, elle la cite et demande de cocher « Créer quand même ».
+
+**Recherche** : la liste des activités se filtre par nom (n'importe où dans le nom), secteur et type ; la même recherche par nom existe au moment de choisir l'activité d'une inscription.
+
 ### 6.2 Inscription
 
 - Un adhérent s'inscrit à une activité ; une inscription porte un **nombre de places** (1 pour une personne, plusieurs pour une structure) qui s'impute sur les places de l'activité. Pour une structure, le **montant est négocié** : il est saisi à l'inscription au lieu d'être déduit du tarif ; si les places sont épuisées et que la liste d'attente est activée, il passe en liste d'attente.
+- L'adhérent doit d'abord être **inscrit pour la saison** de l'activité, y compris pour une activité « sans adhésion » (cet indicateur ne sert qu'au calcul de la cotisation). Tant qu'il a une inscription en cours à une activité, il ne peut pas être retiré de la saison.
+- Une personne n'a qu'**une inscription en cours** par activité ; une structure peut en avoir plusieurs.
+- Le **montant est copié** sur l'inscription au moment où elle est faite : modifier un tarif ne change pas les inscriptions déjà enregistrées.
+- **Tarif familial** : quand le tarif de l'activité a un montant familial, l'accueil choisit à l'inscription d'une personne entre le tarif individuel et le tarif familial. Chaque inscription au tarif familial porte le montant familial, qui ne **compte qu'une fois par famille et par activité**, quel que soit le nombre de membres inscrits à ce tarif (calcul du montant dû, étape 3).
+- **Places** : si les places demandées ne tiennent pas en entier, l'inscription va **entièrement en liste d'attente** quand l'activité en a une (exemple : une structure demande 5 places, il en reste 3) ; sinon elle est refusée.
+- **Liste d'attente** : on peut y inscrire quelqu'un **directement**, même s'il reste des places. Quand une place se libère, rien n'est automatique : la fiche de l'activité le signale et l'accueil **choisit** qui passe de la liste d'attente aux inscrits.
 - Annulation par indicateur (pas de suppression), pour garder l'historique.
 
 ---
@@ -275,7 +301,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 |---|---|---|
 | Les adhérents | Liste des adhérents ; Nouvelle inscription ; Les familles | liste et familles : tous ; nouvelle inscription : `standard` au moins |
 | Les activités | Liste des activités ; Nouvelle activité ; Secteurs d'activité | liste : tous ; nouvelle activité : `standard` au moins ; secteurs : `admin` |
-| Les paiements (partie entière réservée à `standard` au moins) | Liste des paiements ; Nouveau paiement ; Les tarifs ; État des paiements | tarifs : `admin` ; les autres : `standard` au moins |
+| Les paiements (partie entière réservée à `standard` au moins) | Liste des paiements ; Nouveau paiement ; Les tarifs ; État des paiements | tous : `standard` au moins (tarifs : consulter et ajouter ; les modifier ou les supprimer : `admin`) |
 
 « État des paiements » : vue d'ensemble des familles et structures de la saison avec reste à payer ou trop-perçu (voir section 7).
 
@@ -285,7 +311,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 |---|---|
 | Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
 | Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) |
-| La base de données | Saisons ; Sauvegarde ; Logs ; Données de référence (pays, quartiers, QP, QPV, codes postaux) ; RGPD (anonymisation) |
+| La base de données | Saisons ; Sauvegarde ; Logs ; Données de référence (pays, quartiers, QP, QPV, codes postaux) ; Types d'activité ; RGPD (anonymisation) |
 | Configuration | Paramètres des mails (avec l'essai d'envoi) |
 
 **Règles**

@@ -25,6 +25,8 @@ require_once DOSSIER_PRIVE . '/includes/fonctions_adherents.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_adresses.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_reference.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_inscription.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_tarifs.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_activites.php';
 
 // Bibliothèques installées par Composer (PHPMailer)
 if (is_file(DOSSIER_PRIVE . '/vendor/autoload.php')) {

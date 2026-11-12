@@ -71,7 +71,7 @@ function cards_tableau_de_bord(): array
             'cards' => [
                 ['titre' => 'Liste des paiements', 'texte' => 'Paiements enregistrés sur une période.', 'page' => 'paiements.php', 'role' => 'standard'],
                 ['titre' => 'Nouveau paiement', 'texte' => 'Encaisser un paiement pour une famille ou une structure.', 'page' => 'ajout_paiement.php', 'role' => 'standard'],
-                ['titre' => 'Les tarifs', 'texte' => 'Cotisations et tarifs des activités.', 'page' => 'tarifs.php', 'role' => 'admin'],
+                ['titre' => 'Les tarifs', 'texte' => 'Cotisations et tarifs des activités.', 'page' => 'tarifs.php', 'role' => 'standard'],
                 ['titre' => 'État des paiements', 'texte' => 'Reste à payer et trop-perçu des familles pour la saison.', 'page' => 'etat_paiements.php', 'role' => 'standard'],
             ],
         ],
@@ -109,6 +109,7 @@ function cards_parametres(): array
                 ['titre' => 'Sauvegarde', 'texte' => 'Exporter la base et télécharger les sauvegardes.', 'page' => 'sauvegarde.php', 'role' => 'admin'],
                 ['titre' => 'Logs', 'texte' => 'Journal des actions de la saison en cours.', 'page' => 'journal.php', 'role' => 'admin'],
                 ['titre' => 'Données de référence', 'texte' => 'Pays, quartiers, QP, QPV, codes postaux : consulter et mettre à jour.', 'page' => 'donnees_reference.php', 'role' => 'admin'],
+                ['titre' => 'Types d\'activité', 'texte' => 'Atelier, sortie, évènement, séjour… : la liste proposée pour les activités.', 'page' => 'types_activite.php', 'role' => 'admin'],
                 ['titre' => 'RGPD', 'texte' => 'Anonymisation des familles inactives.', 'page' => 'rgpd.php', 'role' => 'admin'],
             ],
         ],

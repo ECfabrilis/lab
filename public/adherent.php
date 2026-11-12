@@ -104,7 +104,9 @@ if (est_post()) {
         if ($dossier_id <= 0) {
             flash('erreur', 'Cette structure n\'est pas inscrite pour la saison.');
         } elseif ($action === 'retirer_saison') {
-            if (retirer_de_la_saison($dossier_id, $fiche_id)) {
+            if (inscriptions_actives_nb($dossier_id, $fiche_id) > 0) {
+                flash('erreur', 'Cette structure a des inscriptions en cours à des activités de la saison : annulez-les d\'abord.');
+            } elseif (retirer_de_la_saison($dossier_id, $fiche_id)) {
                 flash('succes', 'La structure est retirée de la saison ' . texte($saison_affichee['nom'] ?? '') . '. Sa fiche est conservée.');
             }
         } elseif (mb_strlen($notes_saisies) > 5000) {
@@ -137,6 +139,7 @@ $autres_membres = $adresse_saison === null ? [] : array_values(array_filter(
 // Adresse proposée dans la fenêtre de modification : celle de la saison, sinon la dernière connue.
 $adresse_proposee = $adresse_saison ?? derniere_adresse_adherent($fiche_id) ?? ($est_structure ? null : derniere_adresse_famille($famille_id)) ?? [];
 $autres_saisons = autres_saisons_adherent($fiche_id, $saison_affichee_id);
+$inscriptions_saison = $adresse_saison !== null ? inscriptions_adherent($fiche_id, $saison_affichee_id) : [];
 
 // Après une erreur de saisie, la fenêtre concernée est rouverte avec les valeurs saisies.
 $fenetre_a_rouvrir = ancien_existe() ? ancien('action') : '';
@@ -278,8 +281,36 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?php endif; ?>
 
             <div class="border rounded p-3 mb-3">
-                <h3 class="h6">Inscriptions aux activités</h3>
-                <p class="text-body-secondary mb-0">Les inscriptions de <?= e(nom_adherent($fiche)) ?><?= $est_structure ? '' : ' et de sa famille' ?> s'afficheront ici (étape 2 : activités et inscriptions).</p>
+                <div class="d-flex justify-content-between align-items-start gap-2">
+                    <h3 class="h6">Inscriptions aux activités</h3>
+                    <?php if ($peut_modifier) : ?>
+                        <a class="small" href="<?= e(chemin_site('ajout_inscription.php?adherent=' . $fiche_id . '&origine=adherent')) ?>">Inscrire à une activité</a>
+                    <?php endif; ?>
+                </div>
+                <?php if ($inscriptions_saison === []) : ?>
+                    <p class="text-body-secondary mb-0">Aucune inscription à une activité pour cette saison.</p>
+                <?php else : ?>
+                    <ul class="list-unstyled mb-0">
+                        <?php foreach ($inscriptions_saison as $ligne_inscription) : ?>
+                            <?php $ligne_annulee = entier($ligne_inscription['est_annulee']) === 1; ?>
+                            <li class="<?= $ligne_annulee ? 'text-body-secondary' : '' ?>">
+                                <a href="<?= e(chemin_site('activite.php?id=' . entier($ligne_inscription['activite_id']))) ?>"><?= e($ligne_inscription['activite_nom']) ?></a>
+                                <span class="text-body-secondary">— <?= e(activite_dates($ligne_inscription)) ?></span>
+                                <?php if (entier($ligne_inscription['nb_places']) > 1) : ?>
+                                    <span class="text-body-secondary">— <?= entier($ligne_inscription['nb_places']) ?> places</span>
+                                <?php endif; ?>
+                                <?php if (role_au_moins('standard')) : ?>
+                                    <span class="text-body-secondary">— <?= e(montant_fr($ligne_inscription['montant'])) ?><?= entier($ligne_inscription['est_tarif_familial']) === 1 ? ' (tarif familial)' : '' ?></span>
+                                <?php endif; ?>
+                                <?php if ($ligne_annulee) : ?>
+                                    <span class="badge text-bg-secondary">Annulée le <?= e(date_fr($ligne_inscription['annulee_le'])) ?></span>
+                                <?php elseif (texte($ligne_inscription['statut']) === 'attente') : ?>
+                                    <span class="badge text-bg-warning">Liste d'attente</span>
+                                <?php endif; ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                <?php endif; ?>
             </div>
 
             <div class="border rounded p-3 mb-3">

@@ -473,6 +473,30 @@ function date_valide(string $date): bool
 }
 
 // ---------------------------------------------------------------------------
+// Montants
+// ---------------------------------------------------------------------------
+
+/** Montant de la base (12.5) au format français : « 12,50 € ». */
+function montant_fr(mixed $montant): string
+{
+    return number_format((float) texte($montant), 2, ',', ' ') . ' €';
+}
+
+/**
+ * Montant saisi (« 12,50 », « 12.5 », « 12 € ») au format de la base (« 12.50 »).
+ * Null si ce n'est pas un montant positif ou nul, de 999 999,99 au maximum.
+ */
+function montant_lire(string $saisie): ?string
+{
+    $saisie = str_replace([' ', "\u{00A0}", "\u{202F}", '€'], '', $saisie);
+    $saisie = str_replace(',', '.', $saisie);
+    if (preg_match('/^\d{1,6}(\.\d{1,2})?$/', $saisie) !== 1) {
+        return null;
+    }
+    return number_format((float) $saisie, 2, '.', '');
+}
+
+// ---------------------------------------------------------------------------
 // Paramètres de l'application (table parametres)
 // ---------------------------------------------------------------------------
 
