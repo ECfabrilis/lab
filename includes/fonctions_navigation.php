@@ -34,8 +34,8 @@ function menu_principal(): array
 {
     return [
         ['page' => 'index.php', 'libelle' => 'Tableau de bord', 'role' => 'lecteur'],
-        ['page' => 'statistiques.php', 'libelle' => 'Statistiques', 'role' => 'lecteur'],
         ['page' => 'parametres.php', 'libelle' => 'Paramètres', 'role' => 'admin'],
+        ['page' => 'statistiques.php', 'libelle' => 'Statistiques', 'role' => 'lecteur'],
     ];
 }
 
