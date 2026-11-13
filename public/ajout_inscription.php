@@ -9,7 +9,8 @@ declare(strict_types=1);
 //   ?activite=N&adherent=N   les deux sont connus : on confirme l'inscription.
 // « origine=adherent » indique que l'on revient ensuite sur la fiche de l'adhérent.
 // Le nom d'adhérent cherché est gardé en session : aucun nom de personne
-// n'apparaît dans l'adresse. Le nom d'activité cherché (« q ») peut y figurer.
+// n'apparaît dans l'adresse. La liste des activités est filtrée dans le
+// navigateur pendant la frappe (public/js/activites.js), sans envoi au serveur.
 
 require __DIR__ . '/_chemins.php';
 require DOSSIER_PRIVE . '/includes/init.php';
@@ -122,14 +123,13 @@ $recherche = '';
 $propositions = [];
 $activites_proposees = [];
 $deja_inscrit = [];
-$recherche_activite = mb_substr(trim(mb_scrub(texte($_GET['q'] ?? ''), 'UTF-8')), 0, 100);
 if ($activite !== null && $inscrit === null) {
     // Étape « qui ? » : adhérents de la saison de l'activité.
     $recherche = texte($_SESSION['recherche_inscription'] ?? '');
     $propositions = adherents_suggestions($recherche, $saison_id, true);
 } elseif ($activite === null) {
-    // Étape « quelle activité ? » : activités de la saison affichée.
-    $activites_proposees = activites_liste($saison_id, 0, 0, $recherche_activite);
+    // Étape « quelle activité ? » : toutes les activités de la saison affichée.
+    $activites_proposees = activites_liste($saison_id);
     foreach (inscriptions_adherent($adherent_id, $saison_id) as $ligne_inscription) {
         if (entier($ligne_inscription['est_annulee']) === 0) {
             $deja_inscrit[entier($ligne_inscription['activite_id'])] = true;
@@ -212,24 +212,17 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <?php elseif ($activite === null && $inscrit !== null) : ?>
             <?php // ----- À quelle activité ? ----- ?>
             <h2 class="h5 mb-3">À quelle activité inscrire <?= e(nom_adherent($inscrit)) ?> ?</h2>
-            <form class="mb-3" method="get" action="<?= e(chemin_site('ajout_inscription.php')) ?>">
-                <input type="hidden" name="adherent" value="<?= $adherent_id ?>">
-                <?php if ($origine === 'adherent') : ?><input type="hidden" name="origine" value="adherent"><?php endif; ?>
-                <label class="form-label" for="q">Rechercher une activité de la saison <?= e($saison_nom) ?></label>
-                <div class="d-flex gap-2">
-                    <input class="form-control" type="search" id="q" name="q" maxlength="100" value="<?= e($recherche_activite) ?>" placeholder="Nom de l'activité">
-                    <button class="btn btn-outline-primary" type="submit">Rechercher</button>
-                    <?php if ($recherche_activite !== '') : ?>
-                        <a class="btn btn-outline-secondary" href="<?= e(chemin_site($page_ici)) ?>">Effacer</a>
-                    <?php endif; ?>
-                </div>
-            </form>
             <?php if ($activites_proposees === []) : ?>
-                <div class="alert alert-info" role="alert">
-                    <?= $recherche_activite !== '' ? 'Aucune activité de la saison ' . e($saison_nom) . ' ne correspond à « ' . e($recherche_activite) . ' ».' : 'Aucune activité n\'existe pour la saison ' . e($saison_nom) . '.' ?>
-                </div>
+                <div class="alert alert-info" role="alert">Aucune activité n'existe pour la saison <?= e($saison_nom) ?>.</div>
             <?php else : ?>
-                <div class="list-group">
+                <div class="mb-3">
+                    <label class="form-label" for="filtre_activites">Rechercher une activité de la saison <?= e($saison_nom) ?></label>
+                    <input class="form-control" type="search" id="filtre_activites" maxlength="100" autocomplete="off" placeholder="Nom de l'activité"
+                           data-filtre-liste="listeActivites" data-filtre-vide="aucuneActivite" aria-controls="listeActivites" aria-describedby="aide_filtre_activites">
+                    <div class="form-text" id="aide_filtre_activites">La liste se réduit pendant la saisie.</div>
+                </div>
+                <div class="alert alert-info d-none" role="status" id="aucuneActivite">Aucune activité de la saison <?= e($saison_nom) ?> ne correspond à cette recherche.</div>
+                <div class="list-group" id="listeActivites">
                     <?php foreach ($activites_proposees as $ligne_activite) : ?>
                         <?php
                         $ligne_id = entier($ligne_activite['id']);
@@ -238,17 +231,17 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         $ligne_detail = e(texte($ligne_activite['type_nom']) . ' — ' . activite_dates($ligne_activite) . ' — ' . activite_prix($ligne_activite));
                         ?>
                         <?php if (!$est_structure && isset($deja_inscrit[$ligne_id])) : ?>
-                            <div class="list-group-item text-body-secondary">
+                            <div class="list-group-item text-body-secondary" data-filtre-texte="<?= e($ligne_activite['nom']) ?>">
                                 <?= e($ligne_activite['nom']) ?> <span class="badge text-bg-secondary">Déjà inscrit(e)</span>
                                 <span class="d-block small"><?= $ligne_detail ?></span>
                             </div>
                         <?php elseif ($ligne_restantes === 0 && !$ligne_attente) : ?>
-                            <div class="list-group-item text-body-secondary">
+                            <div class="list-group-item text-body-secondary" data-filtre-texte="<?= e($ligne_activite['nom']) ?>">
                                 <?= e($ligne_activite['nom']) ?> <span class="badge text-bg-danger">Complet</span>
                                 <span class="d-block small"><?= $ligne_detail ?></span>
                             </div>
                         <?php else : ?>
-                            <a class="list-group-item list-group-item-action" href="<?= e(chemin_site('ajout_inscription.php?activite=' . $ligne_id . '&adherent=' . $adherent_id . $suffixe_origine)) ?>">
+                            <a class="list-group-item list-group-item-action" data-filtre-texte="<?= e($ligne_activite['nom']) ?>" href="<?= e(chemin_site('ajout_inscription.php?activite=' . $ligne_id . '&adherent=' . $adherent_id . $suffixe_origine)) ?>">
                                 <strong><?= e($ligne_activite['nom']) ?></strong>
                                 <?php if ($ligne_restantes === 0) : ?>
                                     <span class="badge text-bg-warning">Complet — liste d'attente</span>

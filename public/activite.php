@@ -5,8 +5,8 @@ declare(strict_types=1);
 // Fiche d'une activité : ses informations, ses inscrits, sa liste d'attente
 // et ses inscriptions annulées. L'activité se modifie dans une fenêtre.
 // Consultation : tout utilisateur connecté (liste d'inscrits, téléphones).
-// Modification, suppression, annulation d'une inscription, sortie de la liste
-// d'attente : rôle standard au minimum.
+// Modification, suppression, annulation d'une inscription, passage des inscrits
+// à la liste d'attente et inversement : rôle standard au minimum.
 
 require __DIR__ . '/_chemins.php';
 require DOSSIER_PRIVE . '/includes/init.php';
@@ -68,8 +68,8 @@ if (est_post()) {
         rediriger($page_fiche);
     }
 
-    // --- Inscriptions : annulation, sortie de la liste d'attente ----------------
-    if ($action === 'annuler_inscription' || $action === 'sortir_attente') {
+    // --- Inscriptions : annulation, passage en liste d'attente et inversement ---
+    if (in_array($action, ['annuler_inscription', 'sortir_attente', 'mettre_attente'], true)) {
         $inscription = inscription_par_id(entier(post('inscription_id')));
         if ($inscription === null || entier($inscription['activite_id']) !== $fiche_id) {
             flash('erreur', 'Cette inscription n\'existe pas.');
@@ -78,6 +78,13 @@ if (est_post()) {
                 flash('succes', 'L\'inscription de ' . nom_adherent($inscription) . ' est annulée.');
             } else {
                 flash('info', 'Cette inscription était déjà annulée.');
+            }
+        } elseif ($action === 'mettre_attente') {
+            $erreur_attente = inscription_mettre_en_attente($inscription);
+            if ($erreur_attente === '') {
+                flash('succes', nom_adherent($inscription) . ' passe des inscrits à la liste d\'attente.');
+            } else {
+                flash('erreur', $erreur_attente);
             }
         } else {
             $erreur_attente = inscription_sortir_attente($inscription);
@@ -119,7 +126,7 @@ $fenetre_a_rouvrir = ancien_existe() ? ancien('action') : '';
  * @param list<array<string, mixed>> $lignes
  * @param 'inscrits'|'attente'       $partie
  */
-$afficher_inscriptions = static function (array $lignes, string $partie) use ($fiche_id, $peut_modifier): void {
+$afficher_inscriptions = static function (array $lignes, string $partie) use ($fiche_id, $peut_modifier, $a_liste_attente): void {
     ?>
     <div class="table-responsive">
         <table class="table table-hover align-middle">
@@ -145,7 +152,11 @@ $afficher_inscriptions = static function (array $lignes, string $partie) use ($f
                             <?php else : ?>
                                 <span class="text-body-secondary small">— <?= age_ans(texte($ligne['date_naissance'])) ?> ans</span>
                             <?php endif; ?>
-                            <span class="d-block small text-body-secondary">depuis le <?= e(date_fr($ligne['date_crea'])) ?></span>
+                            <?php if ($partie === 'attente') : ?>
+                                <span class="d-block small text-body-secondary">en attente depuis le <?= e(date_fr($ligne['attente_le'] ?? $ligne['date_crea'])) ?></span>
+                            <?php else : ?>
+                                <span class="d-block small text-body-secondary">depuis le <?= e(date_fr($ligne['date_crea'])) ?></span>
+                            <?php endif; ?>
                         </td>
                         <td class="small">
                             <?= e($ligne['tel']) ?>
@@ -168,6 +179,8 @@ $afficher_inscriptions = static function (array $lignes, string $partie) use ($f
                                     <input type="hidden" name="inscription_id" value="<?= entier($ligne['id']) ?>">
                                     <?php if ($partie === 'attente') : ?>
                                         <button class="btn btn-outline-primary btn-sm" type="submit" name="action" value="sortir_attente">Inscrire</button>
+                                    <?php elseif ($a_liste_attente) : ?>
+                                        <button class="btn btn-outline-secondary btn-sm text-nowrap" type="submit" name="action" value="mettre_attente">Mettre en attente</button>
                                     <?php endif; ?>
                                     <button class="btn btn-outline-danger btn-sm" type="submit" name="action" value="annuler_inscription">Annuler</button>
                                 </form>

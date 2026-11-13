@@ -85,6 +85,38 @@ function famille_membres(int $famille_id, int $saison_id = 0): array
 }
 
 /**
+ * Adultes d'une famille que l'on peut joindre (téléphone ou adresse e-mail
+ * renseigné) : ils sont proposés comme responsable d'un mineur de la famille.
+ *
+ * @return list<array{id: int, nom: string, tel: string, mail: string}> nom : « NOM Prénom »
+ */
+function famille_adultes_joignables(int $famille_id): array
+{
+    $adultes = [];
+    $lignes = db_lignes(
+        'SELECT a.id, a.nom, a.prenom, a.date_naissance, a.mail, a.tel
+           FROM adherents a
+          WHERE a.famille_id = ? AND a.est_structure = 0 AND a.anonymise_le IS NULL
+            AND (COALESCE(a.tel, \'\') <> \'\' OR COALESCE(a.mail, \'\') <> \'\')
+          ORDER BY a.date_naissance, a.prenom, a.id',
+        [$famille_id]
+    );
+    foreach ($lignes as $ligne) {
+        $naissance = texte($ligne['date_naissance']);
+        if (!date_valide($naissance) || est_mineur($naissance)) {
+            continue;
+        }
+        $adultes[] = [
+            'id'   => entier($ligne['id']),
+            'nom'  => trim(texte($ligne['nom']) . ' ' . texte($ligne['prenom'])),
+            'tel'  => texte($ligne['tel']),
+            'mail' => texte($ligne['mail']),
+        ];
+    }
+    return $adultes;
+}
+
+/**
  * Un dossier par son identifiant, avec le nom de la famille (ou de la structure) et de la saison, ou null.
  *
  * @return array<string, mixed>|null

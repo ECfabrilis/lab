@@ -645,20 +645,21 @@ function afficher_champs_activite(array $defauts, array $saison): void
 
 /**
  * Inscriptions d'une activité : les inscrits, puis la liste d'attente, puis
- * les annulées, chacune dans l'ordre d'arrivée.
+ * les annulées. Les inscrits sont dans l'ordre de leur inscription, la liste
+ * d'attente dans l'ordre d'entrée dans cette liste.
  *
  * @return list<array<string, mixed>>
  */
 function inscriptions_activite(int $activite_id): array
 {
     return db_lignes(
-        'SELECT i.id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.est_annulee, i.annulee_le, i.date_crea,
+        'SELECT i.id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.attente_le, i.est_annulee, i.annulee_le, i.date_crea,
                 a.nom, a.prenom, a.est_structure, a.date_naissance, a.mail, a.tel,
                 a.responsable_nom, a.responsable_tel
            FROM inscriptions i
            JOIN adherents a ON a.id = i.adherent_id
           WHERE i.activite_id = ?
-          ORDER BY i.est_annulee, i.statut, i.date_crea, i.id',
+          ORDER BY i.est_annulee, i.statut, COALESCE(i.attente_le, i.date_crea), i.id',
         [$activite_id]
     );
 }
@@ -839,9 +840,9 @@ function inscription_creer(int $activite_id, array $adherent, int $nb_places, ?s
             $montant_retenu = $activite['tarif_montant_familial'];
         }
         db_executer(
-            'INSERT INTO inscriptions (activite_id, dossier_id, adherent_id, nb_places, montant, est_tarif_familial, statut, creation_par)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-            [$activite_id, $dossier_id, $adherent_id, $nb_places, $montant_retenu, $familial ? 1 : 0, $statut, entier($_SESSION['utilisateur_id'] ?? 0)]
+            'INSERT INTO inscriptions (activite_id, dossier_id, adherent_id, nb_places, montant, est_tarif_familial, statut, attente_le, creation_par)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$activite_id, $dossier_id, $adherent_id, $nb_places, $montant_retenu, $familial ? 1 : 0, $statut, $statut === 'attente' ? date('Y-m-d H:i:s') : null, entier($_SESSION['utilisateur_id'] ?? 0)]
         );
         $inscription_id = entier(db()->lastInsertId());
         journaliser(
@@ -919,7 +920,7 @@ function inscription_sortir_attente(array $inscription): string
             return $erreur;
         }
         db_executer(
-            'UPDATE inscriptions SET statut = \'inscrit\', modification_par = ? WHERE id = ?',
+            'UPDATE inscriptions SET statut = \'inscrit\', attente_le = NULL, modification_par = ? WHERE id = ?',
             [entier($_SESSION['utilisateur_id'] ?? 0), $inscription_id]
         );
         journaliser(
@@ -929,6 +930,54 @@ function inscription_sortir_attente(array $inscription): string
             'Sortie de la liste d\'attente : ' . nom_adherent($inscription),
             ['statut' => 'attente'],
             ['statut' => 'inscrit']
+        );
+        db()->commit();
+        return '';
+    } catch (Throwable $exception) {
+        if (db()->inTransaction()) {
+            db()->rollBack();
+        }
+        throw $exception;
+    }
+}
+
+/**
+ * Fait passer une inscription des inscrits à la liste d'attente : ses places
+ * sont libérées, et elle prend la dernière position de la liste d'attente.
+ * Refusé si l'activité n'a pas de liste d'attente.
+ *
+ * @param array<string, mixed> $inscription ligne lue par inscription_par_id()
+ * @return string message d'erreur, ou '' si l'inscription est en liste d'attente
+ */
+function inscription_mettre_en_attente(array $inscription): string
+{
+    $inscription_id = entier($inscription['id'] ?? 0);
+    db()->beginTransaction();
+    try {
+        $activite = activite_verrouiller(entier($inscription['activite_id'] ?? 0));
+        // Relue après le verrou : un autre utilisateur a pu la modifier entre-temps.
+        $actuelle = db_ligne('SELECT statut, est_annulee FROM inscriptions WHERE id = ?', [$inscription_id]);
+        $erreur = '';
+        if ($activite === null || $actuelle === null || entier($actuelle['est_annulee']) === 1 || texte($actuelle['statut']) !== 'inscrit') {
+            $erreur = 'Cette inscription n\'est plus dans la liste des inscrits.';
+        } elseif (!$activite['a_liste_attente']) {
+            $erreur = 'Cette activité n\'a pas de liste d\'attente.';
+        }
+        if ($erreur !== '') {
+            db()->rollBack();
+            return $erreur;
+        }
+        db_executer(
+            'UPDATE inscriptions SET statut = \'attente\', attente_le = ?, modification_par = ? WHERE id = ?',
+            [date('Y-m-d H:i:s'), entier($_SESSION['utilisateur_id'] ?? 0), $inscription_id]
+        );
+        journaliser(
+            'modification',
+            'inscriptions',
+            $inscription_id,
+            'Passage en liste d\'attente : ' . nom_adherent($inscription),
+            ['statut' => 'inscrit'],
+            ['statut' => 'attente']
         );
         db()->commit();
         return '';

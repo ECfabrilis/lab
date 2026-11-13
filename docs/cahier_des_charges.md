@@ -142,7 +142,7 @@ Une activité ne se **supprime** que si elle est vide (aucune inscription, même
 - Le **montant est copié** sur l'inscription au moment où elle est faite : modifier un tarif ne change pas les inscriptions déjà enregistrées.
 - **Tarif familial** : quand le tarif de l'activité a un montant familial, l'accueil choisit à l'inscription d'une personne entre le tarif individuel et le tarif familial. Chaque inscription au tarif familial porte le montant familial, qui ne **compte qu'une fois par famille et par activité**, quel que soit le nombre de membres inscrits à ce tarif (calcul du montant dû, étape 3).
 - **Places** : si les places demandées ne tiennent pas en entier, l'inscription va **entièrement en liste d'attente** quand l'activité en a une (exemple : une structure demande 5 places, il en reste 3) ; sinon elle est refusée.
-- **Liste d'attente** : on peut y inscrire quelqu'un **directement**, même s'il reste des places. Quand une place se libère, rien n'est automatique : la fiche de l'activité le signale et l'accueil **choisit** qui passe de la liste d'attente aux inscrits.
+- **Liste d'attente** : on peut y inscrire quelqu'un **directement**, même s'il reste des places. Quand une place se libère, rien n'est automatique : la fiche de l'activité le signale et l'accueil **choisit** qui passe de la liste d'attente aux inscrits. À l'inverse, un inscrit peut être **passé en liste d'attente** (si l'activité en a une) : ses places sont libérées. La liste d'attente s'affiche dans l'**ordre d'entrée** dans cette liste.
 - Annulation par indicateur (pas de suppression), pour garder l'historique.
 
 ---
@@ -267,7 +267,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 **Étape 3 — Adresse, contact, notes**
 - *Adresse** et complément d'adresse : vérification en direct auprès de l'API BAN. Une indication en petit sous le champ dit si l'adresse est **certifiée** ou non. À partir des coordonnées, une deuxième indication donne le **quartier**, le **quartier prioritaire (QP)** et le **quartier de la politique de la ville (QPV)**. Le code postal saisi à l'étape 1 oriente la recherche ; l'adresse certifiée corrige le code postal et la commune si besoin.
 - *Contact* : courriel, téléphone, **consentement aux communications** (case à cocher, enregistrée avec la date).
-- *Si la personne a moins de 18 ans* (à la date du jour) : un **responsable** est demandé (nom, courriel, téléphone) ; l'**établissement scolaire / niveau** (facultatif) est proposé.
+- *Si la personne a moins de 18 ans* (à la date du jour) : un **responsable** est demandé (nom, courriel, téléphone) ; si une famille existante a été choisie et qu'elle compte des adultes ayant un téléphone ou un courriel, un menu permet de **reprendre l'un d'eux** comme responsable (les trois champs se remplissent et restent modifiables) ; l'**établissement scolaire / niveau** (facultatif) est proposé.
 - *Notes* : texte libre ; elles concernent la **famille pour la saison** (en base : le dossier), pas la personne.
 
 **Étape 4 — Validation**

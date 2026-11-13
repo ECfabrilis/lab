@@ -3,6 +3,27 @@
 // enregistrés (5 au maximum). Cliquer sur l'un d'eux ouvre sa fiche, d'où il
 // peut être inscrit pour la saison au lieu de créer une deuxième fiche.
 
+//
+// Étape 3, personne mineure : le menu « Reprendre un adulte de la famille »
+// remplit le nom, le téléphone et l'adresse e-mail du responsable.
+
+document.addEventListener('DOMContentLoaded', function () {
+    var menu = document.querySelector('select[data-responsable-adulte]');
+    if (!menu || !menu.form) {
+        return;
+    }
+    menu.addEventListener('change', function () {
+        var choix = menu.options[menu.selectedIndex];
+        if (!choix || choix.value === '') {
+            return;
+        }
+        var champs = menu.form.elements;
+        champs.responsable_nom.value = choix.dataset.nom || '';
+        champs.responsable_tel.value = choix.dataset.tel || '';
+        champs.responsable_mail.value = choix.dataset.mail || '';
+    });
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     var formulaire = document.querySelector('form[data-doublons-url]');
     var liste = document.getElementById('doublonsProches');

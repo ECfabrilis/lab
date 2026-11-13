@@ -416,6 +416,7 @@ CREATE TABLE IF NOT EXISTS `inscriptions` (
   `montant`          DECIMAL(8,2) NOT NULL DEFAULT 0.00 COMMENT 'Copie du tarif au moment de l inscription, ou montant negocie',
   `est_tarif_familial` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = montant familial : compte une seule fois par famille et par activite',
   `statut`           ENUM('inscrit','attente') NOT NULL DEFAULT 'inscrit',
+  `attente_le`       DATETIME DEFAULT NULL COMMENT 'Date d entree en liste d attente ; NULL pour un inscrit',
   `est_annulee`      TINYINT(1) NOT NULL DEFAULT 0,
   `annulee_le`       DATETIME DEFAULT NULL,
   `annulation_par`   INT UNSIGNED DEFAULT NULL,

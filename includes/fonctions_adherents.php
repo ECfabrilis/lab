@@ -720,13 +720,30 @@ function afficher_champs_adherent(array $defauts): void
 /**
  * Affiche les champs du responsable adulte d'une personne mineure.
  *
+ * Quand des adultes de la famille sont fournis, un menu permet d'en choisir un :
+ * son nom, son téléphone et son adresse e-mail remplissent les champs
+ * (public/js/inscription.js), qui restent modifiables.
+ *
  * @param array<string, mixed> $defauts valeurs affichées quand rien n'a été saisi
+ * @param list<array{id: int, nom: string, tel: string, mail: string}> $adultes adultes de la famille (famille_adultes_joignables())
  */
-function afficher_champs_responsable(array $defauts): void
+function afficher_champs_responsable(array $defauts, array $adultes = []): void
 {
     ?>
     <h2 class="h5">Responsable adulte</h2>
     <p class="text-body-secondary small">Obligatoire pour une personne de moins de <?= AGE_MAJORITE ?> ans : le nom, et le téléphone ou l'adresse e-mail.</p>
+    <?php if ($adultes !== []) : ?>
+        <div class="mb-3">
+            <label class="form-label" for="responsable_adulte">Reprendre un adulte de la famille</label>
+            <select class="form-select" id="responsable_adulte" data-responsable-adulte aria-describedby="aide_responsable_adulte">
+                <option value="">Choisir…</option>
+                <?php foreach ($adultes as $adulte) : ?>
+                    <option value="<?= $adulte['id'] ?>" data-nom="<?= e($adulte['nom']) ?>" data-tel="<?= e($adulte['tel']) ?>" data-mail="<?= e($adulte['mail']) ?>"><?= e(implode(' — ', array_filter([$adulte['nom'], $adulte['tel'], $adulte['mail']], static fn (string $valeur): bool => $valeur !== ''))) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <div class="form-text" id="aide_responsable_adulte">Son nom, son téléphone et son adresse e-mail remplissent les champs ci-dessous, qui restent modifiables.</div>
+        </div>
+    <?php endif; ?>
     <div class="row g-3 mb-4">
         <div class="col-sm-12">
             <label class="form-label" for="responsable_nom">Nom et prénom du responsable</label>

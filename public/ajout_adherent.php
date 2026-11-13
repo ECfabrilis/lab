@@ -262,6 +262,11 @@ $contact = $brouillon['contact'];
 if ($etape === 3 && $contact === []) {
     $contact = inscription_contact_propose($brouillon, $saison_affichee_id);
 }
+// Étape 3, personne mineure dans une famille existante : les adultes de la
+// famille que l'on peut joindre sont proposés comme responsable.
+$adultes_famille = $etape === 3 && $mineur && $famille_choisie !== null
+    ? famille_adultes_joignables($brouillon['famille_id'])
+    : [];
 
 // Étape 4 : doublon exact éventuel.
 $doublons_exacts = $etape === 4 && !$est_structure
@@ -446,7 +451,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             </div>
 
             <?php if ($mineur) : ?>
-                <?php afficher_champs_responsable($contact); ?>
+                <?php afficher_champs_responsable($contact, $adultes_famille); ?>
                 <div class="row g-3 mb-4">
                     <div class="col-sm-8">
                         <label class="form-label" for="etablissement">Établissement scolaire</label>
