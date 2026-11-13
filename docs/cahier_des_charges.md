@@ -86,11 +86,14 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 ## 5. Cotisation (adhésion)
 
 - La **cotisation est distincte du prix des activités**.
-- Elle n'est **pas fixe sur la saison** : un tarif réduit s'applique à partir de la mi-saison. Le tarif applicable est celui **de la date d'inscription**.
+- Elle n'est **pas fixe sur la saison** : un tarif réduit s'applique à partir de la mi-saison. Le tarif applicable est celui **de la date d'inscription**. L'administrateur crée autant de tarifs « adhésion » qu'il en faut (exemple : « Adhésion », « Adhésion mi-saison ») et **l'accueil choisit** le tarif à chaque cotisation ; l'application n'en présélectionne aucun.
 - Deux formes : **individuelle** ou **familiale**. Une famille de 3 personnes peut ne prendre qu'une cotisation individuelle si un seul membre participe.
-- C'est **l'accueil qui choisit** la cotisation d'après ce que dit la personne ; l'application ne l'impose pas.
+- C'est **l'accueil qui choisit** la cotisation d'après ce que dit la personne ; l'application ne l'impose pas. Elle **signale** seulement, sans rien bloquer, une personne inscrite à une activité avec adhésion qu'aucune cotisation ne couvre.
+- Une famille a soit **une** cotisation familiale, soit des cotisations individuelles (une par personne) : pour passer de l'une à l'autre, on annule d'abord. Le montant du tarif est **copié** sur la cotisation. Une cotisation ne se supprime pas : elle s'**annule**.
+- **Structure** : le montant de sa cotisation est **saisi** (négocié), comme pour ses inscriptions.
+- Une personne qui a une cotisation individuelle en cours ne peut pas être retirée de la saison.
 - Certaines activités sont **sans adhésion** (simple indicateur sur l'activité).
-- L'application calcule le **montant dû** et signale un **trop-perçu**.
+- L'application calcule le **montant dû** et signale un **trop-perçu**. Montant dû = cotisations + inscriptions en cours aux activités (hors liste d'attente ; un tarif familial compte une fois par activité) − réductions.
 
 ---
 
@@ -150,11 +153,15 @@ Une activité ne se **supprime** que si elle est vide (aucune inscription, même
 ## 7. Paiements, réductions, reçus
 
 - Modes : **espèces, chèque, carte bancaire, autres**.
-- **Paiement en plusieurs fois** possible.
+- **Paiement en plusieurs fois** possible : plusieurs paiements enregistrés au fil du temps, sans échéancier.
+- **Objet** du paiement, pour la comptabilité : **adhésion** ou **activités**. Un paiement n'a qu'un objet : si un même chèque règle les deux, on enregistre deux paiements.
 - Affichage du **reste à payer** et du **trop-perçu** par dossier.
-- **Reçu** imprimable ou envoyé par courriel.
-- **Réduction** : un **montant** appliqué soit à un adhérent, soit au dossier ; accordée par l'accueil et les admins. Aucun motif et aucune trace spécifique n'est enregistré.
-- Les paiements ne se suppriment jamais : on les **annule** par indicateur.
+- **Reçu** imprimable (PDF) ou envoyé par courriel : un reçu par paiement, numéroté par le numéro du paiement ; il part à l'adresse choisie parmi celles des adultes de la famille (ou celle de la structure).
+- **Réduction** : un **montant** appliqué soit à un adhérent, soit au dossier ; accordée par l'accueil et les admins. Aucun motif et aucune trace spécifique n'est enregistré : une réduction se **supprime**, et le journal note seulement l'ajout ou la suppression, sans montant.
+- Les paiements ne se suppriment jamais : on les **annule** par indicateur (rôle `standard`, action journalisée). Un paiement ne se modifie pas : on l'annule et on en saisit un autre.
+- **Remboursement** d'un trop-perçu : pas en version 1 ; le trop-perçu est seulement signalé.
+- Toute cette partie (montants compris) est réservée au rôle `standard` au minimum : un `lecteur` ne voit ni montant ni paiement.
+- À l'écran : page « Paiements » de la famille ou de la structure pour la saison (cotisations, réductions, paiements, détail du dû) ; liste des paiements sur une période, avec totaux par mode et par objet ; état des paiements de la saison.
 
 ---
 
@@ -222,7 +229,7 @@ Indicateurs issus du rapport d'activité 2025 :
 Voir `CLAUDE.md` : PHP 8.5 / MariaDB 11.8 / Bootstrap 5.3 / SCSS, `declare(strict_types=1)`, `db()`, Post/Redirect/Get, requêtes préparées, etc.
 
 À choisir au moment de la réalisation :
-- **Génération de PDF** (bibliothèque Composer légère, ex. Dompdf ou TCPDF) — compatible hébergement mutualisé.
+- **Génération de PDF** : **Dompdf** (choisi à l'étape 3) ; les documents s'écrivent en HTML/CSS.
 - **Graphiques** : Chart.js (côté navigateur).
 - **API Adresse (BAN)** : vérifier l'adresse officielle actuelle du service au moment de coder (le service a évolué).
 - **Quartier / QPV** : déterminés à partir de l'adresse via l'API BAN (déjà éprouvé).

@@ -9,7 +9,7 @@ Réponds toujours **en français** (code commenté en français, messages affich
 
 - **Production** : Hostinger, PHP 8.5.12, MariaDB 11.8.9. Pas de Node ni de Composer dev en production.
 - **Local** : WAMP (mêmes versions de PHP et MariaDB), Mailpit (faux serveur de courriel), base de test locale, `config.php` local.
-- **Outils** : Git + GitHub (dépôt privé), Composer (PHPMailer, PHPStan), Node + Sass (Bootstrap 5.3.8).
+- **Outils** : Git + GitHub (dépôt privé), Composer (PHPMailer, Dompdf, PHPStan), Node + Sass (Bootstrap 5.3.8).
 - Version minimale du code : **PHP 8.3**. Utilise les fonctionnalités modernes (types, `match`, `str_contains`, `?->`).
 
 ## Commandes à lancer avant de dire qu'une tâche est terminée
@@ -81,6 +81,8 @@ Le projet est séparé en une partie publique et une partie privée.
 - RGPD : anonymisation des familles inactives après 3 ans ; le journal (`logs_bdd`) ne couvre que la saison en cours : un mois après le début d'une saison, les lignes antérieures sont effacées à la première connexion (`journal_purger_saisons_passees()`).
 - Noms enregistrés en majuscules (`nom_normaliser()`), prénoms avec une majuscule initiale (`prenom_normaliser()`) ; le nom d'une structure reste tel que saisi.
 - Une **structure** (association, école…) est une ligne de `adherents` avec `est_structure = 1`, sans famille ; son dossier est rattaché par `dossiers.structure_id`.
+- Cotisations, réductions et paiements (`includes/fonctions_paiements.php`) sont rattachés au dossier. Cotisations et paiements s'annulent par indicateur ; une réduction se supprime. Le montant dû se calcule toujours par `comptes_lignes()` / `compte_du_dossier()` (en centimes), jamais ailleurs. Les montants ne s'affichent qu'au rôle `standard` au minimum.
+- Documents PDF : `document_pdf()` (`includes/fonctions_documents.php`, Dompdf), avec l'en-tête de l'association.
 - Quartier, quartier prioritaire (QP) et quartier de la politique de la ville (QPV) de l'adresse sont conservés en **instantané** (texte) au moment de la saisie.
 
 ## Règles métier

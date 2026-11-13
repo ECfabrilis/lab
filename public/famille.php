@@ -87,6 +87,8 @@ if (est_post()) {
         $dossier_id = dossier_id_de_famille($famille_id, $saison_affichee_id);
         if ($dossier_id > 0 && inscriptions_actives_nb($dossier_id, entier(post('adherent_id'))) > 0) {
             flash('erreur', 'Cette personne a des inscriptions en cours à des activités de la saison : annulez-les d\'abord.');
+        } elseif ($dossier_id > 0 && cotisations_actives_nb($dossier_id, entier(post('adherent_id'))) > 0) {
+            flash('erreur', 'Cette personne a une cotisation en cours pour la saison : annulez-la d\'abord, dans les paiements de la famille.');
         } elseif ($dossier_id > 0 && retirer_de_la_saison($dossier_id, entier(post('adherent_id')))) {
             flash('succes', 'La personne est retirée de la saison ' . $saison_affichee_nom . '. Sa fiche est conservée.');
         }
@@ -116,6 +118,9 @@ if (est_post()) {
 $membres = famille_membres($famille_id, $saison_affichee_id);
 $dossier_saison_id = dossier_id_de_famille($famille_id, $saison_affichee_id);
 $notes_saison = $dossier_saison_id > 0 ? texte(dossier_par_id($dossier_saison_id)['notes'] ?? '') : '';
+// Paiements de la famille pour la saison : rôle standard au minimum.
+$compte_saison = role_au_moins('standard') ? compte_du_dossier($dossier_saison_id) : null;
+$sans_cotisation = $compte_saison !== null ? cotisations_manquantes($dossier_saison_id) : [];
 // Saisons où au moins un membre de la famille est inscrit.
 $saisons_famille = array_values(array_filter(
     dossiers_de_famille($famille_id),
@@ -207,6 +212,20 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 </tbody>
             </table>
         </div>
+
+        <?php if ($compte_saison !== null) : ?>
+            <?php // Montants : réservés au rôle standard au minimum. ?>
+            <div class="d-flex justify-content-between align-items-start gap-2">
+                <h2 class="h5">Paiements — saison <?= e($saison_affichee_nom) ?></h2>
+                <a class="small" href="<?= e(chemin_site('compte.php?famille=' . $famille_id)) ?>">Cotisations et paiements</a>
+            </div>
+            <div class="mb-4">
+                <?php afficher_resume_compte($compte_saison); ?>
+                <?php if ($sans_cotisation !== []) : ?>
+                    <p class="small text-warning-emphasis mb-0">Sans cotisation pour la saison, alors qu'une de ses activités demande l'adhésion : <?= e(implode(', ', $sans_cotisation)) ?>.</p>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
 
         <?php if ($dossier_saison_id > 0) : ?>
             <h2 class="h5">Notes — saison <?= e($saison_affichee_nom) ?></h2>

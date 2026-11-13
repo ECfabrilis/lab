@@ -106,6 +106,8 @@ if (est_post()) {
         } elseif ($action === 'retirer_saison') {
             if (inscriptions_actives_nb($dossier_id, $fiche_id) > 0) {
                 flash('erreur', 'Cette structure a des inscriptions en cours à des activités de la saison : annulez-les d\'abord.');
+            } elseif (cotisations_actives_nb($dossier_id, $fiche_id) > 0) {
+                flash('erreur', 'Cette structure a une cotisation en cours pour la saison : annulez-la d\'abord, dans ses paiements.');
             } elseif (retirer_de_la_saison($dossier_id, $fiche_id)) {
                 flash('succes', 'La structure est retirée de la saison ' . texte($saison_affichee['nom'] ?? '') . '. Sa fiche est conservée.');
             }
@@ -140,6 +142,9 @@ $autres_membres = $adresse_saison === null ? [] : array_values(array_filter(
 $adresse_proposee = $adresse_saison ?? derniere_adresse_adherent($fiche_id) ?? ($est_structure ? null : derniere_adresse_famille($famille_id)) ?? [];
 $autres_saisons = autres_saisons_adherent($fiche_id, $saison_affichee_id);
 $inscriptions_saison = $adresse_saison !== null ? inscriptions_adherent($fiche_id, $saison_affichee_id) : [];
+// Paiements de la famille (ou de la structure) pour la saison : rôle standard au minimum.
+$compte_saison = $adresse_saison !== null && role_au_moins('standard') ? compte_du_dossier($dossier_saison_id) : null;
+$sans_cotisation = $compte_saison !== null ? cotisations_manquantes($dossier_saison_id) : [];
 
 // Après une erreur de saisie, la fenêtre concernée est rouverte avec les valeurs saisies.
 $fenetre_a_rouvrir = ancien_existe() ? ancien('action') : '';
@@ -313,10 +318,19 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <?php endif; ?>
             </div>
 
-            <div class="border rounded p-3 mb-3">
-                <h3 class="h6">Paiements</h3>
-                <p class="text-body-secondary mb-0">Les paiements <?= $est_structure ? 'de la structure' : 'de la famille' ?>, le reste à payer et le trop-perçu s'afficheront ici (étape 3 : cotisations et paiements).</p>
-            </div>
+            <?php if ($compte_saison !== null) : ?>
+                <?php // Montants : réservés au rôle standard au minimum. ?>
+                <div class="border rounded p-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <h3 class="h6">Paiements <?= $est_structure ? 'de la structure' : 'de la famille' ?></h3>
+                        <a class="small" href="<?= e(chemin_site('compte.php?' . ($est_structure ? 'structure=' . $fiche_id : 'famille=' . $famille_id))) ?>">Cotisations et paiements</a>
+                    </div>
+                    <?php afficher_resume_compte($compte_saison); ?>
+                    <?php if ($sans_cotisation !== []) : ?>
+                        <p class="small text-warning-emphasis mb-0">Sans cotisation pour la saison, alors qu'une de ses activités demande l'adhésion : <?= e(implode(', ', $sans_cotisation)) ?>.</p>
+                    <?php endif; ?>
+                </div>
+            <?php endif; ?>
 
             <?php if ($est_structure && $peut_modifier) : ?>
                 <form class="border rounded p-3" method="post" action="<?= e(chemin_site('adherent.php')) ?>">

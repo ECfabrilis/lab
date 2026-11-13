@@ -3,6 +3,7 @@
         "phpstan/phpstan": "^2.3"
     },
     "require": {
-        "phpmailer/phpmailer": "^7.2"
+        "phpmailer/phpmailer": "^7.2",
+        "dompdf/dompdf": "^3.1"
     }
 }

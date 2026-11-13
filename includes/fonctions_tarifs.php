@@ -49,7 +49,7 @@ function tarifs_liste(int $saison_id, bool $pour_activite = false): array
 }
 
 /**
- * Un tarif par son identifiant, avec le nom de sa saison et le nombre d'activités qui l'utilisent, ou null.
+ * Un tarif par son identifiant, avec le nom de sa saison et le nombre d'activités et de cotisations qui l'utilisent, ou null.
  *
  * @return array<string, mixed>|null
  */
@@ -57,7 +57,8 @@ function tarif_par_id(int $id): ?array
 {
     return db_ligne(
         'SELECT t.id, t.saison_id, t.nom, t.type, t.montant_individuel, t.montant_familial, t.description, s.nom AS saison_nom,
-                (SELECT COUNT(*) FROM activites ac WHERE ac.tarif_id = t.id) AS nb_activites
+                (SELECT COUNT(*) FROM activites ac WHERE ac.tarif_id = t.id) AS nb_activites,
+                (SELECT COUNT(*) FROM cotisations c WHERE c.tarif_id = t.id) AS nb_cotisations
            FROM tarifs t
            JOIN saisons s ON s.id = t.saison_id
           WHERE t.id = ?',
@@ -111,6 +112,8 @@ function erreurs_tarif(array $saisie, int $saison_id, int $sauf_id = 0): array
         $erreurs[] = 'Choisissez le type du tarif : forfait, adhésion ou autre.';
     } elseif ($saisie['type'] === 'adhesion' && $sauf_id > 0 && entier(db_valeur('SELECT COUNT(*) FROM activites WHERE tarif_id = ?', [$sauf_id])) > 0) {
         $erreurs[] = 'Des activités utilisent ce tarif : il ne peut pas devenir un tarif « adhésion », réservé aux cotisations.';
+    } elseif ($saisie['type'] !== 'adhesion' && $sauf_id > 0 && entier(db_valeur('SELECT COUNT(*) FROM cotisations WHERE tarif_id = ?', [$sauf_id])) > 0) {
+        $erreurs[] = 'Des cotisations utilisent ce tarif : il doit rester un tarif « adhésion ».';
     }
     if (montant_lire($saisie['montant_individuel']) === null) {
         $erreurs[] = 'Le montant individuel est obligatoire : un nombre positif ou nul, par exemple 120 ou 12,50.';
@@ -185,15 +188,16 @@ function modifier_tarif(array $actuel, array $saisie): bool
 }
 
 /**
- * Supprime un tarif qu'aucune activité n'utilise.
+ * Supprime un tarif qu'aucune activité ni aucune cotisation (même annulée) n'utilise.
  *
  * @param array<string, mixed> $tarif
- * @return bool false si une activité l'utilise encore
+ * @return bool false s'il est encore utilisé
  */
 function supprimer_tarif(array $tarif): bool
 {
     $tarif_id = entier($tarif['id'] ?? 0);
-    if (entier(db_valeur('SELECT COUNT(*) FROM activites WHERE tarif_id = ?', [$tarif_id])) > 0) {
+    if (entier(db_valeur('SELECT COUNT(*) FROM activites WHERE tarif_id = ?', [$tarif_id])) > 0
+        || entier(db_valeur('SELECT COUNT(*) FROM cotisations WHERE tarif_id = ?', [$tarif_id])) > 0) {
         return false;
     }
     $ancien = [];

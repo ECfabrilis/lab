@@ -27,8 +27,10 @@ require_once DOSSIER_PRIVE . '/includes/fonctions_reference.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_inscription.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_tarifs.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_activites.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_paiements.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_documents.php';
 
-// Bibliothèques installées par Composer (PHPMailer)
+// Bibliothèques installées par Composer (PHPMailer, Dompdf)
 if (is_file(DOSSIER_PRIVE . '/vendor/autoload.php')) {
     require_once DOSSIER_PRIVE . '/vendor/autoload.php';
 }

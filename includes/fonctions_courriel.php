@@ -32,9 +32,10 @@ function reglages_smtp(): array
  * Envoie un courriel avec des réglages SMTP donnés.
  *
  * @param array{hote: string, port: int, chiffrement: string, utilisateur: string, mdp: string, expediteur: string, expediteur_nom: string} $smtp
+ * @param list<array{nom: string, contenu: string, type: string}> $pieces pièces jointes (nom du fichier, contenu, type MIME)
  * @return string|null message d'erreur technique, ou null si le courriel est parti
  */
-function envoyer_courriel_smtp(array $smtp, string $destinataire, string $sujet, string $texte): ?string
+function envoyer_courriel_smtp(array $smtp, string $destinataire, string $sujet, string $texte, array $pieces = []): ?string
 {
     if (!class_exists(PHPMailer::class)) {
         return 'PHPMailer est absent (dossier vendor/ manquant : lancer « composer install --no-dev »).';
@@ -65,6 +66,9 @@ function envoyer_courriel_smtp(array $smtp, string $destinataire, string $sujet,
         $courriel->isHTML(true);
         $courriel->Body = '<div style="font-family: Arial, sans-serif; font-size: 15px;">' . nl2br(e($texte)) . '</div>';
         $courriel->AltBody = $texte;
+        foreach ($pieces as $piece) {
+            $courriel->addStringAttachment($piece['contenu'], $piece['nom'], PHPMailer::ENCODING_BASE64, $piece['type']);
+        }
         $courriel->send();
         return null;
     } catch (ExceptionCourriel $exception) {
@@ -72,10 +76,14 @@ function envoyer_courriel_smtp(array $smtp, string $destinataire, string $sujet,
     }
 }
 
-/** Envoie un courriel avec les réglages de l'application. Les échecs sont notés dans logs/courriel.log. */
-function envoyer_courriel(string $destinataire, string $sujet, string $texte): bool
+/**
+ * Envoie un courriel avec les réglages de l'application. Les échecs sont notés dans logs/courriel.log.
+ *
+ * @param list<array{nom: string, contenu: string, type: string}> $pieces pièces jointes (nom du fichier, contenu, type MIME)
+ */
+function envoyer_courriel(string $destinataire, string $sujet, string $texte, array $pieces = []): bool
 {
-    $erreur = envoyer_courriel_smtp(reglages_smtp(), $destinataire, $sujet, $texte);
+    $erreur = envoyer_courriel_smtp(reglages_smtp(), $destinataire, $sujet, $texte, $pieces);
     if ($erreur !== null) {
         journal_fichier('courriel.log', 'Échec de l\'envoi « ' . $sujet . ' » : ' . $erreur);
         return false;

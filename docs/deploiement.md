@@ -43,7 +43,8 @@ d'hébergement ou de réglage du domaine.
      dossier : `mon_application` (il doit être absent ou vide).
 
 3. **Vérifier `vendor/`** dans le gestionnaire de fichiers : le dossier
-   `mon_application/vendor/phpmailer` doit exister. S'il manque, l'installer
+   `mon_application/vendor/phpmailer` doit exister, ainsi que
+   `mon_application/vendor/dompdf` (reçus en PDF). S'ils manquent, les installer
    d'une de ces deux façons :
    - en SSH : `cd ~/domains/monsite.com/public_html/mon_application`, puis
      `composer install --no-dev` ;
@@ -82,6 +83,8 @@ d'hébergement ou de réglage du domaine.
    une sauvegarde de la base, puis passer ce fichier dans phpMyAdmin.
 3. Panneau Hostinger → Avancé → Git → bouton « Déployer ».
 4. Si `composer.json` a changé (rare) : refaire l'étape 3 de la première installation.
+   C'est le cas de la version « étape 3 » (cotisations et paiements), qui ajoute
+   Dompdf : sans lui, tout fonctionne sauf le reçu en PDF.
 
 La mise à jour ne touche jamais à `config.php`, `public/_chemins.php`, `logs/`,
 `sauvegardes/`, ni au logo et à la couleur enregistrés depuis les options : ces
@@ -102,6 +105,10 @@ migration SQL ait été passée.
   dans `public/.htaccess` (en local, puis commit et déploiement).
 - **Page blanche ou erreur sur PHPMailer** : `vendor/` est absent ou incomplet
   (étape 3 de la première installation).
+- **Le reçu PDF ne s'ouvre pas** (« la bibliothèque PDF est absente ») :
+  `vendor/dompdf` manque (étape 3 de la première installation). Si le logo
+  n'apparaît pas sur le reçu alors que c'est une image PNG : l'extension PHP
+  « gd » n'est pas activée (panneau Hostinger → Configuration PHP → Extensions).
 - **Revenir à la version précédente** : annuler le commit en local
   (`git revert`), pousser, puis redéployer. Une migration SQL déjà passée n'est
   pas annulée par cette opération.
