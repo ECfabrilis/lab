@@ -33,13 +33,21 @@ declare(strict_types=1);
 // ---------------------------------------------------------------------------
 
 /**
- * Libellés des modes de paiement.
+ * Noms de tous les modes de paiement, inactifs compris (filtre et totaux de la
+ * liste des paiements). Les modes sont une liste de choix (table
+ * modes_paiement, fonctions choix_* de fonctions_activites.php), gérée par un
+ * administrateur dans « Options des paiements ». Pour saisir un paiement, seuls
+ * les modes actifs sont proposés : choix_proposes('modes_paiement').
  *
- * @return array<string, string>
+ * @return array<int, string> identifiant => nom
  */
 function libelles_modes_paiement(): array
 {
-    return ['especes' => 'Espèces', 'cheque' => 'Chèque', 'cb' => 'Carte bancaire', 'autre' => 'Autre'];
+    $modes = [];
+    foreach (db_lignes('SELECT id, nom FROM modes_paiement ORDER BY est_actif DESC, nom') as $ligne) {
+        $modes[entier($ligne['id'])] = texte($ligne['nom']);
+    }
+    return $modes;
 }
 
 /**
@@ -154,7 +162,8 @@ function compte_dossier_id(array $titulaire, int $saison_id): int
  */
 const INSCRIPTIONS_DUES_HORS_FORFAIT = 'FROM inscriptions i
                                 LEFT JOIN tarifs t ON t.id = i.tarif_id
-                               WHERE i.est_annulee = 0 AND i.statut = \'inscrit\' AND COALESCE(t.type, \'\') <> \'forfait\'';
+                                LEFT JOIN types_tarif tyt ON tyt.id = t.type_id
+                               WHERE i.est_annulee = 0 AND i.statut = \'inscrit\' AND COALESCE(tyt.comportement, \'\') <> \'forfait\'';
 
 /**
  * Au forfait : une fois par personne et par forfait (le montant familial, une fois par famille et par forfait).
@@ -163,7 +172,8 @@ const INSCRIPTIONS_DUES_HORS_FORFAIT = 'FROM inscriptions i
  */
 const INSCRIPTIONS_DUES_FORFAIT = 'FROM inscriptions i
                                 JOIN tarifs t ON t.id = i.tarif_id
-                               WHERE i.est_annulee = 0 AND i.statut = \'inscrit\' AND t.type = \'forfait\'';
+                                JOIN types_tarif tyt ON tyt.id = t.type_id
+                               WHERE i.est_annulee = 0 AND i.statut = \'inscrit\' AND tyt.comportement = \'forfait\'';
 
 /**
  * Comptes des familles et structures : une ligne par dossier, montants en centimes.
@@ -287,11 +297,12 @@ function compte_inscriptions(int $dossier_id): array
     $lignes = db_lignes(
         'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.tarif_id, i.montant, i.est_tarif_familial,
                 ac.nom AS activite_nom, a.nom, a.prenom,
-                CASE WHEN t.type = \'forfait\' THEN t.nom ELSE \'\' END AS forfait_nom
+                CASE WHEN tyt.comportement = \'forfait\' THEN t.nom ELSE \'\' END AS forfait_nom
            FROM inscriptions i
            JOIN activites ac ON ac.id = i.activite_id
            JOIN adherents a ON a.id = i.adherent_id
            LEFT JOIN tarifs t ON t.id = i.tarif_id
+           LEFT JOIN types_tarif tyt ON tyt.id = t.type_id
           WHERE i.dossier_id = ? AND i.est_annulee = 0 AND i.statut = \'inscrit\'
           ORDER BY ac.date_debut, ac.nom, i.montant DESC, i.id',
         [$dossier_id]
@@ -391,10 +402,11 @@ function afficher_resume_compte(array $compte, bool $detail = false): void
 function tarifs_adhesion(int $saison_id): array
 {
     return db_lignes(
-        'SELECT id, nom, montant_individuel, montant_familial
-           FROM tarifs
-          WHERE saison_id = ? AND type = \'adhesion\'
-          ORDER BY nom',
+        'SELECT t.id, t.nom, t.montant_individuel, t.montant_familial
+           FROM tarifs t
+           JOIN types_tarif tyt ON tyt.id = t.type_id
+          WHERE t.saison_id = ? AND tyt.comportement = \'adhesion\'
+          ORDER BY t.nom',
         [$saison_id]
     );
 }
@@ -486,7 +498,10 @@ function cotisation_creer(array $dossier, int $adherent_id, int $tarif_id, strin
         }
     } else {
         $tarif = db_ligne(
-            'SELECT id, nom, montant_individuel, montant_familial FROM tarifs WHERE id = ? AND saison_id = ? AND type = \'adhesion\'',
+            'SELECT t.id, t.nom, t.montant_individuel, t.montant_familial
+               FROM tarifs t
+               JOIN types_tarif tyt ON tyt.id = t.type_id
+              WHERE t.id = ? AND t.saison_id = ? AND tyt.comportement = \'adhesion\'',
             [$tarif_id, entier($dossier['saison_id'] ?? 0)]
         );
         if ($tarif === null) {
@@ -633,11 +648,12 @@ function reduction_supprimer(int $reduction_id, int $dossier_id): bool
 // ---------------------------------------------------------------------------
 
 /** Morceau de requête commun aux lectures de paiements. */
-const PAIEMENTS_SELECT = 'SELECT p.id, p.dossier_id, p.montant, p.date_paiement, p.mode, p.objet, p.groupe_id, p.note,
+const PAIEMENTS_SELECT = 'SELECT p.id, p.dossier_id, p.montant, p.date_paiement, p.mode_id, mp.nom AS mode_nom, p.objet, p.groupe_id, p.note,
                 p.est_annule, p.annule_le, p.date_crea,
                 d.famille_id, d.structure_id, d.saison_id, s.nom AS saison_nom,
                 COALESCE(f.nom, st.nom) AS titulaire_nom, u.prenom AS saisi_par, ua.prenom AS annule_par
            FROM paiements p
+           JOIN modes_paiement mp ON mp.id = p.mode_id
            JOIN dossiers d ON d.id = p.dossier_id
            JOIN saisons s ON s.id = d.saison_id
            LEFT JOIN familles f ON f.id = d.famille_id
@@ -668,18 +684,18 @@ function paiements_dossier(int $dossier_id): array
 /**
  * Paiements d'une période (toutes saisons), du plus récent au plus ancien.
  *
- * @param string $mode          '' : tous les modes
+ * @param int    $mode_id       0 : tous les modes
  * @param string $objet         '' : tous les objets
  * @param bool   $avec_annules  true : les paiements annulés sont aussi listés
  * @return list<array<string, mixed>>
  */
-function paiements_periode(string $date_du, string $date_au, string $mode = '', string $objet = '', bool $avec_annules = false): array
+function paiements_periode(string $date_du, string $date_au, int $mode_id = 0, string $objet = '', bool $avec_annules = false): array
 {
     $conditions = ['p.date_paiement BETWEEN ? AND ?'];
     $parametres = [$date_du, $date_au];
-    if ($mode !== '') {
-        $conditions[] = 'p.mode = ?';
-        $parametres[] = $mode;
+    if ($mode_id > 0) {
+        $conditions[] = 'p.mode_id = ?';
+        $parametres[] = $mode_id;
     }
     if ($objet !== '') {
         $conditions[] = 'p.objet = ?';
@@ -750,7 +766,8 @@ function erreurs_paiement(array $saisie): array
     } elseif ($saisie['date_paiement'] > date('Y-m-d')) {
         $erreurs[] = 'La date du paiement ne peut pas être dans le futur.';
     }
-    if (!array_key_exists($saisie['mode'], libelles_modes_paiement())) {
+    // Seuls les modes actifs sont acceptés pour un nouveau paiement.
+    if (!array_key_exists(entier($saisie['mode']), choix_proposes('modes_paiement'))) {
         $erreurs[] = 'Choisissez le mode de paiement.';
     }
     if (!array_key_exists($saisie['objet'], libelles_choix_paiement())) {
@@ -809,13 +826,13 @@ function paiement_creer(int $dossier_id, array $saisie, int $groupe_id = 0): int
         'dossier_id'    => $dossier_id,
         'montant'       => montant_lire($saisie['montant']) ?? '0.00',
         'date_paiement' => $saisie['date_paiement'],
-        'mode'          => $saisie['mode'],
+        'mode_id'       => entier($saisie['mode']),
         'objet'         => $saisie['objet'],
         'groupe_id'     => $groupe_id > 0 ? $groupe_id : null,
         'note'          => nul_si_vide($saisie['note']),
     ];
     db_executer(
-        'INSERT INTO paiements (dossier_id, montant, date_paiement, mode, objet, groupe_id, note, creation_par) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO paiements (dossier_id, montant, date_paiement, mode_id, objet, groupe_id, note, creation_par) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         [...array_values($valeurs), entier($_SESSION['utilisateur_id'] ?? 0)]
     );
     $paiement_id = entier(db()->lastInsertId());
@@ -977,7 +994,7 @@ function recu_html(array $paiement): string
         . '<table class="detail">'
         . $ligne('Date du paiement', date_fr($paiement['date_paiement'] ?? ''))
         . $ligne('Montant reçu', montant_fr($paiement['montant'] ?? 0))
-        . $ligne('Mode de paiement', libelles_modes_paiement()[texte($paiement['mode'] ?? '')] ?? '')
+        . $ligne('Mode de paiement', texte($paiement['mode_nom'] ?? ''))
         . $ligne('Objet', (libelles_objets_paiement()[texte($paiement['objet'] ?? '')] ?? '') . ' — saison ' . texte($paiement['saison_nom'] ?? ''))
         . (texte($paiement['note'] ?? '') !== '' ? $ligne('Précision', texte($paiement['note'])) : '')
         . '</table>'

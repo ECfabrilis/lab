@@ -20,7 +20,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="d-grid gap-2">
             <a class="btn btn-primary" href="<?= e(chemin_site('ajout_saison.php')) ?>">Ajouter une saison</a>
         </div>
-        <ul class="text-body-secondary small mt-3 mb-0 ps-3">
+        <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
             <li>Deux saisons ne peuvent pas se chevaucher.</li>
             <li>Une seule saison à venir à la fois.</li>
             <li>Une saison dure 2 ans au maximum.</li>

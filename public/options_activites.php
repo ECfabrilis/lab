@@ -31,7 +31,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?php endforeach; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('parametres.php')) ?>">Retour aux paramètres</a>
         </div>
-        <ul class="text-body-secondary small mt-3 mb-0 ps-3">
+        <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
             <li>Les deux listes sont communes à toutes les saisons.</li>
             <li>Un choix inactif n'est plus proposé pour les nouvelles activités ; celles qui l'utilisent le gardent.</li>
             <li>Un choix ne se supprime que si aucune activité ne l'utilise.</li>

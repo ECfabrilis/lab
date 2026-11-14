@@ -265,7 +265,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <?php if ($peut_modifier && $fiche['tarif_montant_familial'] !== null) : ?>
             <p class="small text-body-secondary">Le montant « tarif familial » (<?= e(montant_fr($fiche['tarif_montant_familial'])) ?>) ne compte qu'une fois par famille, quel que soit le nombre d'inscrits de la famille à ce tarif.</p>
         <?php endif; ?>
-        <?php if ($peut_modifier && texte($fiche['tarif_type'] ?? '') === 'forfait') : ?>
+        <?php if ($peut_modifier && texte($fiche['tarif_comportement'] ?? '') === 'forfait') : ?>
             <p class="small text-body-secondary">Le forfait « <?= e($fiche['tarif_nom']) ?> » ne se paie qu'une fois par personne (ou par famille, au tarif familial) : une personne déjà inscrite à une autre activité de ce forfait ne le doit pas une seconde fois.</p>
         <?php endif; ?>
         <?php if ($inscrits === []) : ?>

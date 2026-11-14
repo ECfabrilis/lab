@@ -54,7 +54,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="d-grid gap-2">
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('utilisateurs.php')) ?>">Retour à la liste</a>
         </div>
-        <ul class="text-body-secondary small mt-3 mb-0 ps-3">
+        <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
             <li><strong>Lecteur</strong> : consultation seulement.</li>
             <li><strong>Standard</strong> : saisie (inscriptions, paiements).</li>
             <li><strong>Administrateur</strong> : paramétrage et utilisateurs.</li>

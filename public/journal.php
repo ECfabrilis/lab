@@ -121,7 +121,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="d-grid mt-4">
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('parametres.php')) ?>">Retour aux paramètres</a>
         </div>
-        <p class="text-body-secondary small mt-3 mb-0">Le journal couvre la saison en cours : un mois après le début d'une nouvelle saison, les actions des saisons précédentes sont effacées. Il ne contient ni mot de passe ni jeton.</p>
+        <p class="d-none d-lg-block text-body-secondary small mt-3 mb-0">Le journal couvre la saison en cours : un mois après le début d'une nouvelle saison, les actions des saisons précédentes sont effacées. Il ne contient ni mot de passe ni jeton.</p>
     </div>
     <div class="col-md-8 order-md-1">
         <p class="text-body-secondary"><?= $total ?> action<?= $total > 1 ? 's' : '' ?></p>

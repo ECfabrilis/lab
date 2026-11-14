@@ -20,8 +20,9 @@ $date_au = date_valide($date_au) ? $date_au : date('Y-m-d');
 if ($date_au < $date_du) {
     [$date_du, $date_au] = [$date_au, $date_du];
 }
-$filtre_mode = texte($_GET['mode'] ?? '');
-$filtre_mode = array_key_exists($filtre_mode, libelles_modes_paiement()) ? $filtre_mode : '';
+$filtre_mode = entier($_GET['mode'] ?? 0);
+$modes_paiement = libelles_modes_paiement();
+$filtre_mode = array_key_exists($filtre_mode, $modes_paiement) ? $filtre_mode : 0;
 $filtre_objet = texte($_GET['objet'] ?? '');
 $filtre_objet = array_key_exists($filtre_objet, libelles_objets_paiement()) ? $filtre_objet : '';
 $avec_annules = texte($_GET['annules'] ?? '') === '1';
@@ -30,7 +31,7 @@ $liste_paiements = paiements_periode($date_du, $date_au, $filtre_mode, $filtre_o
 
 // Totaux (en centimes), sans les paiements annulés.
 $total = 0;
-$totaux_modes = array_fill_keys(array_keys(libelles_modes_paiement()), 0);
+$totaux_modes = array_fill_keys(array_keys($modes_paiement), 0);
 $totaux_objets = array_fill_keys(array_keys(libelles_objets_paiement()), 0);
 $nb_valides = 0;
 foreach ($liste_paiements as $ligne_paiement) {
@@ -40,7 +41,8 @@ foreach ($liste_paiements as $ligne_paiement) {
     $montant_ligne = centimes($ligne_paiement['montant']);
     $total += $montant_ligne;
     $nb_valides++;
-    $totaux_modes[texte($ligne_paiement['mode'])] = ($totaux_modes[texte($ligne_paiement['mode'])] ?? 0) + $montant_ligne;
+    $mode_ligne = entier($ligne_paiement['mode_id']);
+    $totaux_modes[$mode_ligne] = ($totaux_modes[$mode_ligne] ?? 0) + $montant_ligne;
     $totaux_objets[texte($ligne_paiement['objet'])] = ($totaux_objets[texte($ligne_paiement['objet'])] ?? 0) + $montant_ligne;
 }
 
@@ -68,8 +70,8 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <label class="form-label" for="mode">Mode de paiement</label>
                 <select class="form-select" id="mode" name="mode">
                     <option value="">Tous les modes</option>
-                    <?php foreach (libelles_modes_paiement() as $code_mode => $libelle_mode) : ?>
-                        <option value="<?= e($code_mode) ?>" <?= $filtre_mode === $code_mode ? 'selected' : '' ?>><?= e($libelle_mode) ?></option>
+                    <?php foreach ($modes_paiement as $code_mode => $libelle_mode) : ?>
+                        <option value="<?= $code_mode ?>" <?= $filtre_mode === $code_mode ? 'selected' : '' ?>><?= e($libelle_mode) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -95,7 +97,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <h2 class="h6 mt-4">Totaux de la période</h2>
         <table class="table table-sm mb-0">
             <tbody>
-                <?php foreach (libelles_modes_paiement() as $code_mode => $libelle_mode) : ?>
+                <?php foreach ($modes_paiement as $code_mode => $libelle_mode) : ?>
                     <?php if ($totaux_modes[$code_mode] > 0) : ?>
                         <tr><th scope="row" class="fw-normal"><?= e($libelle_mode) ?></th><td class="text-end"><?= e(centimes_fr($totaux_modes[$code_mode])) ?></td></tr>
                     <?php endif; ?>
@@ -111,7 +113,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
     <div class="col-md-8 order-md-1">
         <p class="text-body-secondary">
             <?= $nb_valides ?> paiement<?= $nb_valides > 1 ? 's' : '' ?>
-            <?= $filtre_mode !== '' ? '— ' . e(mb_strtolower(libelles_modes_paiement()[$filtre_mode])) : '' ?>
+            <?= $filtre_mode > 0 ? '— ' . e(mb_strtolower($modes_paiement[$filtre_mode])) : '' ?>
             <?= $filtre_objet !== '' ? '— ' . e(mb_strtolower(libelles_objets_paiement()[$filtre_objet])) : '' ?>
         </p>
         <?php if ($liste_paiements === []) : ?>
@@ -141,7 +143,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                         <span class="d-block small text-body-secondary"><?= e($ligne_paiement['note']) ?></span>
                                     <?php endif; ?>
                                 </td>
-                                <td><?= e(libelles_modes_paiement()[texte($ligne_paiement['mode'])] ?? '') ?></td>
+                                <td><?= e($ligne_paiement['mode_nom']) ?></td>
                                 <td><?= e(libelles_objets_paiement()[texte($ligne_paiement['objet'])] ?? '') ?></td>
                                 <td class="text-end <?= $ligne_annulee ? 'text-decoration-line-through' : '' ?>"><?= e(montant_fr($ligne_paiement['montant'])) ?></td>
                             </tr>

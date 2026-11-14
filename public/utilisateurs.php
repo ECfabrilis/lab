@@ -20,7 +20,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="d-grid gap-2">
             <a class="btn btn-primary" href="<?= e(chemin_site('ajout_utilisateur.php')) ?>">Ajouter un utilisateur</a>
         </div>
-        <p class="text-body-secondary small mt-3 mb-0">Un nouvel utilisateur reçoit un courriel avec un lien, valable 7 jours, pour choisir son mot de passe.</p>
+        <p class="d-none d-lg-block text-body-secondary small mt-3 mb-0">Un nouvel utilisateur reçoit un courriel avec un lien, valable 7 jours, pour choisir son mot de passe.</p>
     </div>
     <div class="col-md-8 order-md-1">
         <div class="table-responsive">

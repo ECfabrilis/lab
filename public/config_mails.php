@@ -113,7 +113,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="d-grid gap-2">
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('parametres.php')) ?>">Retour aux paramètres</a>
         </div>
-        <ul class="text-body-secondary small mt-3 mb-0 ps-3">
+        <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
             <li>Ces réglages servent aux courriels d'invitation et de mot de passe oublié.</li>
             <li>« Envoyer un essai » teste les valeurs saisies sans les enregistrer.</li>
             <li>En local avec Mailpit : serveur <code>localhost</code>, port <code>1025</code>, sans chiffrement, sans identifiant.</li>

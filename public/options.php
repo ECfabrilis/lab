@@ -103,7 +103,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="border rounded p-3 text-center bg-body-tertiary">
             <img class="img-fluid" src="<?= e($logo_actuel) ?>" alt="Logo de l'association">
         </div>
-        <p class="text-body-secondary small mt-3">Le nom, l'adresse et le logo figurent sur les documents (reçus, attestations, listes).</p>
+        <p class="d-none d-lg-block text-body-secondary small mt-3">Le nom, l'adresse et le logo figurent sur les documents (reçus, attestations, listes).</p>
         <div class="d-grid">
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('parametres.php')) ?>">Retour aux paramètres</a>
         </div>

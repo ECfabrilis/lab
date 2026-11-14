@@ -95,7 +95,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <dt class="col-sm-4 fw-normal text-body-secondary">Montant</dt>
             <dd class="col-sm-8 <?= $est_annule ? 'text-decoration-line-through' : '' ?>"><?= e(montant_fr($fiche['montant'])) ?></dd>
             <dt class="col-sm-4 fw-normal text-body-secondary">Mode de paiement</dt>
-            <dd class="col-sm-8"><?= e(libelles_modes_paiement()[texte($fiche['mode'])] ?? '') ?></dd>
+            <dd class="col-sm-8"><?= e($fiche['mode_nom']) ?></dd>
             <dt class="col-sm-4 fw-normal text-body-secondary">Objet</dt>
             <dd class="col-sm-8"><?= e(libelles_objets_paiement()[texte($fiche['objet'])] ?? '') ?></dd>
             <?php if (texte($fiche['note']) !== '') : ?>

@@ -47,7 +47,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('parametres.php')) ?>">Retour aux paramètres</a>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('donnees_reference.php')) ?>">Données de référence</a>
         </div>
-        <ul class="text-body-secondary small mt-3 mb-0 ps-3">
+        <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
             <li>À l'inscription d'un adhérent, le quartier de son adresse est cherché parmi les quartiers des communes et arrondissements cochés.</li>
             <li>Une adresse située ailleurs est enregistrée sans quartier.</li>
             <li>Les adresses déjà saisies gardent le quartier calculé le jour de leur saisie.</li>

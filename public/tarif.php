@@ -56,7 +56,7 @@ if (est_post()) {
 $titre_page = 'Tarif';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-4"><?= e($fiche['nom']) ?> <span class="badge text-bg-light border"><?= e(libelles_types_tarif()[texte($fiche['type'])] ?? '') ?></span> <span class="badge text-bg-secondary">Saison <?= e($fiche['saison_nom']) ?></span></h1>
+<h1 class="h3 mb-4"><?= e($fiche['nom']) ?> <span class="badge text-bg-light border"><?= e($fiche['type_nom']) ?></span> <span class="badge text-bg-secondary">Saison <?= e($fiche['saison_nom']) ?></span></h1>
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2">
@@ -69,7 +69,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?php endif; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('tarifs.php')) ?>">Retour à la liste</a>
         </div>
-        <p class="text-body-secondary small mt-3 mb-0">
+        <p class="d-none d-lg-block text-body-secondary small mt-3 mb-0">
             <?php if ($nb_cotisations > 0) : ?>
                 <?= $nb_cotisations ?> cotisation<?= $nb_cotisations > 1 ? 's utilisent' : ' utilise' ?> ce tarif : il ne peut pas être supprimé.
             <?php elseif ($nb_activites > 0) : ?>
@@ -79,7 +79,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?php else : ?>
                 Ce tarif n'est pas utilisé : il peut être supprimé.
             <?php endif; ?>
-            <?php if (texte($fiche['type']) === 'forfait') : ?>
+            <?php if (texte($fiche['comportement']) === 'forfait') : ?>
                 Un forfait ne se paie qu'une fois par personne (ou par famille, au montant familial), quel que soit le nombre d'activités qui l'utilisent.
             <?php endif; ?>
             Modifier les montants ne change ni les inscriptions ni les cotisations déjà enregistrées.

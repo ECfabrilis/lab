@@ -129,7 +129,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <?php afficher_resume_compte($compte, true); ?>
             </div>
         <?php endif; ?>
-        <ul class="text-body-secondary small mt-3 mb-0 ps-3">
+        <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
             <li>Le montant dû additionne les cotisations et les inscriptions en cours aux activités (hors liste d'attente), moins les réductions.</li>
             <li>Un tarif familial ne compte qu'une fois par activité, quel que soit le nombre de membres inscrits à ce tarif.</li>
         </ul>
@@ -387,7 +387,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                             <a href="<?= e(chemin_site('paiement.php?id=' . entier($ligne_paiement['id']))) ?>"><?= e(date_fr($ligne_paiement['date_paiement'])) ?></a>
                                             <?php if ($paiement_annule) : ?><span class="badge text-bg-secondary">Annulé</span><?php endif; ?>
                                         </td>
-                                        <td><?= e(libelles_modes_paiement()[texte($ligne_paiement['mode'])] ?? '') ?></td>
+                                        <td><?= e($ligne_paiement['mode_nom']) ?></td>
                                         <td><?= e(libelles_objets_paiement()[texte($ligne_paiement['objet'])] ?? '') ?></td>
                                         <td class="text-end <?= $paiement_annule ? 'text-decoration-line-through' : '' ?>"><?= e(montant_fr($ligne_paiement['montant'])) ?></td>
                                     </tr>

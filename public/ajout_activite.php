@@ -86,7 +86,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('activites.php')) ?>">Retour à la liste</a>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('tarifs.php')) ?>">Les tarifs</a>
         </div>
-        <p class="text-body-secondary small mt-3 mb-0">Le tarif voulu n'est pas dans la liste ? Ajoutez-le d'abord dans « Les tarifs ».</p>
+        <p class="d-none d-lg-block text-body-secondary small mt-3 mb-0">Le tarif voulu n'est pas dans la liste ? Ajoutez-le d'abord dans « Les tarifs ».</p>
     </div>
     <div class="col-md-8 order-md-1">
         <?php if ($listes_a_completer !== []) : ?>

@@ -142,7 +142,7 @@ $montant_familial = $activite !== null && !$est_structure ? ($activite['tarif_mo
 $famille_deja_au_familial = $montant_familial !== null && $inscrit !== null
     && inscription_familiale_existe($activite_id, dossier_id_de_adherent($inscrit, $saison_id));
 // Forfait : il ne se paie qu'une fois par personne (ou par famille, au montant familial).
-$forfait_nom = $activite !== null && !$est_structure && texte($activite['tarif_type'] ?? '') === 'forfait' ? texte($activite['tarif_nom']) : '';
+$forfait_nom = $activite !== null && !$est_structure && texte($activite['tarif_comportement'] ?? '') === 'forfait' ? texte($activite['tarif_nom']) : '';
 $forfait_pris = $forfait_nom !== '' && $inscrit !== null
     ? forfait_deja_pris(entier($activite['tarif_id']), dossier_id_de_adherent($inscrit, $saison_id), $adherent_id)
     : ['individuel' => false, 'familial' => false];

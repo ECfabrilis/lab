@@ -97,7 +97,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="d-grid gap-2">
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('parametres.php')) ?>">Retour aux paramètres</a>
         </div>
-        <ul class="text-body-secondary small mt-3 mb-0 ps-3">
+        <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
             <li>Une mise à jour <strong>remplace</strong> tout le contenu de la table (sauf « Ajouter à la table », pour les quartiers). En cas d'erreur dans le fichier, rien n'est modifié.</li>
             <li>Les adresses déjà saisies gardent le quartier calculé le jour de leur saisie.</li>
             <li>Faites une sauvegarde avant une mise à jour.</li>

@@ -7,7 +7,9 @@ declare(strict_types=1);
  *
  *  - Secteurs, types d'activité et récurrences : trois listes de choix communes
  *    à toutes les saisons (fonctions choix_*). Un choix utilisé par une activité ne se
- *    supprime pas : il se rend inactif.
+ *    supprime pas : il se rend inactif. Les mêmes fonctions gèrent les types de
+ *    tarif (utilisés par les tarifs) et les modes de paiement (utilisés par les
+ *    paiements) ; les types de tarif « Adhésion » et « Forfait » sont figés.
  *  - Activités : rattachées à une saison, avec un type, un secteur, un tarif
  *    (ou gratuites), des places limitées ou non, une liste d'attente ou non.
  *  - Inscriptions : un adhérent inscrit pour la saison prend une ou plusieurs
@@ -16,20 +18,35 @@ declare(strict_types=1);
  */
 
 // ---------------------------------------------------------------------------
-// Listes de choix : secteurs, types d'activité et récurrences
+// Listes de choix : secteurs, types d'activité, récurrences, types de tarif
+// et modes de paiement
 // ---------------------------------------------------------------------------
 
 /**
- * Description d'une liste de choix. Le nom de la table vient toujours du code
- * (jamais d'une saisie) : il peut être écrit dans les requêtes.
+ * Description d'une liste de choix. Les noms de table et de colonne viennent
+ * toujours du code (jamais d'une saisie) : ils peuvent être écrits dans les
+ * requêtes.
  *
- * @param 'secteurs'|'types_activite'|'recurrences' $liste
- * @return array{table: string, colonne: string, a_description: bool, un: string, le: string, titre: string, page_liste: string, page_fiche: string, page_ajout: string}
+ * table_usage et colonne disent ce qui utilise un choix (activités, tarifs ou
+ * paiements) ; usage_* servent aux messages. a_comportement : la liste a des
+ * choix figés (types de tarif « Adhésion » et « Forfait »), qui ne se modifient
+ * ni ne se suppriment.
+ *
+ * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
+ * @return array{table: string, table_usage: string, colonne: string, a_description: bool, a_comportement: bool, un: string, le: string, titre: string, usage_titre: string, usage_aucun: string, usage_un: string, usage_plusieurs: string, page_liste: string, page_fiche: string, page_ajout: string}
  */
 function choix_definition(string $liste): array
 {
+    $activites = [
+        'table_usage'     => 'activites',
+        'a_comportement'  => false,
+        'usage_titre'     => 'Activités',
+        'usage_aucun'     => 'Aucune activité n\'utilise',
+        'usage_un'        => 'activité utilise',
+        'usage_plusieurs' => 'activités utilisent',
+    ];
     return match ($liste) {
-        'secteurs' => [
+        'secteurs' => $activites + [
             'table'      => 'secteurs',
             'colonne'    => 'secteur_id',
             'a_description' => true,
@@ -40,7 +57,7 @@ function choix_definition(string $liste): array
             'page_fiche' => 'secteur.php',
             'page_ajout' => 'ajout_secteur.php',
         ],
-        'types_activite' => [
+        'types_activite' => $activites + [
             'table'      => 'types_activite',
             'colonne'    => 'type_id',
             'a_description' => false,
@@ -51,7 +68,7 @@ function choix_definition(string $liste): array
             'page_fiche' => 'type_activite.php',
             'page_ajout' => 'ajout_type_activite.php',
         ],
-        'recurrences' => [
+        'recurrences' => $activites + [
             'table'      => 'recurrences',
             'colonne'    => 'recurrence_id',
             'a_description' => false,
@@ -62,21 +79,80 @@ function choix_definition(string $liste): array
             'page_fiche' => 'recurrence.php',
             'page_ajout' => 'ajout_recurrence.php',
         ],
+        'types_tarif' => [
+            'table'           => 'types_tarif',
+            'table_usage'     => 'tarifs',
+            'colonne'         => 'type_id',
+            'a_description'   => false,
+            'a_comportement'  => true,
+            'un'              => 'un type de tarif',
+            'le'              => 'le type de tarif',
+            'titre'           => 'Types de tarif',
+            'usage_titre'     => 'Tarifs',
+            'usage_aucun'     => 'Aucun tarif n\'utilise',
+            'usage_un'        => 'tarif utilise',
+            'usage_plusieurs' => 'tarifs utilisent',
+            'page_liste'      => 'options_paiements.php',
+            'page_fiche'      => 'type_tarif.php',
+            'page_ajout'      => 'ajout_type_tarif.php',
+        ],
+        'modes_paiement' => [
+            'table'           => 'modes_paiement',
+            'table_usage'     => 'paiements',
+            'colonne'         => 'mode_id',
+            'a_description'   => false,
+            'a_comportement'  => false,
+            'un'              => 'un mode de paiement',
+            'le'              => 'le mode de paiement',
+            'titre'           => 'Modes de paiement',
+            'usage_titre'     => 'Paiements',
+            'usage_aucun'     => 'Aucun paiement n\'utilise',
+            'usage_un'        => 'paiement utilise',
+            'usage_plusieurs' => 'paiements utilisent',
+            'page_liste'      => 'options_paiements.php',
+            'page_fiche'      => 'mode_paiement.php',
+            'page_ajout'      => 'ajout_mode_paiement.php',
+        ],
     };
+}
+
+/**
+ * Colonnes lues pour un choix (alias c), selon ce que sa liste contient.
+ * « nb_activites » est le nombre d'utilisations du choix : des activités, ou
+ * des tarifs (types de tarif), ou des paiements (modes de paiement).
+ *
+ * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
+ */
+function choix_colonnes(string $liste): string
+{
+    $definition = choix_definition($liste);
+    return 'c.id, c.nom, c.est_actif, ' . ($definition['a_description'] ? 'c.description' : 'NULL AS description') . ',
+                ' . ($definition['a_comportement'] ? 'c.comportement' : 'NULL AS comportement') . ',
+                (SELECT COUNT(*) FROM ' . $definition['table_usage'] . ' u WHERE u.' . $definition['colonne'] . ' = c.id) AS nb_activites';
+}
+
+/**
+ * Vrai si le choix est figé : il a un comportement particulier dans
+ * l'application (types de tarif « Adhésion » et « Forfait »).
+ *
+ * @param array<string, mixed> $choix ligne lue par choix_liste() ou choix_par_id()
+ */
+function choix_est_fige(array $choix): bool
+{
+    return ($choix['comportement'] ?? null) !== null;
 }
 
 /**
  * Tous les choix d'une liste, avec le nombre d'activités qui les utilisent (toutes saisons).
  *
- * @param 'secteurs'|'types_activite'|'recurrences' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
  * @return list<array<string, mixed>>
  */
 function choix_liste(string $liste): array
 {
     $definition = choix_definition($liste);
     return db_lignes(
-        'SELECT c.id, c.nom, c.est_actif, ' . ($definition['a_description'] ? 'c.description' : 'NULL AS description') . ',
-                (SELECT COUNT(*) FROM activites ac WHERE ac.' . $definition['colonne'] . ' = c.id) AS nb_activites
+        'SELECT ' . choix_colonnes($liste) . '
            FROM ' . $definition['table'] . ' c
           ORDER BY c.est_actif DESC, c.nom'
     );
@@ -86,7 +162,7 @@ function choix_liste(string $liste): array
  * Choix proposés dans le formulaire d'une activité : les choix actifs, plus
  * celui que l'activité utilise déjà (même s'il a été rendu inactif depuis).
  *
- * @param 'secteurs'|'types_activite'|'recurrences' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
  * @return array<int, string> identifiant => nom
  */
 function choix_proposes(string $liste, int $courant_id = 0): array
@@ -106,15 +182,14 @@ function choix_proposes(string $liste, int $courant_id = 0): array
 /**
  * Un choix par son identifiant, avec le nombre d'activités qui l'utilisent, ou null.
  *
- * @param 'secteurs'|'types_activite'|'recurrences' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
  * @return array<string, mixed>|null
  */
 function choix_par_id(string $liste, int $id): ?array
 {
     $definition = choix_definition($liste);
     return db_ligne(
-        'SELECT c.id, c.nom, c.est_actif, ' . ($definition['a_description'] ? 'c.description' : 'NULL AS description') . ',
-                (SELECT COUNT(*) FROM activites ac WHERE ac.' . $definition['colonne'] . ' = c.id) AS nb_activites
+        'SELECT ' . choix_colonnes($liste) . '
            FROM ' . $definition['table'] . ' c
           WHERE c.id = ?',
         [$id]
@@ -124,7 +199,7 @@ function choix_par_id(string $liste, int $id): ?array
 /**
  * Vérifie le nom d'un choix avant création ou modification.
  *
- * @param 'secteurs'|'types_activite'|'recurrences' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
  * @param int $sauf_id identifiant du choix modifié (0 pour une création)
  * @return string|null message d'erreur, ou null si tout va bien
  */
@@ -150,7 +225,7 @@ function choix_erreur_description(string $description): ?string
  * Ajoute un choix (nom et description déjà vérifiés) et renvoie son identifiant.
  * La description n'est enregistrée que pour les listes qui en ont une (secteurs).
  *
- * @param 'secteurs'|'types_activite'|'recurrences' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
  */
 function choix_creer(string $liste, string $nom, string $description = ''): int
 {
@@ -170,13 +245,16 @@ function choix_creer(string $liste, string $nom, string $description = ''): int
 /**
  * Modifie le nom d'un choix, sa description (secteurs), ou le rend actif ou inactif (valeurs déjà vérifiées).
  *
- * @param 'secteurs'|'types_activite'|'recurrences' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
  * @param array<string, mixed> $actuel choix en base avant la modification
- * @return bool false s'il n'y avait rien à modifier
+ * @return bool false s'il n'y avait rien à modifier, ou si le choix est figé
  */
 function choix_modifier(string $liste, array $actuel, string $nom, bool $est_actif, string $description = ''): bool
 {
     $definition = choix_definition($liste);
+    if (choix_est_fige($actuel)) {
+        return false;
+    }
     $ancien = ['nom' => texte($actuel['nom'] ?? ''), 'est_actif' => entier($actuel['est_actif'] ?? 0)];
     $nouveau = ['nom' => $nom, 'est_actif' => $est_actif ? 1 : 0];
     if ($definition['a_description']) {
@@ -196,17 +274,18 @@ function choix_modifier(string $liste, array $actuel, string $nom, bool $est_act
 }
 
 /**
- * Supprime un choix qu'aucune activité n'utilise.
+ * Supprime un choix que rien n'utilise (activité, tarif ou paiement selon la liste) et qui n'est pas figé.
  *
- * @param 'secteurs'|'types_activite'|'recurrences' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
  * @param array<string, mixed> $choix
- * @return bool false si une activité l'utilise (il faut alors le rendre inactif)
+ * @return bool false s'il est utilisé (il faut alors le rendre inactif) ou figé
  */
 function choix_supprimer(string $liste, array $choix): bool
 {
     $definition = choix_definition($liste);
     $choix_id = entier($choix['id'] ?? 0);
-    if (entier(db_valeur('SELECT COUNT(*) FROM activites WHERE ' . $definition['colonne'] . ' = ?', [$choix_id])) > 0) {
+    if (choix_est_fige($choix)
+        || entier(db_valeur('SELECT COUNT(*) FROM ' . $definition['table_usage'] . ' WHERE ' . $definition['colonne'] . ' = ?', [$choix_id])) > 0) {
         return false;
     }
     db_executer('DELETE FROM ' . $definition['table'] . ' WHERE id = ?', [$choix_id]);
@@ -223,7 +302,7 @@ function choix_supprimer(string $liste, array $choix): bool
 
 /** Début commun des requêtes qui lisent une activité avec ses libellés et ses places. */
 const ACTIVITE_SELECT = 'SELECT ac.*, t.nom AS type_nom, se.nom AS secteur_nom, r.nom AS recurrence_nom,
-            ta.nom AS tarif_nom, ta.type AS tarif_type, ta.montant_individuel AS tarif_montant, ta.montant_familial AS tarif_montant_familial,
+            ta.nom AS tarif_nom, COALESCE(tyt.comportement, \'\') AS tarif_comportement, ta.montant_individuel AS tarif_montant, ta.montant_familial AS tarif_montant_familial,
             s.nom AS saison_nom, s.date_debut AS saison_debut, s.date_fin AS saison_fin,
             (SELECT COALESCE(SUM(i.nb_places), 0) FROM inscriptions i
               WHERE i.activite_id = ac.id AND i.est_annulee = 0 AND i.statut = \'inscrit\') AS places_prises,
@@ -235,6 +314,7 @@ const ACTIVITE_SELECT = 'SELECT ac.*, t.nom AS type_nom, se.nom AS secteur_nom, 
        JOIN secteurs se ON se.id = ac.secteur_id
        JOIN recurrences r ON r.id = ac.recurrence_id
        LEFT JOIN tarifs ta ON ta.id = ac.tarif_id
+       LEFT JOIN types_tarif tyt ON tyt.id = ta.type_id
        JOIN saisons s ON s.id = ac.saison_id';
 
 /**
@@ -411,7 +491,7 @@ function erreurs_activite(array $saisie, array $saison, ?array $actuelle = null)
         $tarif = tarif_par_id(entier($saisie['tarif_id']));
         if ($tarif === null || entier($tarif['saison_id']) !== $saison_id) {
             $erreurs[] = 'Le tarif choisi n\'existe pas pour cette saison.';
-        } elseif (texte($tarif['type']) === 'adhesion') {
+        } elseif (texte($tarif['comportement']) === 'adhesion') {
             $erreurs[] = 'Un tarif « adhésion » est réservé aux cotisations : une activité qui ne demande que l\'adhésion est gratuite.';
         }
     }
@@ -613,7 +693,7 @@ function afficher_champs_activite(array $defauts, array $saison): void
                     <option value="<?= entier($tarif['id']) ?>" <?= $tarif_choisi === entier($tarif['id']) ? 'selected' : '' ?>><?= e(texte($tarif['nom']) . ' — ' . tarif_montants($tarif['montant_individuel'], $tarif['montant_familial'])) ?></option>
                 <?php endforeach; ?>
             </select>
-            <div class="form-text" id="aide_tarif">Tarifs « forfait » et « autre » de la saison <?= e($saison['nom'] ?? '') ?>. Une activité qui ne demande que l'adhésion est gratuite. Un forfait ne se paie qu'une fois par personne, même s'il est partagé par plusieurs activités. Le montant est copié sur chaque inscription au moment où elle est faite.</div>
+            <div class="form-text" id="aide_tarif">Tarifs de la saison <?= e($saison['nom'] ?? '') ?>. Une activité qui ne demande que l'adhésion est gratuite. Un forfait ne se paie qu'une fois par personne, même s'il est partagé par plusieurs activités. Le montant est copié sur chaque inscription au moment où elle est faite.</div>
         </div>
         <div class="col-sm-12">
             <div class="form-check form-switch">

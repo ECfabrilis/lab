@@ -126,10 +126,12 @@ Pas de gestion d'horaires, de séances ni de lieu. Les séances et heures d'anim
 | Champ | Remarques |
 |---|---|
 | Nom | unique dans la saison |
-| Type | obligatoire : **forfait**, **adhésion** ou **autre**. Les tarifs « adhésion » sont réservés aux cotisations (section 5) : une activité ne peut pas en choisir un. Un **forfait** ne se paie qu'une fois, comme une cotisation (section 6.2) ; un tarif « autre » est dû à chaque inscription |
+| Type | obligatoire, choisi dans la liste des **types de tarif**. Liste créée à l'installation (**adhésion**, **forfait**, autre), modifiable par un admin dans les paramètres (Options des paiements). Les tarifs « adhésion » sont réservés aux cotisations (section 5) : une activité ne peut pas en choisir un. Un **forfait** ne se paie qu'une fois, comme une cotisation (section 6.2) ; un tarif d'un autre type est dû à chaque inscription |
 | Montant individuel | obligatoire |
 | Montant familial | facultatif ; il vaut pour **toute la famille** (exemple : centre de loisirs, 5 € par enfant ou 10 € pour l'ensemble des enfants) |
 | Description | texte libre facultatif |
+
+**Types de tarif** : une liste **commune à toutes les saisons**, gérée comme les types d'activité (page « Options des paiements »). « Adhésion » et « Forfait » ont un comportement particulier : ils sont **réservés**, et ne se renomment pas, ne se rendent pas inactifs et ne se suppriment pas. Les autres types (dont « Autre ») sont libres : un admin en ajoute, les renomme, les rend **inactifs** (ils ne sont plus proposés pour un nouveau tarif ; les tarifs qui les utilisent les gardent) et ne les **supprime** que si aucun tarif ne les utilise.
 
 Une activité ne se **supprime** que si elle est vide (aucune inscription, même annulée). Son nombre de places ne peut pas descendre sous les places déjà prises.
 
@@ -153,7 +155,7 @@ Une activité ne se **supprime** que si elle est vide (aucune inscription, même
 
 ## 7. Paiements, réductions, reçus
 
-- Modes : **espèces, chèque, carte bancaire, autres**.
+- Modes : une liste créée à l'installation (**espèces, chèque, carte bancaire, autre**), modifiable par un admin dans les paramètres (Options des paiements). Un mode peut être rendu **inactif** (il n'est plus proposé à la saisie d'un paiement ; les paiements qui l'utilisent le gardent, et il reste dans le filtre de la liste des paiements) ; il ne se **supprime** que si aucun paiement ne l'utilise.
 - **Paiement en plusieurs fois** possible : plusieurs paiements enregistrés au fil du temps, sans échéancier.
 - **Objet** du paiement, pour la comptabilité : **adhésion**, **activités** ou **don**. Un paiement n'a qu'un objet. Un don ne compte pas dans ce qui a été payé : il ne réduit pas le reste à payer.
 - **« Les deux »** : quand le montant saisi couvre tout le reste à payer, l'accueil peut choisir « les deux » ; l'application enregistre alors elle-même un paiement pour l'adhésion et un autre pour les activités, en une seule saisie.
@@ -321,7 +323,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 | Partie | Choix |
 |---|---|
 | Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
-| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Options des activités (une seule page : types d'activité et récurrences) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul) |
+| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Options des activités (une seule page : types d'activité et récurrences) ; Options des paiements (une seule page : types de tarif et modes de paiement) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul) |
 | La base de données | Saisons ; Données de référence (pays, quartiers, QP, QPV, codes postaux ; pour les quartiers : « Remplacer la table » ou « Ajouter à la table ») ; Logs ; Sauvegarde ; RGPD (anonymisation) |
 | Configuration | Paramètres des mails (avec l'essai d'envoi) |
 

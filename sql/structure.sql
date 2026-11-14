@@ -346,16 +346,35 @@ INSERT IGNORE INTO `recurrences` (`id`, `nom`) VALUES
 --     Un tarif est une ligne nommée d'une saison ; plusieurs activités peuvent
 --     le partager. La clé (id, saison_id) sert à garantir qu'une activité
 --     utilise un tarif de sa propre saison.
---     type : 'adhesion' est réservé aux cotisations (étape 3) ; une activité
---     ne choisit qu'un tarif 'forfait' ou 'autre'.
+--     types_tarif : liste des types, commune à toutes les saisons, gérée par un
+--     administrateur. Deux types sont figés (colonne comportement) :
+--     'adhesion', réservé aux cotisations (étape 3), qu'une activité ne peut
+--     pas choisir ; 'forfait', qui ne se paie qu'une fois. Les autres types
+--     sont libres : leur tarif est dû à chaque inscription.
 --     montant_familial : facultatif ; montant pour toute la famille (exemple :
 --     centre de loisirs, 5 € par enfant ou 10 € pour tous les enfants).
 -- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `types_tarif` (
+  `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nom`          VARCHAR(100) NOT NULL,
+  `comportement` ENUM('adhesion','forfait') DEFAULT NULL COMMENT 'Type fige : adhesion = reserve aux cotisations ; forfait = ne se paie qu une fois. NULL = type libre',
+  `est_actif`    TINYINT(1) NOT NULL DEFAULT 1,
+  `date_crea`    DATETIME NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_types_tarif_nom` (`nom`),
+  UNIQUE KEY `uq_types_tarif_comportement` (`comportement`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `types_tarif` (`id`, `nom`, `comportement`) VALUES
+  (1, 'Adhésion', 'adhesion'),
+  (2, 'Forfait', 'forfait'),
+  (3, 'Autre', NULL);
+
 CREATE TABLE IF NOT EXISTS `tarifs` (
   `id`                 INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `saison_id`          INT UNSIGNED NOT NULL,
   `nom`                VARCHAR(100) NOT NULL,
-  `type`               ENUM('forfait','adhesion','autre') NOT NULL COMMENT 'adhesion : reserve aux cotisations, jamais choisi pour une activite',
+  `type_id`            INT UNSIGNED NOT NULL,
   `montant_individuel` DECIMAL(8,2) NOT NULL,
   `montant_familial`   DECIMAL(8,2) DEFAULT NULL COMMENT 'Pour toute la famille ; NULL = pas de tarif familial',
   `description`        TEXT DEFAULT NULL,
@@ -366,9 +385,11 @@ CREATE TABLE IF NOT EXISTS `tarifs` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_tarifs_saison_nom` (`saison_id`, `nom`),
   UNIQUE KEY `uq_tarifs_id_saison` (`id`, `saison_id`),
+  KEY `idx_tarifs_type` (`type_id`),
   KEY `idx_tarifs_creation_par` (`creation_par`),
   KEY `idx_tarifs_modification_par` (`modification_par`),
   CONSTRAINT `fk_tarifs_saison` FOREIGN KEY (`saison_id`) REFERENCES `saisons` (`id`),
+  CONSTRAINT `fk_tarifs_type` FOREIGN KEY (`type_id`) REFERENCES `types_tarif` (`id`),
   CONSTRAINT `fk_tarifs_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_tarifs_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `ck_tarifs_montants` CHECK (`montant_individuel` >= 0 AND (`montant_familial` IS NULL OR `montant_familial` >= 0))
@@ -481,6 +502,9 @@ CREATE TABLE IF NOT EXISTS `inscriptions` (
 --       s'annule (est_annule = 1). groupe_id relie les paiements nés d'une
 --       même saisie (« les deux », surplus en don) : annuler l'un annule les
 --       autres.
+--     modes_paiement : liste des modes proposés à la saisie d'un paiement,
+--       gérée par un administrateur (un mode utilisé ne se supprime pas : il
+--       se rend inactif).
 --     Montant dû = cotisations + inscriptions en cours (hors liste d'attente,
 --       tarif familial compté une fois par activité) − réductions.
 -- ----------------------------------------------------------------------------
@@ -536,12 +560,27 @@ CREATE TABLE IF NOT EXISTS `reductions` (
   CONSTRAINT `ck_reductions_montant` CHECK (`montant` > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `modes_paiement` (
+  `id`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nom`       VARCHAR(100) NOT NULL,
+  `est_actif` TINYINT(1) NOT NULL DEFAULT 1,
+  `date_crea` DATETIME NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_modes_paiement_nom` (`nom`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `modes_paiement` (`id`, `nom`) VALUES
+  (1, 'Espèces'),
+  (2, 'Chèque'),
+  (3, 'Carte bancaire'),
+  (4, 'Autre');
+
 CREATE TABLE IF NOT EXISTS `paiements` (
   `id`               INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `dossier_id`       INT UNSIGNED NOT NULL,
   `montant`          DECIMAL(8,2) NOT NULL,
   `date_paiement`    DATE NOT NULL,
-  `mode`             ENUM('especes','cheque','cb','autre') NOT NULL,
+  `mode_id`          INT UNSIGNED NOT NULL,
   `objet`            ENUM('adhesion','activites','don') NOT NULL COMMENT 'Ce que regle le paiement (distinction demandee par la comptabilite)',
   `groupe_id`        INT UNSIGNED DEFAULT NULL COMMENT 'Paiements nes d une meme saisie : numero du premier ; NULL = paiement seul',
   `note`             VARCHAR(255) DEFAULT NULL COMMENT 'Numero de cheque, banque, precision',
@@ -556,11 +595,13 @@ CREATE TABLE IF NOT EXISTS `paiements` (
   KEY `idx_paiements_dossier` (`dossier_id`, `est_annule`),
   KEY `idx_paiements_date` (`date_paiement`),
   KEY `idx_paiements_groupe` (`groupe_id`),
+  KEY `idx_paiements_mode` (`mode_id`),
   KEY `idx_paiements_annulation_par` (`annulation_par`),
   KEY `idx_paiements_creation_par` (`creation_par`),
   KEY `idx_paiements_modification_par` (`modification_par`),
   CONSTRAINT `fk_paiements_dossier` FOREIGN KEY (`dossier_id`) REFERENCES `dossiers` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_paiements_groupe` FOREIGN KEY (`groupe_id`) REFERENCES `paiements` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_paiements_mode` FOREIGN KEY (`mode_id`) REFERENCES `modes_paiement` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_paiements_annulation_par` FOREIGN KEY (`annulation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_paiements_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_paiements_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`),

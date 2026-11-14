@@ -75,7 +75,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?php endif; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site($definition['page_liste'])) ?>">Retour à la liste</a>
         </div>
-        <p class="text-body-secondary small mt-3 mb-0">
+        <p class="d-none d-lg-block text-body-secondary small mt-3 mb-0">
             <?php if ($nb_activites === 0) : ?>
                 Aucune activité n'utilise ce choix : il peut être supprimé.
             <?php else : ?>

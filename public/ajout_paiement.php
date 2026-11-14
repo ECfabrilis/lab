@@ -114,7 +114,7 @@ if ($titulaire === null) {
         $objet_propose = 'adhesion';
     }
 }
-$mode_choisi = ancien('mode');
+$mode_choisi = entier(ancien('mode'));
 $objet_choisi = ancien('objet', $objet_propose);
 // Reste à payer (en centimes) : il décide de l'affichage du choix « les deux » (js/paiements.js).
 $reste_a_payer = $compte !== null ? max(0, $compte['solde']) : 0;
@@ -192,8 +192,8 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <label class="form-label" for="mode">Mode de paiement</label>
                         <select class="form-select" id="mode" name="mode" required>
                             <option value="">Choisir…</option>
-                            <?php foreach (libelles_modes_paiement() as $code_mode => $libelle_mode) : ?>
-                                <option value="<?= e($code_mode) ?>" <?= $mode_choisi === $code_mode ? 'selected' : '' ?>><?= e($libelle_mode) ?></option>
+                            <?php foreach (choix_proposes('modes_paiement') as $code_mode => $libelle_mode) : ?>
+                                <option value="<?= $code_mode ?>" <?= $mode_choisi === $code_mode ? 'selected' : '' ?>><?= e($libelle_mode) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
