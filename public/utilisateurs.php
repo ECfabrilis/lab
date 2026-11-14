@@ -29,8 +29,8 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <tr>
                         <th scope="col">Prénom</th>
                         <th scope="col">Adresse e-mail</th>
-                        <th scope="col">Rôle</th>
-                        <th scope="col">État</th>
+                        <th scope="col" class="d-none d-lg-table-cell">Rôle</th>
+                        <th scope="col" class="d-none d-lg-table-cell">État</th>
                         <th scope="col">Dernière connexion</th>
                     </tr>
                 </thead>
@@ -39,8 +39,8 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <tr>
                             <td><a href="<?= e(chemin_site('utilisateur.php?id=' . entier($compte['id']))) ?>"><?= e($compte['prenom']) ?></a></td>
                             <td><?= e($compte['mail']) ?></td>
-                            <td><?= e(libelles_roles()[texte($compte['role'])] ?? '') ?></td>
-                            <td>
+                            <td class="d-none d-lg-table-cell"><?= e(libelles_roles()[texte($compte['role'])] ?? '') ?></td>
+                            <td class="d-none d-lg-table-cell">
                                 <?php if (entier($compte['est_actif']) !== 1) : ?>
                                     <span class="badge text-bg-secondary">Désactivé</span>
                                 <?php elseif (entier($compte['invitation_en_attente']) === 1) : ?>
