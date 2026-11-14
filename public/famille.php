@@ -20,7 +20,8 @@ if ($famille === null) {
     rediriger('familles.php');
 }
 $page_fiche = 'famille.php?id=' . $famille_id;
-$peut_modifier = role_au_moins('standard') && texte($famille['anonymise_le']) === '';
+$est_anonymisee = texte($famille['anonymise_le']) !== '';
+$peut_modifier = role_au_moins('standard') && !$est_anonymisee;
 
 $saison_affichee = saison_courante();
 $saison_affichee_id = entier($saison_affichee['id'] ?? 0);
@@ -58,6 +59,10 @@ if (est_post()) {
         $membre = adherent_par_id(entier(post('adherent_id')));
         if ($membre === null || entier($membre['famille_id']) !== $famille_id) {
             flash('erreur', 'Cette personne ne fait pas partie de la famille.');
+            rediriger($page_fiche);
+        }
+        if (texte($membre['anonymise_le']) !== '') {
+            flash('erreur', 'Cette fiche est anonymisée : elle ne peut plus être inscrite.');
             rediriger($page_fiche);
         }
         $membre_id = entier($membre['id']);
@@ -136,7 +141,10 @@ $saisons_famille = array_values(array_filter(
 $titre_page = 'Famille';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-4">Famille <?= e($famille['nom']) ?></h1>
+<h1 class="h3 mb-4">
+    Famille <?= e($famille['nom']) ?>
+    <?php if ($est_anonymisee) : ?><span class="badge text-bg-secondary">Anonymisée</span><?php endif; ?>
+</h1>
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2">
@@ -148,6 +156,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <a class="btn btn-outline-secondary" href="<?= e(chemin_site('compte.php?famille=' . $famille_id)) ?>">Cotisations et paiements</a>
             <?php endif; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('familles.php')) ?>">Retour à la liste</a>
+            <?php if (role_au_moins('admin') && !$est_anonymisee) : ?>
+                <?php // RGPD : la confirmation (nom retapé) et les contrôles sont sur rgpd.php. ?>
+                <a class="btn btn-outline-danger" href="<?= e(chemin_site('rgpd.php?famille=' . $famille_id)) ?>">Anonymiser cette famille</a>
+            <?php endif; ?>
         </div>
 
         <?php if ($peut_modifier) : ?>

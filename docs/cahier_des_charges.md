@@ -233,10 +233,17 @@ Indicateurs issus du rapport d'activité 2025 :
 
 - Données personnelles de mineurs et de personnes en situation de fragilité : accès par compte, journal des actions, pas de données dans les URL.
 - **Consentement** explicite pour les communications / Google Contacts, enregistré avec la date.
-- **Anonymisation** des familles inactives après 3 ans.
+- **Anonymisation** des familles inactives après 3 ans (Paramètres > RGPD, `admin`) :
+  - une famille est **inactive** quand la dernière saison où l'un de ses membres est inscrit est terminée depuis plus de 3 ans (ou, si elle n'a jamais été inscrite, quand elle a été créée il y a plus de 3 ans) ;
+  - l'anonymisation est **manuelle** : la page liste les familles inactives, l'administrateur coche et confirme en tapant le mot « ANONYMISER ». Elle est **définitive** ;
+  - **effacé** : noms, prénoms, jour et mois de naissance, courriels, téléphones, responsable, consentement, adresse (voie, complément, position), notes des saisons, précisions des paiements, lignes du journal qui concernent ces fiches ;
+  - **gardé**, pour que les statistiques et la comptabilité des saisons passées ne changent pas : sexe, année de naissance, nationalité, bénévolat, code postal, ville, quartier, QP, QPV, scolarité, inscriptions, cotisations, réductions et paiements ;
+  - les **structures** ne sont pas concernées ;
+  - les sauvegardes antérieures contiennent encore les données effacées : la page rappelle de supprimer les anciennes.
 - **Journal des actions (logs)** : conservé pour la saison en cours et **remis à zéro à chaque nouvelle saison**. Un mois après le début de la saison, à la première connexion, les actions antérieures à ce début sont effacées (sans export : les sauvegardes de la base en gardent la trace).
 - **Sauvegardes** : export de la base **toutes les semaines** (recommandation : au minimum), en plus des sauvegardes de l'hébergeur ; une copie hors hébergeur.
-- Droit d'accès / effacement : fonction « anonymiser cette famille » réservée aux admins.
+- Droit d'accès / effacement : fonction « anonymiser cette famille » réservée aux admins, sur la fiche de la famille. Elle est **refusée** tant que la famille est inscrite pour la saison en cours ou à venir (il faut d'abord retirer ses membres de la saison) et demande une **confirmation renforcée** : retaper le nom de la famille.
+- **Une personne seule** peut aussi être anonymisée (`admin`, sur sa fiche), avec les mêmes règles : refus si elle est inscrite pour la saison en cours ou à venir, confirmation en retapant son prénom et son nom. Le nom de la famille, les notes des saisons et les précisions des paiements appartiennent à toute la famille : ils ne sont pas effacés (la page le rappelle). Si la personne est le **dernier membre non anonymisé**, c'est la famille entière qui est anonymisée. Si elle est le responsable enregistré d'un mineur de la famille, la page le signale : ses coordonnées restent sur la fiche du mineur, à corriger à la main.
 
 ---
 

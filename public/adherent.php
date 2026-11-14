@@ -175,6 +175,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <a class="btn btn-outline-secondary" href="<?= e(chemin_site($lien_compte)) ?>">Cotisations et paiements</a>
             <?php endif; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('adherents.php')) ?>">Retour à la liste</a>
+            <?php if (role_au_moins('admin') && !$est_anonymise && !$est_structure) : ?>
+                <?php // RGPD : la confirmation (nom retapé) et les contrôles sont sur rgpd.php. ?>
+                <a class="btn btn-outline-danger" href="<?= e(chemin_site('rgpd.php?adherent=' . $fiche_id)) ?>">Anonymiser cette personne</a>
+            <?php endif; ?>
         </div>
 
         <?php // Informations de la personne : affichées en clair, modifiables par la fenêtre « Modifier la fiche ». ?>
