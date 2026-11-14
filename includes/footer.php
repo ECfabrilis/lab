@@ -16,5 +16,6 @@ ancien_oublier();
 <script src="<?= e(chemin_site('js/inscription.js')) ?>"></script>
 <script src="<?= e(chemin_site('js/recherche.js')) ?>"></script>
 <script src="<?= e(chemin_site('js/activites.js')) ?>"></script>
+<script src="<?= e(chemin_site('js/paiements.js')) ?>"></script>
 </body>
 </html>

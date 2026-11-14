@@ -48,15 +48,26 @@ if (est_post()) {
         }
 
         // --- Quartiers, QP, QPV : fichier GeoJSON ---------------------------
-        if ($action === 'quartiers_fichier' && isset($tables_quartiers[$table])) {
+        // « Ajouter à la table » n'existe que pour les quartiers : ceux du fichier
+        // s'ajoutent à ceux déjà présents (d'autres communes, par exemple).
+        $ajout = $action === 'quartiers_ajouter' && $table === 'quartiers';
+        if (($action === 'quartiers_fichier' || $ajout) && isset($tables_quartiers[$table])) {
             $avant = entier(db_valeur('SELECT COUNT(*) FROM `' . $table . '`'));
             $proprietes = [];
             foreach (array_keys($tables_quartiers[$table]['colonnes']) as $colonne) {
                 $proprietes[$colonne] = post('propriete_' . $colonne);
             }
-            $apres = reference_importer_geojson($table, fichier_envoye('fichier'), $proprietes);
-            journaliser('reference', $table, null, 'Mise à jour par un fichier GeoJSON', ['lignes' => $avant], ['lignes' => $apres]);
-            flash('succes', $tables_quartiers[$table]['libelle'] . ' : ' . $apres . ' lignes enregistrées (' . $avant . ' auparavant). Les adresses déjà saisies gardent leur quartier.');
+            $bilan = reference_importer_geojson($table, fichier_envoye('fichier'), $proprietes, $ajout);
+            $apres = entier(db_valeur('SELECT COUNT(*) FROM `' . $table . '`'));
+            journaliser('reference', $table, null, $ajout ? 'Ajout par un fichier GeoJSON' : 'Mise à jour par un fichier GeoJSON', ['lignes' => $avant], ['lignes' => $apres]);
+            if ($ajout) {
+                flash('succes', 'Quartiers : ' . $bilan['ajoutes'] . ' ajouté(s), ' . $bilan['mis_a_jour'] . ' déjà présent(s) dont le contour est mis à jour. La table compte ' . $apres . ' lignes.');
+                if ($bilan['ajoutes'] > 0) {
+                    flash('info', 'Une nouvelle commune ou un nouvel arrondissement est pris en compte d\'office ; un quartier ajouté à une commune ou à un arrondissement déjà présent suit son choix. Ce choix se modifie dans Paramètres > Options > Quartiers.');
+                }
+            } else {
+                flash('succes', $tables_quartiers[$table]['libelle'] . ' : ' . $apres . ' lignes enregistrées (' . $avant . ' auparavant). Les adresses déjà saisies gardent leur quartier.');
+            }
             rediriger('donnees_reference.php');
         }
 
@@ -87,7 +98,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('parametres.php')) ?>">Retour aux paramètres</a>
         </div>
         <ul class="text-body-secondary small mt-3 mb-0 ps-3">
-            <li>Une mise à jour <strong>remplace</strong> tout le contenu de la table. En cas d'erreur dans le fichier, rien n'est modifié.</li>
+            <li>Une mise à jour <strong>remplace</strong> tout le contenu de la table (sauf « Ajouter à la table », pour les quartiers). En cas d'erreur dans le fichier, rien n'est modifié.</li>
             <li>Les adresses déjà saisies gardent le quartier calculé le jour de leur saisie.</li>
             <li>Faites une sauvegarde avant une mise à jour.</li>
             <li>Les pays ne se modifient pas ici : ils sont liés à la nationalité des adhérents.</li>
@@ -149,7 +160,14 @@ require DOSSIER_PRIVE . '/includes/header.php';
                             </div>
                         <?php endforeach; ?>
                     </div>
-                    <button class="btn btn-primary" type="submit" name="action" value="quartiers_fichier">Remplacer cette table</button>
+                    <?php if ($nom_table === 'quartiers') : ?>
+                        <button class="btn btn-primary" type="submit" name="action" value="quartiers_fichier">Remplacer la table</button>
+                        <button class="btn btn-outline-primary" type="submit" name="action" value="quartiers_ajouter">Ajouter à la table</button>
+                        <div class="form-text">« Ajouter » garde les quartiers déjà présents : pour un quartier de même commune, arrondissement et nom, seul le contour est mis à jour.
+                            Le choix des communes et arrondissements pris en compte se fait dans <a href="<?= e(chemin_site('quartiers.php')) ?>">Options &gt; Quartiers</a> ; « Remplacer » les prend tous en compte.</div>
+                    <?php else : ?>
+                        <button class="btn btn-primary" type="submit" name="action" value="quartiers_fichier">Remplacer cette table</button>
+                    <?php endif; ?>
                 </form>
                 <form class="mt-2" method="post" action="<?= e(chemin_site('donnees_reference.php')) ?>">
                     <?= csrf_champ() ?>

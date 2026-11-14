@@ -189,8 +189,9 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <tr>
                             <th scope="col">Nom</th>
                             <th scope="col">Âge</th>
-                            <th scope="col">Famille</th>
-                            <th scope="col">Ville</th>
+                            <?php // Famille et adresse : masquées sur les petits écrans (avant md). ?>
+                            <th scope="col" class="d-none d-md-table-cell">Famille</th>
+                            <th scope="col" class="d-none d-md-table-cell">Adresse</th>
                             <th scope="col">Contact</th>
                         </tr>
                     </thead>
@@ -199,18 +200,25 @@ require DOSSIER_PRIVE . '/includes/header.php';
                             <tr>
                                 <td>
                                     <a href="<?= e(chemin_site('adherent.php?id=' . entier($ligne['id']))) ?>"><?= e(trim(texte($ligne['nom']) . ' ' . texte($ligne['prenom']))) ?></a>
+                                    <?php if (entier($ligne['est_benevole']) === 1) : ?>
+                                        <span class="badge text-bg-info">Bénévole</span>
+                                    <?php endif; ?>
                                     <?php if ($perimetre === 'tous' && entier($ligne['dans_saison']) !== 1) : ?>
                                         <span class="badge text-bg-secondary">Hors saison</span>
                                     <?php endif; ?>
                                 </td>
                                 <?php if (entier($ligne['est_structure']) === 1) : ?>
                                     <td>—</td>
-                                    <td><span class="badge text-bg-secondary">Structure</span></td>
+                                    <td class="d-none d-md-table-cell"><span class="badge text-bg-secondary">Structure</span></td>
                                 <?php else : ?>
                                     <td><?= age_ans(texte($ligne['date_naissance'])) ?> ans</td>
-                                    <td><a href="<?= e(chemin_site('famille.php?id=' . entier($ligne['famille_id']))) ?>"><?= e($ligne['famille_nom']) ?></a></td>
+                                    <td class="d-none d-md-table-cell"><a href="<?= e(chemin_site('famille.php?id=' . entier($ligne['famille_id']))) ?>"><?= e($ligne['famille_nom']) ?></a></td>
                                 <?php endif; ?>
-                                <td><?= e(trim(texte($ligne['code_postal']) . ' ' . texte($ligne['ville']))) ?></td>
+                                <td class="d-none d-md-table-cell">
+                                    <?= e($ligne['adresse']) ?>
+                                    <?php if (texte($ligne['adresse']) !== '') : ?><br><?php endif; ?>
+                                    <?= e(trim(texte($ligne['code_postal']) . ' ' . texte($ligne['ville']))) ?>
+                                </td>
                                 <td class="small">
                                     <?= e($ligne['tel']) ?>
                                     <?php if (texte($ligne['tel']) !== '' && texte($ligne['mail']) !== '') : ?><br><?php endif; ?>

@@ -76,7 +76,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <div class="mb-3">
                 <label class="form-label" for="objet">Objet</label>
                 <select class="form-select" id="objet" name="objet">
-                    <option value="">Adhésion et activités</option>
+                    <option value="">Tous les objets</option>
                     <?php foreach (libelles_objets_paiement() as $code_objet => $libelle_objet) : ?>
                         <option value="<?= e($code_objet) ?>" <?= $filtre_objet === $code_objet ? 'selected' : '' ?>><?= e($libelle_objet) ?></option>
                     <?php endforeach; ?>

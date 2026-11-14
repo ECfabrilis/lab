@@ -613,6 +613,12 @@ function afficher_champs_activite(array $defauts, array $saison): void
             </select>
             <div class="form-text" id="aide_tarif">Tarifs « forfait » et « autre » de la saison <?= e($saison['nom'] ?? '') ?>. Une activité qui ne demande que l'adhésion est gratuite. Le montant est copié sur chaque inscription au moment où elle est faite.</div>
         </div>
+        <div class="col-sm-12">
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="est_sans_adhesion" name="est_sans_adhesion" value="1" <?= $coche('est_sans_adhesion') ?>>
+                <label class="form-check-label" for="est_sans_adhesion">Activité sans adhésion</label>
+            </div>
+        </div>
         <div class="col-sm-6">
             <label class="form-label" for="nb_places">Nombre de places <span class="text-body-secondary">(facultatif)</span></label>
             <input class="form-control" type="number" id="nb_places" name="nb_places" min="1" max="9999" step="1" value="<?= e(ancien('nb_places', $defauts['nb_places'] ?? '')) ?>" aria-describedby="aide_places">
@@ -624,13 +630,9 @@ function afficher_champs_activite(array $defauts, array $saison): void
             <div class="form-text" id="aide_accompagnateurs">Simple information : ils ne prennent pas de places.</div>
         </div>
     </div>
-    <div class="form-check form-switch mb-2">
+    <div class="form-check form-switch mb-3">
         <input class="form-check-input" type="checkbox" role="switch" id="a_liste_attente" name="a_liste_attente" value="1" <?= $coche('a_liste_attente') ?>>
         <label class="form-check-label" for="a_liste_attente">Liste d'attente</label>
-    </div>
-    <div class="form-check form-switch mb-3">
-        <input class="form-check-input" type="checkbox" role="switch" id="est_sans_adhesion" name="est_sans_adhesion" value="1" <?= $coche('est_sans_adhesion') ?>>
-        <label class="form-check-label" for="est_sans_adhesion">Activité sans adhésion</label>
     </div>
     <div class="mb-3">
         <label class="form-label" for="description">Description <span class="text-body-secondary">(facultatif)</span></label>
@@ -680,6 +682,58 @@ function inscriptions_adherent(int $adherent_id, int $saison_id): array
           ORDER BY i.est_annulee, ac.date_debut, ac.nom, i.id',
         [$adherent_id, $saison_id]
     );
+}
+
+/**
+ * Inscriptions des membres d'une famille aux activités d'une saison, classées
+ * par membre (du plus âgé au plus jeune), les annulées en dernier.
+ *
+ * @return list<array<string, mixed>>
+ */
+function inscriptions_famille(int $famille_id, int $saison_id): array
+{
+    return db_lignes(
+        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.est_annulee, i.annulee_le,
+                ac.nom AS activite_nom, ac.date_debut, ac.date_fin
+           FROM inscriptions i
+           JOIN activites ac ON ac.id = i.activite_id
+           JOIN adherents a ON a.id = i.adherent_id
+          WHERE a.famille_id = ? AND ac.saison_id = ?
+          ORDER BY a.date_naissance, a.prenom, a.id, i.est_annulee, ac.date_debut, ac.nom, i.id',
+        [$famille_id, $saison_id]
+    );
+}
+
+/**
+ * Affiche une liste d'inscriptions à des activités (fiche adhérent, fiche famille).
+ * Les montants ne sont montrés qu'au rôle standard au minimum.
+ *
+ * @param list<array<string, mixed>> $inscriptions lignes de inscriptions_adherent() ou inscriptions_famille()
+ */
+function afficher_inscriptions_activites(array $inscriptions): void
+{
+    ?>
+    <ul class="list-unstyled mb-0">
+        <?php foreach ($inscriptions as $ligne_inscription) : ?>
+            <?php $ligne_annulee = entier($ligne_inscription['est_annulee']) === 1; ?>
+            <li class="<?= $ligne_annulee ? 'text-body-secondary' : '' ?>">
+                <a href="<?= e(chemin_site('activite.php?id=' . entier($ligne_inscription['activite_id']))) ?>"><?= e($ligne_inscription['activite_nom']) ?></a>
+                <span class="text-body-secondary">— <?= e(activite_dates($ligne_inscription)) ?></span>
+                <?php if (entier($ligne_inscription['nb_places']) > 1) : ?>
+                    <span class="text-body-secondary">— <?= entier($ligne_inscription['nb_places']) ?> places</span>
+                <?php endif; ?>
+                <?php if (role_au_moins('standard')) : ?>
+                    <span class="text-body-secondary">— <?= e(montant_fr($ligne_inscription['montant'])) ?><?= entier($ligne_inscription['est_tarif_familial']) === 1 ? ' (tarif familial)' : '' ?></span>
+                <?php endif; ?>
+                <?php if ($ligne_annulee) : ?>
+                    <span class="badge text-bg-secondary">Annulée le <?= e(date_fr($ligne_inscription['annulee_le'])) ?></span>
+                <?php elseif (texte($ligne_inscription['statut']) === 'attente') : ?>
+                    <span class="badge text-bg-warning">Liste d'attente</span>
+                <?php endif; ?>
+            </li>
+        <?php endforeach; ?>
+    </ul>
+    <?php
 }
 
 /**

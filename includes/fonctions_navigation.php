@@ -99,6 +99,7 @@ function cards_parametres(): array
             'role'  => 'admin',
             'cards' => [
                 ['titre' => 'Options d\'affichage', 'texte' => 'Nom de la structure, logo et couleur principale.', 'page' => 'options.php', 'role' => 'admin'],
+                ['titre' => 'Quartiers', 'texte' => 'Communes et arrondissements dont les quartiers sont pris en compte pour les adresses.', 'page' => 'quartiers.php', 'role' => 'admin'],
             ],
         ],
         [
@@ -146,7 +147,7 @@ function afficher_cards(array $parties): void
         ?>
         <section class="mb-4">
             <h2 class="h5 mb-3"><?= e($partie['titre']) ?></h2>
-            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-4 g-3">
                 <?php foreach ($visibles as $card) : ?>
                     <div class="col">
                         <?php if (page_existe($card['page'])) : ?>

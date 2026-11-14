@@ -4,20 +4,44 @@
 // peut être inscrit pour la saison au lieu de créer une deuxième fiche.
 
 //
-// Étape 3, personne mineure : le menu « Reprendre un adulte de la famille »
-// remplit le nom, le téléphone et l'adresse e-mail du responsable.
+// Étape 3, personne mineure : choisir un adulte de la famille dans la liste
+// remplit le nom, le téléphone et l'adresse e-mail du responsable. Choisir
+// « une autre personne » vide ces champs s'ils venaient d'un adulte de la liste.
 
 document.addEventListener('DOMContentLoaded', function () {
-    var menu = document.querySelector('select[data-responsable-adulte]');
-    if (!menu || !menu.form) {
+    var liste = document.querySelector('[data-responsable-adulte]');
+    var formulaire = liste ? liste.closest('form') : null;
+    if (!liste || !formulaire) {
         return;
     }
-    menu.addEventListener('change', function () {
-        var choix = menu.options[menu.selectedIndex];
-        if (!choix || choix.value === '') {
+    var champs = formulaire.elements;
+    if (!champs.responsable_nom || !champs.responsable_tel || !champs.responsable_mail) {
+        return;
+    }
+
+    // Vrai si les champs contiennent exactement les coordonnées d'un adulte de la liste.
+    function viennentDeLaListe() {
+        return Array.prototype.some.call(liste.querySelectorAll('input[type="radio"][data-nom]'), function (choix) {
+            return champs.responsable_nom.value === (choix.dataset.nom || '')
+                && champs.responsable_tel.value === (choix.dataset.tel || '')
+                && champs.responsable_mail.value === (choix.dataset.mail || '');
+        });
+    }
+
+    liste.addEventListener('change', function (evenement) {
+        var choix = evenement.target;
+        if (!choix || choix.type !== 'radio') {
             return;
         }
-        var champs = menu.form.elements;
+        if (choix.value === '') {
+            if (viennentDeLaListe()) {
+                champs.responsable_nom.value = '';
+                champs.responsable_tel.value = '';
+                champs.responsable_mail.value = '';
+            }
+            champs.responsable_nom.focus();
+            return;
+        }
         champs.responsable_nom.value = choix.dataset.nom || '';
         champs.responsable_tel.value = choix.dataset.tel || '';
         champs.responsable_mail.value = choix.dataset.mail || '';

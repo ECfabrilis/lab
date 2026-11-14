@@ -12,7 +12,11 @@ declare(strict_types=1);
  * Montant dû = cotisations + inscriptions en cours aux activités (hors liste
  * d'attente ; le tarif familial ne compte qu'une fois par activité) − réductions.
  * Reste à payer = montant dû − paiements non annulés ; s'il est négatif, c'est
- * un trop-perçu.
+ * un trop-perçu. Un don ne compte pas dans ce qui a été payé.
+ *
+ * Une saisie peut créer plusieurs paiements liés (même groupe_id) : « les deux »
+ * (adhésion + activités) et le surplus, enregistré en don. Chaque paiement
+ * garde un seul objet, pour la comptabilité.
  *
  * Les calculs se font en centimes (entiers), pour éviter les erreurs d'arrondi.
  *
@@ -40,7 +44,18 @@ function libelles_modes_paiement(): array
  */
 function libelles_objets_paiement(): array
 {
-    return ['adhesion' => 'Adhésion', 'activites' => 'Activités'];
+    return ['adhesion' => 'Adhésion', 'activites' => 'Activités', 'don' => 'Don'];
+}
+
+/**
+ * Choix proposés dans le formulaire pour « Ce paiement règle » : les objets,
+ * plus « les deux » (adhésion et activités), qui crée un paiement par objet.
+ *
+ * @return array<string, string>
+ */
+function libelles_choix_paiement(): array
+{
+    return ['adhesion' => 'l\'adhésion', 'activites' => 'les activités', 'deux' => 'les deux', 'don' => 'un don'];
 }
 
 /** Montant de la base (« 12.50 ») en centimes (1250). */
@@ -131,10 +146,11 @@ function compte_dossier_id(array $titulaire, int $saison_id): int
  * Comptes des familles et structures : une ligne par dossier, montants en centimes.
  *
  * solde = montant dû − payé : positif, c'est le reste à payer ; négatif, un trop-perçu.
+ * Les dons sont à part : ils ne comptent pas dans « payé ».
  *
  * @param int $saison_id  tous les dossiers de cette saison (0 : sans filtre de saison)
  * @param int $dossier_id un seul dossier (0 : tous)
- * @return list<array{dossier_id: int, famille_id: int, structure_id: int, nom: string, cotisations: int, activites: int, reductions: int, du: int, paye_adhesion: int, paye_activites: int, paye: int, solde: int}>
+ * @return list<array{dossier_id: int, famille_id: int, structure_id: int, nom: string, cotisations: int, activites: int, reductions: int, du: int, paye_adhesion: int, paye_activites: int, paye: int, dons: int, solde: int}>
  */
 function comptes_lignes(int $saison_id, int $dossier_id = 0): array
 {
@@ -154,7 +170,7 @@ function comptes_lignes(int $saison_id, int $dossier_id = 0): array
     $lignes = db_lignes(
         'SELECT d.id AS dossier_id, d.famille_id, d.structure_id, COALESCE(f.nom, st.nom) AS nom,
                 COALESCE(c.total, 0) AS cotisations, COALESCE(i.total, 0) AS activites, COALESCE(r.total, 0) AS reductions,
-                COALESCE(p.adhesion, 0) AS paye_adhesion, COALESCE(p.activites, 0) AS paye_activites
+                COALESCE(p.adhesion, 0) AS paye_adhesion, COALESCE(p.activites, 0) AS paye_activites, COALESCE(p.dons, 0) AS dons
            FROM dossiers d
            LEFT JOIN familles f ON f.id = d.famille_id
            LEFT JOIN adherents st ON st.id = d.structure_id
@@ -174,7 +190,8 @@ function comptes_lignes(int $saison_id, int $dossier_id = 0): array
                         FROM reductions GROUP BY dossier_id) r ON r.dossier_id = d.id
            LEFT JOIN (SELECT dossier_id,
                              SUM(CASE WHEN objet = \'adhesion\' THEN montant ELSE 0 END) AS adhesion,
-                             SUM(CASE WHEN objet = \'activites\' THEN montant ELSE 0 END) AS activites
+                             SUM(CASE WHEN objet = \'activites\' THEN montant ELSE 0 END) AS activites,
+                             SUM(CASE WHEN objet = \'don\' THEN montant ELSE 0 END) AS dons
                         FROM paiements WHERE est_annule = 0 GROUP BY dossier_id) p ON p.dossier_id = d.id
           WHERE ' . implode(' AND ', $conditions) . '
           ORDER BY nom, d.id',
@@ -201,6 +218,7 @@ function comptes_lignes(int $saison_id, int $dossier_id = 0): array
             'paye_adhesion'  => $paye_adhesion,
             'paye_activites' => $paye_activites,
             'paye'           => $paye_adhesion + $paye_activites,
+            'dons'           => centimes($ligne['dons']),
             'solde'          => $du - $paye_adhesion - $paye_activites,
         ];
     }
@@ -210,7 +228,7 @@ function comptes_lignes(int $saison_id, int $dossier_id = 0): array
 /**
  * Compte d'un dossier (montants en centimes), ou null si le dossier n'existe pas.
  *
- * @return array{dossier_id: int, famille_id: int, structure_id: int, nom: string, cotisations: int, activites: int, reductions: int, du: int, paye_adhesion: int, paye_activites: int, paye: int, solde: int}|null
+ * @return array{dossier_id: int, famille_id: int, structure_id: int, nom: string, cotisations: int, activites: int, reductions: int, du: int, paye_adhesion: int, paye_activites: int, paye: int, dons: int, solde: int}|null
  */
 function compte_du_dossier(int $dossier_id): ?array
 {
@@ -253,7 +271,7 @@ function compte_inscriptions(int $dossier_id): array
 /**
  * Affiche le résumé d'un compte : dû, payé, reste à payer ou trop-perçu.
  *
- * @param array{dossier_id: int, famille_id: int, structure_id: int, nom: string, cotisations: int, activites: int, reductions: int, du: int, paye_adhesion: int, paye_activites: int, paye: int, solde: int} $compte
+ * @param array{dossier_id: int, famille_id: int, structure_id: int, nom: string, cotisations: int, activites: int, reductions: int, du: int, paye_adhesion: int, paye_activites: int, paye: int, dons: int, solde: int} $compte
  * @param bool $detail true : avec le détail du dû et la répartition des paiements
  */
 function afficher_resume_compte(array $compte, bool $detail = false): void
@@ -289,6 +307,9 @@ function afficher_resume_compte(array $compte, bool $detail = false): void
                     <td class="text-end"><span class="badge text-bg-success fs-6"><?= e(centimes_fr(0)) ?></span></td>
                 <?php endif; ?>
             </tr>
+            <?php if ($detail && $compte['dons'] > 0) : ?>
+                <tr><th scope="row" class="fw-normal text-body-secondary">Dons (en plus)</th><td class="text-end text-body-secondary"><?= e(centimes_fr($compte['dons'])) ?></td></tr>
+            <?php endif; ?>
         </tbody>
     </table>
     <?php
@@ -548,7 +569,7 @@ function reduction_supprimer(int $reduction_id, int $dossier_id): bool
 // ---------------------------------------------------------------------------
 
 /** Morceau de requête commun aux lectures de paiements. */
-const PAIEMENTS_SELECT = 'SELECT p.id, p.dossier_id, p.montant, p.date_paiement, p.mode, p.objet, p.note,
+const PAIEMENTS_SELECT = 'SELECT p.id, p.dossier_id, p.montant, p.date_paiement, p.mode, p.objet, p.groupe_id, p.note,
                 p.est_annule, p.annule_le, p.date_crea,
                 d.famille_id, d.structure_id, d.saison_id, s.nom AS saison_nom,
                 COALESCE(f.nom, st.nom) AS titulaire_nom, u.prenom AS saisi_par, ua.prenom AS annule_par
@@ -609,6 +630,21 @@ function paiements_periode(string $date_du, string $date_au, string $mode = '', 
     );
 }
 
+/**
+ * Autres paiements nés de la même saisie qu'un paiement (même groupe), annulés compris.
+ *
+ * @param array<string, mixed> $paiement ligne lue par paiement_par_id()
+ * @return list<array<string, mixed>>
+ */
+function paiements_lies(array $paiement): array
+{
+    $groupe_id = entier($paiement['groupe_id'] ?? 0);
+    if ($groupe_id <= 0) {
+        return [];
+    }
+    return db_lignes(PAIEMENTS_SELECT . ' WHERE p.groupe_id = ? AND p.id <> ? ORDER BY p.id', [$groupe_id, entier($paiement['id'] ?? 0)]);
+}
+
 /** Lien (paramètre d'adresse) vers le compte auquel appartient un paiement : « famille=12 » ou « structure=34 ». */
 function paiement_lien_compte(mixed $famille_id, mixed $structure_id): string
 {
@@ -632,7 +668,8 @@ function paiement_saisie(): array
 }
 
 /**
- * Vérifie un paiement avant de l'enregistrer.
+ * Vérifie un paiement avant de l'enregistrer. « objet » est le choix du
+ * formulaire : un objet, ou « deux » (adhésion et activités).
  *
  * @param array{montant: string, date_paiement: string, mode: string, objet: string, note: string} $saisie
  * @return list<string> messages d'erreur (vide si tout va bien)
@@ -652,8 +689,8 @@ function erreurs_paiement(array $saisie): array
     if (!array_key_exists($saisie['mode'], libelles_modes_paiement())) {
         $erreurs[] = 'Choisissez le mode de paiement.';
     }
-    if (!array_key_exists($saisie['objet'], libelles_objets_paiement())) {
-        $erreurs[] = 'Indiquez ce que règle le paiement : l\'adhésion ou les activités.';
+    if (!array_key_exists($saisie['objet'], libelles_choix_paiement())) {
+        $erreurs[] = 'Indiquez ce que règle le paiement : l\'adhésion, les activités, les deux ou un don.';
     }
     if (mb_strlen($saisie['note']) > 255) {
         $erreurs[] = 'La note est trop longue (255 caractères au maximum).';
@@ -662,11 +699,47 @@ function erreurs_paiement(array $saisie): array
 }
 
 /**
- * Enregistre un paiement (déjà vérifié) et renvoie son identifiant.
+ * Répartit un montant entre les objets, d'après le choix du formulaire.
  *
- * @param array{montant: string, date_paiement: string, mode: string, objet: string, note: string} $saisie
+ * Règles :
+ *   - « don » : tout le montant est un don ;
+ *   - ce qui dépasse le reste à payer part toujours en don ;
+ *   - « adhesion » ou « activites » : le reste du montant va à cet objet ;
+ *   - « deux » : le montant doit couvrir tout le reste à payer ; l'adhésion
+ *     reçoit ce qui reste dû des cotisations, les activités le complément.
+ *
+ * @param array{dossier_id: int, famille_id: int, structure_id: int, nom: string, cotisations: int, activites: int, reductions: int, du: int, paye_adhesion: int, paye_activites: int, paye: int, dons: int, solde: int} $compte
+ * @param int    $montant montant reçu, en centimes
+ * @param string $choix   adhesion, activites, deux ou don
+ * @return array<string, int>|null centimes par objet (objets à zéro omis), ou null si « deux » n'est pas possible
  */
-function paiement_creer(int $dossier_id, array $saisie): int
+function paiement_repartir(array $compte, int $montant, string $choix): ?array
+{
+    if ($choix === 'don') {
+        return ['don' => $montant];
+    }
+    $reste = max(0, $compte['solde']);
+    $utile = min($montant, $reste);
+    if ($choix === 'deux') {
+        if ($reste === 0 || $montant < $reste) {
+            return null;
+        }
+        $adhesion = min(max(0, $compte['cotisations'] - $compte['paye_adhesion']), $reste);
+        $parts = ['adhesion' => $adhesion, 'activites' => $reste - $adhesion];
+    } else {
+        $parts = [$choix => $utile];
+    }
+    $parts['don'] = $montant - $utile;
+    return array_filter($parts, static fn (int $part): bool => $part > 0);
+}
+
+/**
+ * Enregistre un paiement d'un seul objet et renvoie son identifiant.
+ *
+ * @param array{montant: string, date_paiement: string, mode: string, objet: string, note: string} $saisie objet : adhesion, activites ou don
+ * @param int $groupe_id numéro du premier paiement de la même saisie (0 : paiement seul)
+ */
+function paiement_creer(int $dossier_id, array $saisie, int $groupe_id = 0): int
 {
     $valeurs = [
         'dossier_id'    => $dossier_id,
@@ -674,10 +747,11 @@ function paiement_creer(int $dossier_id, array $saisie): int
         'date_paiement' => $saisie['date_paiement'],
         'mode'          => $saisie['mode'],
         'objet'         => $saisie['objet'],
+        'groupe_id'     => $groupe_id > 0 ? $groupe_id : null,
         'note'          => nul_si_vide($saisie['note']),
     ];
     db_executer(
-        'INSERT INTO paiements (dossier_id, montant, date_paiement, mode, objet, note, creation_par) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO paiements (dossier_id, montant, date_paiement, mode, objet, groupe_id, note, creation_par) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         [...array_values($valeurs), entier($_SESSION['utilisateur_id'] ?? 0)]
     );
     $paiement_id = entier(db()->lastInsertId());
@@ -686,31 +760,86 @@ function paiement_creer(int $dossier_id, array $saisie): int
 }
 
 /**
+ * Enregistre la saisie d'un paiement (déjà vérifiée par erreurs_paiement()).
+ * Selon le choix et le reste à payer, elle donne un ou plusieurs paiements,
+ * un par objet ; quand il y en a plusieurs, ils sont liés (groupe_id).
+ *
+ * @param array{montant: string, date_paiement: string, mode: string, objet: string, note: string} $saisie
+ * @return array{erreur: string, ids: list<int>, parts: array<string, int>} parts : centimes par objet
+ */
+function paiements_enregistrer(int $dossier_id, array $saisie): array
+{
+    db()->beginTransaction();
+    try {
+        // Verrou sur le dossier : le reste à payer ne change pas pendant la répartition.
+        db_valeur('SELECT id FROM dossiers WHERE id = ? FOR UPDATE', [$dossier_id]);
+        $compte = compte_du_dossier($dossier_id);
+        $parts = $compte === null ? null : paiement_repartir($compte, centimes(montant_lire($saisie['montant'])), $saisie['objet']);
+        if ($parts === null || $parts === []) {
+            db()->rollBack();
+            return [
+                'erreur' => '« Les deux » n\'est possible que s\'il reste quelque chose à payer et que le montant le couvre en entier. Choisissez l\'adhésion, les activités ou un don.',
+                'ids'    => [],
+                'parts'  => [],
+            ];
+        }
+        $ids = [];
+        foreach ($parts as $objet => $part) {
+            $ligne = $saisie;
+            $ligne['objet'] = $objet;
+            $ligne['montant'] = number_format($part / 100, 2, '.', '');
+            // Plusieurs paiements : tous portent le numéro du premier.
+            $ids[] = paiement_creer($dossier_id, $ligne, count($parts) > 1 ? ($ids[0] ?? 0) : 0);
+        }
+        if (count($ids) > 1) {
+            db_executer('UPDATE paiements SET groupe_id = ? WHERE id = ?', [$ids[0], $ids[0]]);
+        }
+        db()->commit();
+        return ['erreur' => '', 'ids' => $ids, 'parts' => $parts];
+    } catch (Throwable $exception) {
+        if (db()->inTransaction()) {
+            db()->rollBack();
+        }
+        throw $exception;
+    }
+}
+
+/**
  * Annule un paiement (il reste en base : un paiement ne se supprime jamais).
+ * Les paiements nés de la même saisie (même groupe) sont annulés avec lui.
  *
  * @param array<string, mixed> $paiement ligne lue par paiement_par_id()
- * @return bool false s'il était déjà annulé
+ * @return int nombre de paiements annulés (0 s'il était déjà annulé)
  */
-function paiement_annuler(array $paiement): bool
+function paiement_annuler(array $paiement): int
 {
     $paiement_id = entier($paiement['id'] ?? 0);
+    $groupe_id = entier($paiement['groupe_id'] ?? 0);
     $utilisateur_id = entier($_SESSION['utilisateur_id'] ?? 0);
-    $requete = db_executer(
-        'UPDATE paiements SET est_annule = 1, annule_le = ?, annulation_par = ?, modification_par = ? WHERE id = ? AND est_annule = 0',
-        [date('Y-m-d H:i:s'), $utilisateur_id, $utilisateur_id, $paiement_id]
+    $a_annuler = db_lignes(
+        'SELECT id, montant FROM paiements WHERE est_annule = 0 AND (id = ? OR (groupe_id IS NOT NULL AND groupe_id = ?)) ORDER BY id',
+        [$paiement_id, $groupe_id]
     );
-    if ($requete->rowCount() === 0) {
-        return false;
+    $nombre = 0;
+    foreach ($a_annuler as $ligne) {
+        $requete = db_executer(
+            'UPDATE paiements SET est_annule = 1, annule_le = ?, annulation_par = ?, modification_par = ? WHERE id = ? AND est_annule = 0',
+            [date('Y-m-d H:i:s'), $utilisateur_id, $utilisateur_id, entier($ligne['id'])]
+        );
+        if ($requete->rowCount() === 0) {
+            continue;
+        }
+        $nombre++;
+        journaliser(
+            'modification',
+            'paiements',
+            entier($ligne['id']),
+            'Annulation du paiement de ' . montant_fr($ligne['montant']),
+            ['est_annule' => 0],
+            ['est_annule' => 1]
+        );
     }
-    journaliser(
-        'modification',
-        'paiements',
-        $paiement_id,
-        'Annulation du paiement de ' . montant_fr($paiement['montant'] ?? 0),
-        ['est_annule' => 0],
-        ['est_annule' => 1]
-    );
-    return true;
+    return $nombre;
 }
 
 // ---------------------------------------------------------------------------

@@ -74,14 +74,24 @@ if (est_post()) {
             ancien_memoriser();
             rediriger($page_ici);
         }
-        $paiement_id = paiement_creer($dossier_id, $saisie);
-        unset($_SESSION['recherche_paiement']);
-        flash('succes', 'Le paiement de ' . montant_fr(montant_lire($saisie['montant'])) . ' est enregistré.');
-        $compte_apres = compte_du_dossier($dossier_id);
-        if ($compte_apres !== null && $compte_apres['solde'] < 0) {
-            flash('avertissement', 'Trop-perçu : ' . $titulaire['titre'] . ' a payé ' . centimes_fr(-$compte_apres['solde']) . ' de plus que le montant dû.');
+        // Selon le choix et le reste à payer : un paiement, ou plusieurs paiements liés (un par objet).
+        $resultat = paiements_enregistrer($dossier_id, $saisie);
+        if ($resultat['erreur'] !== '') {
+            flash('erreur', $resultat['erreur']);
+            ancien_memoriser();
+            rediriger($page_ici);
         }
-        rediriger('paiement.php?id=' . $paiement_id);
+        unset($_SESSION['recherche_paiement']);
+        $detail_parts = [];
+        foreach ($resultat['parts'] as $objet_part => $centimes_part) {
+            $detail_parts[] = mb_strtolower(libelles_objets_paiement()[$objet_part] ?? '') . ' ' . centimes_fr($centimes_part);
+        }
+        flash('succes', 'Le paiement de ' . montant_fr(montant_lire($saisie['montant'])) . ' est enregistré'
+            . (count($detail_parts) > 1 ? ', réparti en ' . count($detail_parts) . ' paiements liés : ' . implode(', ', $detail_parts) . '.' : '.'));
+        if ($saisie['objet'] !== 'don' && ($resultat['parts']['don'] ?? 0) > 0) {
+            flash('avertissement', 'Le montant dépassait le reste à payer : ' . centimes_fr($resultat['parts']['don']) . ' ont été enregistrés en don.');
+        }
+        rediriger('paiement.php?id=' . ($resultat['ids'][0] ?? 0));
     }
 
     rediriger($page_ici);
@@ -97,13 +107,17 @@ if ($titulaire === null) {
     $propositions = adherents_suggestions($recherche, $saison_affichee_id, true);
 } else {
     $compte = compte_du_dossier($dossier_id);
-    // Objet proposé : l'adhésion tant qu'elle n'est pas réglée.
-    if ($compte !== null && $compte['cotisations'] > $compte['paye_adhesion']) {
+    // Objet proposé : un don quand plus rien n'est dû ; sinon l'adhésion tant qu'elle n'est pas réglée.
+    if ($compte !== null && $compte['solde'] <= 0) {
+        $objet_propose = 'don';
+    } elseif ($compte !== null && $compte['cotisations'] > $compte['paye_adhesion']) {
         $objet_propose = 'adhesion';
     }
 }
 $mode_choisi = ancien('mode');
 $objet_choisi = ancien('objet', $objet_propose);
+// Reste à payer (en centimes) : il décide de l'affichage du choix « les deux » (js/paiements.js).
+$reste_a_payer = $compte !== null ? max(0, $compte['solde']) : 0;
 
 $titre_page = 'Nouveau paiement';
 require DOSSIER_PRIVE . '/includes/header.php';
@@ -184,15 +198,17 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         </select>
                     </div>
                     <div class="col-sm-6">
-                        <fieldset>
+                        <?php // « les deux » n'apparaît que si le montant saisi couvre le reste à payer (js/paiements.js) ; la règle est revérifiée à l'enregistrement. ?>
+                        <fieldset data-paiement-reste="<?= $reste_a_payer ?>" data-paiement-defaut="<?= e($objet_propose) ?>">
                             <legend class="form-label fs-6">Ce paiement règle</legend>
-                            <?php foreach (libelles_objets_paiement() as $code_objet => $libelle_objet) : ?>
-                                <div class="form-check form-check-inline">
+                            <?php foreach (libelles_choix_paiement() as $code_objet => $libelle_objet) : ?>
+                                <div class="form-check form-check-inline <?= $code_objet === 'deux' ? 'd-none' : '' ?>" <?= $code_objet === 'deux' ? 'data-paiement-deux' : '' ?>>
                                     <input class="form-check-input" type="radio" id="objet_<?= e($code_objet) ?>" name="objet" value="<?= e($code_objet) ?>" <?= $objet_choisi === $code_objet ? 'checked' : '' ?> required>
-                                    <label class="form-check-label" for="objet_<?= e($code_objet) ?>"><?= e($code_objet === 'adhesion' ? 'l\'adhésion' : 'les activités') ?></label>
+                                    <label class="form-check-label" for="objet_<?= e($code_objet) ?>"><?= e($libelle_objet) ?></label>
                                 </div>
                             <?php endforeach; ?>
-                            <div class="form-text">Pour la comptabilité. Si un même chèque règle les deux, enregistrez deux paiements.</div>
+                            <div class="form-text">Pour la comptabilité. « Les deux » est proposé quand le montant couvre tout le reste à payer : un paiement est alors enregistré pour l'adhésion et un autre pour les activités, liés entre eux.</div>
+                            <div class="form-text text-warning-emphasis fw-semibold" data-paiement-surplus role="status"></div>
                         </fieldset>
                     </div>
                     <div class="col-sm-12">

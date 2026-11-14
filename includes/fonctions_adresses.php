@@ -166,7 +166,8 @@ function quartiers_du_point(float $latitude, float $longitude): array
 {
     // Les géométries sont enregistrées en longitude puis latitude.
     $point = sprintf('POINT(%.6F %.6F)', $longitude, $latitude);
-    $quartier = db_valeur('SELECT nom FROM quartiers WHERE ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
+    // Seuls les quartiers pris en compte (Paramètres > Options > Quartiers) sont cherchés.
+    $quartier = db_valeur('SELECT nom FROM quartiers WHERE est_actif = 1 AND ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
     $qp = db_ligne('SELECT code_quartier, nom FROM quartiers_prioritaires WHERE ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
     $qpv = db_ligne('SELECT code_quartier, nom FROM quartiers_qpv WHERE ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
     return [

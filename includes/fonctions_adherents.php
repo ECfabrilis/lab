@@ -539,8 +539,8 @@ function adherents_rechercher(string $recherche, int $saison_id, bool $saison_se
     $par_page = max(1, $par_page);
     array_push($parametres, $par_page, (max(1, $page) - 1) * $par_page);
     $lignes = db_lignes(
-        'SELECT a.id, a.est_structure, a.nom, a.prenom, a.date_naissance, a.mail, a.tel, a.famille_id, f.nom AS famille_nom,
-                d.id AS dossier_id, da.code_postal, da.ville, (da.adherent_id IS NOT NULL) AS dans_saison'
+        'SELECT a.id, a.est_structure, a.nom, a.prenom, a.date_naissance, a.mail, a.tel, a.est_benevole, a.famille_id, f.nom AS famille_nom,
+                d.id AS dossier_id, da.adresse, da.code_postal, da.ville, (da.adherent_id IS NOT NULL) AS dans_saison'
         . $base . ' ORDER BY a.nom, a.prenom, a.id LIMIT ? OFFSET ?',
         $parametres
     );
@@ -720,7 +720,8 @@ function afficher_champs_adherent(array $defauts): void
 /**
  * Affiche les champs du responsable adulte d'une personne mineure.
  *
- * Quand des adultes de la famille sont fournis, un menu permet d'en choisir un :
+ * Quand des adultes de la famille sont fournis, une liste à cocher (comme le
+ * choix de la famille) permet d'en choisir un, ou « une autre personne » :
  * son nom, son téléphone et son adresse e-mail remplissent les champs
  * (public/js/inscription.js), qui restent modifiables.
  *
@@ -733,16 +734,38 @@ function afficher_champs_responsable(array $defauts, array $adultes = []): void
     <h2 class="h5">Responsable adulte</h2>
     <p class="text-body-secondary small">Obligatoire pour une personne de moins de <?= AGE_MAJORITE ?> ans : le nom, et le téléphone ou l'adresse e-mail.</p>
     <?php if ($adultes !== []) : ?>
-        <div class="mb-3">
-            <label class="form-label" for="responsable_adulte">Reprendre un adulte de la famille</label>
-            <select class="form-select" id="responsable_adulte" data-responsable-adulte aria-describedby="aide_responsable_adulte">
-                <option value="">Choisir…</option>
-                <?php foreach ($adultes as $adulte) : ?>
-                    <option value="<?= $adulte['id'] ?>" data-nom="<?= e($adulte['nom']) ?>" data-tel="<?= e($adulte['tel']) ?>" data-mail="<?= e($adulte['mail']) ?>"><?= e(implode(' — ', array_filter([$adulte['nom'], $adulte['tel'], $adulte['mail']], static fn (string $valeur): bool => $valeur !== ''))) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <div class="form-text" id="aide_responsable_adulte">Son nom, son téléphone et son adresse e-mail remplissent les champs ci-dessous, qui restent modifiables.</div>
+        <?php
+        // Même présentation que le choix de la famille (étape 2) : une liste à cocher.
+        // Le choix coché au réaffichage est l'adulte dont les coordonnées sont déjà dans les champs.
+        $nom_actuel = ancien('responsable_nom', $defauts['responsable_nom'] ?? '');
+        $tel_actuel = ancien('responsable_tel', $defauts['responsable_tel'] ?? '');
+        $mail_actuel = ancien('responsable_mail', $defauts['responsable_mail'] ?? '');
+        $adulte_coche = 0;
+        foreach ($adultes as $adulte) {
+            if ($nom_actuel === $adulte['nom'] && $tel_actuel === $adulte['tel'] && $mail_actuel === $adulte['mail']) {
+                $adulte_coche = $adulte['id'];
+                break;
+            }
+        }
+        $autre_coche = $adulte_coche === 0 && $nom_actuel !== '';
+        ?>
+        <div class="list-group mb-2" data-responsable-adulte role="radiogroup" aria-label="Responsable : un adulte de la famille ou une autre personne">
+            <?php foreach ($adultes as $adulte) : ?>
+                <label class="list-group-item d-flex gap-2">
+                    <input class="form-check-input flex-shrink-0" type="radio" name="responsable_adulte" value="<?= $adulte['id'] ?>"
+                           data-nom="<?= e($adulte['nom']) ?>" data-tel="<?= e($adulte['tel']) ?>" data-mail="<?= e($adulte['mail']) ?>" <?= $adulte_coche === $adulte['id'] ? 'checked' : '' ?>>
+                    <span>
+                        <strong><?= e($adulte['nom']) ?></strong>
+                        <span class="d-block small text-body-secondary"><?= e(implode(' — ', array_filter([$adulte['tel'], $adulte['mail']], static fn (string $valeur): bool => $valeur !== ''))) ?></span>
+                    </span>
+                </label>
+            <?php endforeach; ?>
+            <label class="list-group-item d-flex gap-2">
+                <input class="form-check-input flex-shrink-0" type="radio" name="responsable_adulte" value="" <?= $autre_coche ? 'checked' : '' ?>>
+                <span><strong>Une autre personne</strong> : saisir ses coordonnées ci-dessous</span>
+            </label>
         </div>
+        <p class="form-text mt-0 mb-3">Le nom, le téléphone et l'adresse e-mail de l'adulte choisi remplissent les champs ci-dessous, qui restent modifiables.</p>
     <?php endif; ?>
     <div class="row g-3 mb-4">
         <div class="col-sm-12">

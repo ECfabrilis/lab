@@ -60,7 +60,7 @@ Modèle conservé : **famille → dossier (par saison) → adhérents → inscri
 | Nationalité | non | liste de pays, **France par défaut** dans le formulaire d'inscription ; le continent est déduit (statistiques) |
 | Adresse | oui | vérifiée par l'API Adresse (BAN, Géoplateforme) ; si le service ne répond pas, une indication le dit (« Géoplateforme est indisponible, l'adresse ne sera pas vérifiée ») et la saisie reste possible |
 | Code postal | oui | proposé à partir d'une table |
-| Quartier, quartier prioritaire (QP), QPV | calculés | déterminés automatiquement depuis l'adresse, conservés en **instantané** (API BAN) |
+| Quartier, quartier prioritaire (QP), QPV | calculés | déterminés automatiquement depuis l'adresse, conservés en **instantané** (API BAN). Le quartier est cherché parmi les quartiers des **communes et arrondissements pris en compte**, choisis par un administrateur (Paramètres > Options > Quartiers) |
 | Courriel, téléphone | non | |
 | Bénévole | oui/non | un bénévole est aussi un adhérent |
 | Consentement aux communications | oui/non | nécessaire pour l'export Google Contacts |
@@ -154,7 +154,10 @@ Une activité ne se **supprime** que si elle est vide (aucune inscription, même
 
 - Modes : **espèces, chèque, carte bancaire, autres**.
 - **Paiement en plusieurs fois** possible : plusieurs paiements enregistrés au fil du temps, sans échéancier.
-- **Objet** du paiement, pour la comptabilité : **adhésion** ou **activités**. Un paiement n'a qu'un objet : si un même chèque règle les deux, on enregistre deux paiements.
+- **Objet** du paiement, pour la comptabilité : **adhésion**, **activités** ou **don**. Un paiement n'a qu'un objet. Un don ne compte pas dans ce qui a été payé : il ne réduit pas le reste à payer.
+- **« Les deux »** : quand le montant saisi couvre tout le reste à payer, l'accueil peut choisir « les deux » ; l'application enregistre alors elle-même un paiement pour l'adhésion et un autre pour les activités, en une seule saisie.
+- **Surplus** : ce qui dépasse le reste à payer est enregistré en **don**, quel que soit le choix ; l'utilisateur en est prévenu pendant la saisie et après l'enregistrement.
+- **Paiements liés** : les paiements nés d'une même saisie sont liés ; annuler l'un annule les autres. Chacun garde son reçu.
 - Affichage du **reste à payer** et du **trop-perçu** par dossier.
 - **Reçu** imprimable (PDF) ou envoyé par courriel : un reçu par paiement, numéroté par le numéro du paiement ; il part à l'adresse choisie parmi celles des adultes de la famille (ou celle de la structure).
 - **Réduction** : un **montant** appliqué soit à un adhérent, soit au dossier ; accordée par l'accueil et les admins. Aucun motif et aucune trace spécifique n'est enregistré : une réduction se **supprime**, et le journal note seulement l'ajout ou la suppression, sans montant.
@@ -274,7 +277,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 **Étape 3 — Adresse, contact, notes**
 - *Adresse** et complément d'adresse : vérification en direct auprès de l'API BAN. Une indication en petit sous le champ dit si l'adresse est **certifiée** ou non. À partir des coordonnées, une deuxième indication donne le **quartier**, le **quartier prioritaire (QP)** et le **quartier de la politique de la ville (QPV)**. Le code postal saisi à l'étape 1 oriente la recherche ; l'adresse certifiée corrige le code postal et la commune si besoin.
 - *Contact* : courriel, téléphone, **consentement aux communications** (case à cocher, enregistrée avec la date).
-- *Si la personne a moins de 18 ans* (à la date du jour) : un **responsable** est demandé (nom, courriel, téléphone) ; si une famille existante a été choisie et qu'elle compte des adultes ayant un téléphone ou un courriel, un menu permet de **reprendre l'un d'eux** comme responsable (les trois champs se remplissent et restent modifiables) ; l'**établissement scolaire / niveau** (facultatif) est proposé.
+- *Si la personne a moins de 18 ans* (à la date du jour) : un **responsable** est demandé (nom, courriel, téléphone) ; si une famille existante a été choisie et qu'elle compte des adultes ayant un téléphone ou un courriel, une liste à cocher, présentée comme le choix de la famille à l'étape 2, permet de **reprendre l'un d'eux** comme responsable ou de choisir « une autre personne » (les trois champs se remplissent et restent modifiables) ; l'**établissement scolaire / niveau** (facultatif) est proposé.
 - *Notes* : texte libre ; elles concernent la **famille pour la saison** (en base : le dossier), pas la personne.
 
 **Étape 4 — Validation**
@@ -317,12 +320,13 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 | Partie | Choix |
 |---|---|
 | Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
-| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) |
-| La base de données | Saisons ; Sauvegarde ; Logs ; Données de référence (pays, quartiers, QP, QPV, codes postaux) ; Types d'activité ; RGPD (anonymisation) |
+| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul) |
+| La base de données | Saisons ; Sauvegarde ; Logs ; Données de référence (pays, quartiers, QP, QPV, codes postaux ; pour les quartiers : « Remplacer la table » ou « Ajouter à la table ») ; Types d'activité ; RGPD (anonymisation) |
 | Configuration | Paramètres des mails (avec l'essai d'envoi) |
 
 **Règles**
 - Une card que l'utilisateur n'a pas le droit d'utiliser **n'est pas affichée** ; une partie sans aucune card visible disparaît. Le droit est **toujours revérifié côté serveur** sur chaque page, pas seulement par le masquage.
+- À partir de la largeur `xl`, les cards s'affichent par **4** sur une ligne.
 - Les listes de choix sont **extensibles** : on peut ajouter des cards au fur et à mesure (notamment dans les parties Options, Base de données et Configuration) sans changer la mise en page.
 - La couleur choisie dans Options s'applique à l'ensemble de l'application ; le logo et le nom de la structure servent aussi aux documents PDF (section 8).
 

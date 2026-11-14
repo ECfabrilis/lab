@@ -96,13 +96,13 @@ if (est_post()) {
         rediriger($page_fiche);
     }
 
-    // --- Structure : notes de la saison et retrait de la saison --------------
-    // (pour une personne, ces deux actions sont sur la fiche de sa famille)
-    if ($est_structure && ($action === 'notes' || $action === 'retirer_saison')) {
+    // --- Notes de la saison (de la famille, ou de la structure) ; structure : retrait de la saison
+    // (pour une personne, le retrait de la saison est sur la fiche de sa famille)
+    if ($action === 'notes' || ($est_structure && $action === 'retirer_saison')) {
         $dossier_id = dossier_id_de_adherent($fiche, $saison_affichee_id);
         $notes_saisies = post('notes');
-        if ($dossier_id <= 0) {
-            flash('erreur', 'Cette structure n\'est pas inscrite pour la saison.');
+        if ($dossier_id <= 0 || adresse_du_dossier($dossier_id, $fiche_id) === null) {
+            flash('erreur', ($est_structure ? 'Cette structure n\'est pas inscrite' : 'Cette personne n\'est pas inscrite') . ' pour la saison.');
         } elseif ($action === 'retirer_saison') {
             if (inscriptions_actives_nb($dossier_id, $fiche_id) > 0) {
                 flash('erreur', 'Cette structure a des inscriptions en cours à des activités de la saison : annulez-les d\'abord.');
@@ -142,9 +142,10 @@ $autres_membres = $adresse_saison === null ? [] : array_values(array_filter(
 $adresse_proposee = $adresse_saison ?? derniere_adresse_adherent($fiche_id) ?? ($est_structure ? null : derniere_adresse_famille($famille_id)) ?? [];
 $autres_saisons = autres_saisons_adherent($fiche_id, $saison_affichee_id);
 $inscriptions_saison = $adresse_saison !== null ? inscriptions_adherent($fiche_id, $saison_affichee_id) : [];
-// Paiements de la famille (ou de la structure) pour la saison : rôle standard au minimum.
-$compte_saison = $adresse_saison !== null && role_au_moins('standard') ? compte_du_dossier($dossier_saison_id) : null;
-$sans_cotisation = $compte_saison !== null ? cotisations_manquantes($dossier_saison_id) : [];
+// Lien vers les cotisations et paiements de la famille (ou de la structure) : rôle standard au minimum.
+$lien_compte = $adresse_saison !== null && role_au_moins('standard')
+    ? 'compte.php?' . ($est_structure ? 'structure=' . $fiche_id : 'famille=' . $famille_id)
+    : '';
 
 // Après une erreur de saisie, la fenêtre concernée est rouverte avec les valeurs saisies.
 $fenetre_a_rouvrir = ancien_existe() ? ancien('action') : '';
@@ -169,6 +170,9 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <input type="hidden" name="id" value="<?= $fiche_id ?>">
                     <button class="btn btn-outline-danger" type="submit" name="action" value="retirer_saison">Retirer de la saison <?= e($saison_affichee['nom'] ?? '') ?></button>
                 </form>
+            <?php endif; ?>
+            <?php if ($lien_compte !== '') : ?>
+                <a class="btn btn-outline-secondary" href="<?= e(chemin_site($lien_compte)) ?>">Cotisations et paiements</a>
             <?php endif; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('adherents.php')) ?>">Retour à la liste</a>
         </div>
@@ -295,60 +299,26 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <?php if ($inscriptions_saison === []) : ?>
                     <p class="text-body-secondary mb-0">Aucune inscription à une activité pour cette saison.</p>
                 <?php else : ?>
-                    <ul class="list-unstyled mb-0">
-                        <?php foreach ($inscriptions_saison as $ligne_inscription) : ?>
-                            <?php $ligne_annulee = entier($ligne_inscription['est_annulee']) === 1; ?>
-                            <li class="<?= $ligne_annulee ? 'text-body-secondary' : '' ?>">
-                                <a href="<?= e(chemin_site('activite.php?id=' . entier($ligne_inscription['activite_id']))) ?>"><?= e($ligne_inscription['activite_nom']) ?></a>
-                                <span class="text-body-secondary">— <?= e(activite_dates($ligne_inscription)) ?></span>
-                                <?php if (entier($ligne_inscription['nb_places']) > 1) : ?>
-                                    <span class="text-body-secondary">— <?= entier($ligne_inscription['nb_places']) ?> places</span>
-                                <?php endif; ?>
-                                <?php if (role_au_moins('standard')) : ?>
-                                    <span class="text-body-secondary">— <?= e(montant_fr($ligne_inscription['montant'])) ?><?= entier($ligne_inscription['est_tarif_familial']) === 1 ? ' (tarif familial)' : '' ?></span>
-                                <?php endif; ?>
-                                <?php if ($ligne_annulee) : ?>
-                                    <span class="badge text-bg-secondary">Annulée le <?= e(date_fr($ligne_inscription['annulee_le'])) ?></span>
-                                <?php elseif (texte($ligne_inscription['statut']) === 'attente') : ?>
-                                    <span class="badge text-bg-warning">Liste d'attente</span>
-                                <?php endif; ?>
-                            </li>
-                        <?php endforeach; ?>
-                    </ul>
+                    <?php afficher_inscriptions_activites($inscriptions_saison); ?>
                 <?php endif; ?>
             </div>
 
-            <?php if ($compte_saison !== null) : ?>
-                <?php // Montants : réservés au rôle standard au minimum. ?>
-                <div class="border rounded p-3 mb-3">
-                    <div class="d-flex justify-content-between align-items-start gap-2">
-                        <h3 class="h6">Paiements <?= $est_structure ? 'de la structure' : 'de la famille' ?></h3>
-                        <a class="small" href="<?= e(chemin_site('compte.php?' . ($est_structure ? 'structure=' . $fiche_id : 'famille=' . $famille_id))) ?>">Cotisations et paiements</a>
-                    </div>
-                    <?php afficher_resume_compte($compte_saison); ?>
-                    <?php if ($sans_cotisation !== []) : ?>
-                        <p class="small text-warning-emphasis mb-0">Sans cotisation pour la saison, alors qu'une de ses activités demande l'adhésion : <?= e(implode(', ', $sans_cotisation)) ?>.</p>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($est_structure && $peut_modifier) : ?>
+            <?php // Notes de la saison : celles de la structure, ou de toute la famille (les mêmes que sur la fiche famille). ?>
+            <?php if ($peut_modifier) : ?>
                 <form class="border rounded p-3" method="post" action="<?= e(chemin_site('adherent.php')) ?>">
                     <?= csrf_champ() ?>
                     <input type="hidden" name="id" value="<?= $fiche_id ?>">
                     <input type="hidden" name="action" value="notes">
-                    <h3 class="h6"><label for="notes">Notes</label></h3>
-                    <textarea class="form-control mb-3" id="notes" name="notes" rows="3" maxlength="5000"><?= e($fenetre_a_rouvrir === 'notes' ? ancien('notes') : ($dossier_saison['notes'] ?? '')) ?></textarea>
-                    <button class="btn btn-outline-primary btn-sm" type="submit">Enregistrer les notes</button>
+                    <h3 class="h6"><label for="notes"><?= $est_structure ? 'Notes' : 'Notes de la famille' ?></label></h3>
+                    <textarea class="form-control" id="notes" name="notes" rows="3" maxlength="5000" <?= $est_structure ? '' : 'aria-describedby="aide_notes"' ?>><?= e($fenetre_a_rouvrir === 'notes' ? ancien('notes') : ($dossier_saison['notes'] ?? '')) ?></textarea>
+                    <?php if (!$est_structure) : ?>
+                        <div class="form-text" id="aide_notes">Elles concernent toute la famille pour la saison <?= e($saison_affichee['nom']) ?>, pas seulement cette personne.</div>
+                    <?php endif; ?>
+                    <button class="btn btn-outline-primary btn-sm mt-3" type="submit">Enregistrer les notes</button>
                 </form>
             <?php elseif (texte($dossier_saison['notes'] ?? '') !== '') : ?>
                 <div class="border rounded p-3">
-                    <div class="d-flex justify-content-between align-items-start gap-2">
-                        <h3 class="h6">Notes</h3>
-                        <?php if ($peut_modifier) : ?>
-                            <a class="small" href="<?= e(chemin_site('famille.php?id=' . $famille_id)) ?>">Modifier sur la fiche famille</a>
-                        <?php endif; ?>
-                    </div>
+                    <h3 class="h6"><?= $est_structure ? 'Notes' : 'Notes de la famille' ?></h3>
                     <p class="mb-0"><?= nl2br(e($dossier_saison['notes'] ?? '')) ?></p>
                 </div>
             <?php endif; ?>

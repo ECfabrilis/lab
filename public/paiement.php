@@ -21,6 +21,12 @@ $page_fiche = 'paiement.php?id=' . $fiche_id;
 $est_annule = entier($fiche['est_annule']) === 1;
 $lien_compte = paiement_lien_compte($fiche['famille_id'], $fiche['structure_id']);
 $destinataires = recu_destinataires($fiche);
+// Autres paiements de la même saisie (« les deux », surplus en don) : ils s'annulent ensemble.
+$paiements_de_la_saisie = paiements_lies($fiche);
+$lies_en_cours = array_values(array_filter(
+    $paiements_de_la_saisie,
+    static fn (array $ligne): bool => entier($ligne['est_annule']) !== 1
+));
 
 if (est_post()) {
     if (!csrf_valide()) {
@@ -31,7 +37,10 @@ if (est_post()) {
 
     // --- Annulation --------------------------------------------------------------
     if ($action === 'annuler') {
-        if (paiement_annuler($fiche)) {
+        $nb_annules = paiement_annuler($fiche);
+        if ($nb_annules > 1) {
+            flash('succes', 'Ce paiement et ceux de la même saisie sont annulés (' . $nb_annules . ' paiements). Ils restent visibles dans la liste, barrés.');
+        } elseif ($nb_annules === 1) {
             flash('succes', 'Le paiement de ' . montant_fr($fiche['montant']) . ' est annulé. Il reste visible dans la liste, barré.');
         } else {
             flash('info', 'Ce paiement était déjà annulé.');
@@ -99,6 +108,20 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <dt class="col-sm-4 fw-normal text-body-secondary">Annulé</dt>
                 <dd class="col-sm-8">le <?= e(date_heure_fr($fiche['annule_le'])) ?><?= texte($fiche['annule_par']) !== '' ? ' par ' . e($fiche['annule_par']) : '' ?></dd>
             <?php endif; ?>
+            <?php if ($paiements_de_la_saisie !== []) : ?>
+                <dt class="col-sm-4 fw-normal text-body-secondary">Même saisie</dt>
+                <dd class="col-sm-8">
+                    <ul class="list-unstyled mb-0">
+                        <?php foreach ($paiements_de_la_saisie as $paiement_lie) : ?>
+                            <li>
+                                <a href="<?= e(chemin_site('paiement.php?id=' . entier($paiement_lie['id']))) ?>"><?= e(libelles_objets_paiement()[texte($paiement_lie['objet'])] ?? '') ?> : <?= e(montant_fr($paiement_lie['montant'])) ?></a>
+                                <?php if (entier($paiement_lie['est_annule']) === 1) : ?><span class="badge text-bg-secondary">Annulé</span><?php endif; ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                    <span class="small text-body-secondary">Ces paiements sont liés : annuler l'un annule les autres.</span>
+                </dd>
+            <?php endif; ?>
         </dl>
 
         <?php if (!$est_annule) : ?>
@@ -140,6 +163,13 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <input type="hidden" name="id" value="<?= $fiche_id ?>">
                     <input type="hidden" name="action" value="annuler">
                     <p>Le paiement de <strong><?= e(montant_fr($fiche['montant'])) ?></strong> du <?= e(date_fr($fiche['date_paiement'])) ?> ne comptera plus dans ce qui a été payé.</p>
+                    <?php if ($lies_en_cours !== []) : ?>
+                        <p>Les paiements de la même saisie seront annulés aussi :
+                            <?= e(implode(', ', array_map(
+                                static fn (array $ligne): string => mb_strtolower(libelles_objets_paiement()[texte($ligne['objet'])] ?? '') . ' ' . montant_fr($ligne['montant']),
+                                $lies_en_cours
+                            ))) ?>.</p>
+                    <?php endif; ?>
                     <p class="mb-0">Une annulation est définitive : pour corriger une erreur, annulez puis saisissez un nouveau paiement.</p>
                 </div>
                 <div class="modal-footer">

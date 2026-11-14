@@ -118,9 +118,15 @@ if (est_post()) {
 $membres = famille_membres($famille_id, $saison_affichee_id);
 $dossier_saison_id = dossier_id_de_famille($famille_id, $saison_affichee_id);
 $notes_saison = $dossier_saison_id > 0 ? texte(dossier_par_id($dossier_saison_id)['notes'] ?? '') : '';
-// Paiements de la famille pour la saison : rôle standard au minimum.
-$compte_saison = role_au_moins('standard') ? compte_du_dossier($dossier_saison_id) : null;
-$sans_cotisation = $compte_saison !== null ? cotisations_manquantes($dossier_saison_id) : [];
+// Activités de la famille pour la saison : les inscriptions de chaque membre inscrit.
+$inscriptions_par_membre = [];
+foreach (inscriptions_famille($famille_id, $saison_affichee_id) as $ligne_inscription) {
+    $inscriptions_par_membre[entier($ligne_inscription['adherent_id'])][] = $ligne_inscription;
+}
+$membres_saison = array_values(array_filter(
+    $membres,
+    static fn (array $membre): bool => entier($membre['dans_dossier']) === 1 || isset($inscriptions_par_membre[entier($membre['id'])])
+));
 // Saisons où au moins un membre de la famille est inscrit.
 $saisons_famille = array_values(array_filter(
     dossiers_de_famille($famille_id),
@@ -136,6 +142,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <div class="d-grid gap-2">
             <?php if ($peut_modifier) : ?>
                 <a class="btn btn-primary" href="<?= e(chemin_site('ajout_adherent.php?famille=' . $famille_id)) ?>">Inscrire un nouveau membre</a>
+            <?php endif; ?>
+            <?php if (role_au_moins('standard')) : ?>
+                <?php // Cotisations, paiements et montants : réservés au rôle standard au minimum. ?>
+                <a class="btn btn-outline-secondary" href="<?= e(chemin_site('compte.php?famille=' . $famille_id)) ?>">Cotisations et paiements</a>
             <?php endif; ?>
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('familles.php')) ?>">Retour à la liste</a>
         </div>
@@ -213,17 +223,28 @@ require DOSSIER_PRIVE . '/includes/header.php';
             </table>
         </div>
 
-        <?php if ($compte_saison !== null) : ?>
-            <?php // Montants : réservés au rôle standard au minimum. ?>
-            <div class="d-flex justify-content-between align-items-start gap-2">
-                <h2 class="h5">Paiements — saison <?= e($saison_affichee_nom) ?></h2>
-                <a class="small" href="<?= e(chemin_site('compte.php?famille=' . $famille_id)) ?>">Cotisations et paiements</a>
-            </div>
+        <?php if ($saison_affichee !== null) : ?>
+            <h2 class="h5">Activités de la famille — saison <?= e($saison_affichee_nom) ?></h2>
             <div class="mb-4">
-                <?php afficher_resume_compte($compte_saison); ?>
-                <?php if ($sans_cotisation !== []) : ?>
-                    <p class="small text-warning-emphasis mb-0">Sans cotisation pour la saison, alors qu'une de ses activités demande l'adhésion : <?= e(implode(', ', $sans_cotisation)) ?>.</p>
+                <?php if ($membres_saison === []) : ?>
+                    <p class="text-body-secondary mb-0">Aucun membre de la famille n'est inscrit pour cette saison.</p>
                 <?php endif; ?>
+                <?php foreach ($membres_saison as $membre) : ?>
+                    <?php $membre_id = entier($membre['id']); ?>
+                    <div class="border rounded p-3 mb-2">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <h3 class="h6"><?= e($membre['prenom']) ?> <?= e($membre['nom']) ?></h3>
+                            <?php if ($peut_modifier && entier($membre['dans_dossier']) === 1) : ?>
+                                <a class="small" href="<?= e(chemin_site('ajout_inscription.php?adherent=' . $membre_id . '&origine=adherent')) ?>">Inscrire à une activité</a>
+                            <?php endif; ?>
+                        </div>
+                        <?php if (isset($inscriptions_par_membre[$membre_id])) : ?>
+                            <?php afficher_inscriptions_activites($inscriptions_par_membre[$membre_id]); ?>
+                        <?php else : ?>
+                            <p class="text-body-secondary mb-0">Aucune inscription à une activité.</p>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
             </div>
         <?php endif; ?>
 

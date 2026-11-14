@@ -67,16 +67,23 @@ function reference_compter(): array
 
 /**
  * Remplace le contenu d'une table de quartiers par celui d'un fichier GeoJSON
- * (FeatureCollection de polygones, coordonnées en longitude / latitude).
+ * (FeatureCollection de polygones, coordonnées en longitude / latitude), ou
+ * l'ajoute à la table (quartiers seulement).
+ *
+ * Ajout : un quartier déjà présent (même commune, même arrondissement, même
+ * nom) n'est pas créé une deuxième fois ; son contour est mis à jour. Le choix
+ * « pris en compte » se fait par zone (commune et arrondissement) : un nouveau
+ * quartier suit celui de sa zone ; une nouvelle zone est prise en compte.
  *
  * @param array<string, string> $proprietes colonne de la table => nom de la propriété GeoJSON ('' = colonne laissée vide)
- * @return int nombre de quartiers enregistrés
+ * @param bool $ajouter true : ajouter à la table au lieu de la remplacer
+ * @return array{ajoutes: int, mis_a_jour: int} nombre de quartiers créés et de quartiers dont le contour est mis à jour
  * @throws RuntimeException avec un message destiné à l'utilisateur si le fichier ne convient pas
  */
-function reference_importer_geojson(string $table, string $chemin, array $proprietes): int
+function reference_importer_geojson(string $table, string $chemin, array $proprietes, bool $ajouter = false): array
 {
     $definition = reference_tables_quartiers()[$table] ?? null;
-    if ($definition === null) {
+    if ($definition === null || ($ajouter && $table !== 'quartiers')) {
         throw new RuntimeException('Table inconnue.');
     }
     $contenu = file_get_contents($chemin);
@@ -131,11 +138,37 @@ function reference_importer_geojson(string $table, string $chemin, array $propri
     $sql = 'INSERT INTO `' . $table . '` (' . implode(', ', $colonnes) . ', geom) VALUES ('
         . str_repeat('?, ', count($colonnes)) . 'ST_GeomFromText(ST_AsText(ST_GeomFromGeoJSON(?))))';
 
+    $ajoutes = 0;
+    $mis_a_jour = 0;
     db()->beginTransaction();
     try {
-        db_executer('DELETE FROM `' . $table . '`');
+        if (!$ajouter) {
+            db_executer('DELETE FROM `' . $table . '`');
+        }
         foreach ($lignes as $ligne) {
-            db_executer($sql, array_values($ligne));
+            $existant_id = $ajouter ? entier(db_valeur(
+                'SELECT id FROM quartiers WHERE commune = ? AND arrondissement = ? AND nom = ? ORDER BY id LIMIT 1',
+                [$ligne['commune'] ?? '', $ligne['arrondissement'] ?? 0, $ligne['nom']]
+            )) : 0;
+            if ($existant_id > 0) {
+                db_executer('UPDATE quartiers SET geom = ST_GeomFromText(ST_AsText(ST_GeomFromGeoJSON(?))) WHERE id = ?', [$ligne['geom'], $existant_id]);
+                $mis_a_jour++;
+            } else {
+                db_executer($sql, array_values($ligne));
+                $ajoutes++;
+                if ($ajouter) {
+                    // Le choix « pris en compte » se fait par zone (commune et arrondissement) :
+                    // un quartier ajouté à une zone qui ne l'est pas ne l'est pas non plus.
+                    $nouveau_id = entier(db()->lastInsertId());
+                    $etat_zone = db_valeur(
+                        'SELECT MAX(est_actif) FROM quartiers WHERE commune = ? AND arrondissement = ? AND id <> ?',
+                        [$ligne['commune'] ?? '', $ligne['arrondissement'] ?? 0, $nouveau_id]
+                    );
+                    if ($etat_zone !== null && entier($etat_zone) === 0) {
+                        db_executer('UPDATE quartiers SET est_actif = 0 WHERE id = ?', [$nouveau_id]);
+                    }
+                }
+            }
         }
         db()->commit();
     } catch (Throwable $erreur) {
@@ -143,7 +176,94 @@ function reference_importer_geojson(string $table, string $chemin, array $propri
         journal_fichier('reference.log', 'Import GeoJSON refusé pour ' . $table . ' : ' . $erreur->getMessage());
         throw new RuntimeException('La base a refusé un contour du fichier ; rien n\'a été modifié.');
     }
-    return count($lignes);
+    return ['ajoutes' => $ajoutes, 'mis_a_jour' => $mis_a_jour];
+}
+
+// ---------------------------------------------------------------------------
+// Quartiers pris en compte (Paramètres > Options > Quartiers)
+// ---------------------------------------------------------------------------
+
+/**
+ * Zones de quartiers : une zone regroupe les quartiers d'une commune et d'un
+ * arrondissement (« Paris 17ème »), ou d'une commune entière quand
+ * l'arrondissement n'est pas renseigné. Le choix « pris en compte » se fait
+ * par zone, jamais quartier par quartier.
+ *
+ * @return list<array{commune: string, arrondissement: int, libelle: string, cle: string, nb_quartiers: int, est_actif: bool}>
+ *         cle : valeur de la case à cocher (« 17|Paris ») ; est_actif : au moins un quartier de la zone est pris en compte
+ */
+function quartiers_zones(): array
+{
+    $zones = [];
+    $lignes = db_lignes(
+        'SELECT commune, arrondissement, COUNT(*) AS nb_quartiers, MAX(est_actif) AS est_actif
+           FROM quartiers
+          GROUP BY commune, arrondissement
+          ORDER BY commune, arrondissement'
+    );
+    foreach ($lignes as $ligne) {
+        $commune = texte($ligne['commune']);
+        $arrondissement = entier($ligne['arrondissement']);
+        $libelle = $commune !== '' ? $commune : 'Commune non renseignée';
+        if ($arrondissement > 0) {
+            $libelle .= ' ' . $arrondissement . ($arrondissement === 1 ? 'er' : 'ème');
+        }
+        $zones[] = [
+            'commune'        => $commune,
+            'arrondissement' => $arrondissement,
+            'libelle'        => $libelle,
+            'cle'            => $arrondissement . '|' . $commune,
+            'nb_quartiers'   => entier($ligne['nb_quartiers']),
+            'est_actif'      => entier($ligne['est_actif']) === 1,
+        ];
+    }
+    return $zones;
+}
+
+/**
+ * Enregistre le choix des zones prises en compte : tous les quartiers des
+ * zones cochées le sont, tous les autres ne le sont plus. Les adresses déjà
+ * saisies ne changent pas.
+ *
+ * @param list<string> $cles clés des zones cochées (voir quartiers_zones())
+ * @return array{modifie: bool, libelles: list<string>} modifie : false si rien n'a changé ; libelles : zones prises en compte
+ */
+function quartiers_choisir(array $cles): array
+{
+    $zones = quartiers_zones();
+    $avant = [];
+    $apres = [];
+    foreach ($zones as $zone) {
+        if ($zone['est_actif']) {
+            $avant[] = $zone['libelle'];
+        }
+        if (in_array($zone['cle'], $cles, true)) {
+            $apres[] = $zone['libelle'];
+        }
+    }
+    // Zone en partie prise en compte (cas anormal) : l'enregistrement la remet d'aplomb.
+    $partielle = entier(db_valeur(
+        'SELECT COUNT(*) FROM (SELECT commune, arrondissement FROM quartiers
+                                GROUP BY commune, arrondissement HAVING MIN(est_actif) <> MAX(est_actif)) z'
+    )) > 0;
+    if ($apres === $avant && !$partielle) {
+        return ['modifie' => false, 'libelles' => $apres];
+    }
+    db()->beginTransaction();
+    try {
+        db_executer('UPDATE quartiers SET est_actif = 0');
+        foreach ($zones as $zone) {
+            if (in_array($zone['cle'], $cles, true)) {
+                db_executer('UPDATE quartiers SET est_actif = 1 WHERE commune = ? AND arrondissement = ?', [$zone['commune'], $zone['arrondissement']]);
+            }
+        }
+        journaliser('modification', 'quartiers', null, 'Choix des quartiers pris en compte', ['zones' => implode(', ', $avant)], ['zones' => implode(', ', $apres)]);
+        db()->commit();
+    } catch (Throwable $erreur) {
+        db()->rollBack();
+        throw $erreur;
+    }
+    return ['modifie' => true, 'libelles' => $apres];
 }
 
 /**

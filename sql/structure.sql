@@ -2,7 +2,7 @@
 -- bddv3 : structure de la base — schéma de référence
 -- Cible : MariaDB 11.8, InnoDB, utf8mb4 / utf8mb4_unicode_ci
 --
--- État : étape 3 (cotisations et paiements). Chaque étape ajoute ses tables par un
+-- État : étape 3 (cotisations et paiements), dons et quartiers pris en compte. Chaque étape ajoute ses tables par un
 -- fichier daté dans sql/migrations/, et ce fichier est mis à jour.
 --
 -- Ce script est exécuté par install.php (étape 3). Il ne supprime rien :
@@ -126,12 +126,15 @@ CREATE TABLE IF NOT EXISTS `pays` (
 --      quartiers_qpv          : quartiers de la politique de la ville (QPV)
 --    Les adresses saisies en gardent un instantané (texte) : ces tables
 --    peuvent être mises à jour sans toucher aux adresses déjà enregistrées.
+--    quartiers.est_actif : seuls les quartiers pris en compte (Paramètres >
+--    Options > Quartiers) servent à déterminer le quartier d'une adresse.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `quartiers` (
   `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `commune`        VARCHAR(100) NOT NULL,
   `arrondissement` TINYINT UNSIGNED NOT NULL,
   `nom`            VARCHAR(150) NOT NULL,
+  `est_actif`      TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1 = pris en compte pour le quartier d une adresse',
   `geom`           GEOMETRY NOT NULL,
   PRIMARY KEY (`id`),
   SPATIAL KEY `idx_spatial_quartiers` (`geom`)
@@ -451,8 +454,11 @@ CREATE TABLE IF NOT EXISTS `inscriptions` (
 --     reductions : montant retiré du montant dû, pour une personne ou pour
 --       toute la famille. Aucun motif ; une réduction se supprime.
 --     paiements : montant toujours positif ; objet = ce que règle le paiement
---       (adhésion ou activités, pour la comptabilité). Un paiement ne se
---       supprime pas : il s'annule (est_annule = 1).
+--       (adhésion, activités ou don, pour la comptabilité). Un don ne compte
+--       pas dans ce qui a été payé. Un paiement ne se supprime pas : il
+--       s'annule (est_annule = 1). groupe_id relie les paiements nés d'une
+--       même saisie (« les deux », surplus en don) : annuler l'un annule les
+--       autres.
 --     Montant dû = cotisations + inscriptions en cours (hors liste d'attente,
 --       tarif familial compté une fois par activité) − réductions.
 -- ----------------------------------------------------------------------------
@@ -514,7 +520,8 @@ CREATE TABLE IF NOT EXISTS `paiements` (
   `montant`          DECIMAL(8,2) NOT NULL,
   `date_paiement`    DATE NOT NULL,
   `mode`             ENUM('especes','cheque','cb','autre') NOT NULL,
-  `objet`            ENUM('adhesion','activites') NOT NULL COMMENT 'Ce que regle le paiement (distinction demandee par la comptabilite)',
+  `objet`            ENUM('adhesion','activites','don') NOT NULL COMMENT 'Ce que regle le paiement (distinction demandee par la comptabilite)',
+  `groupe_id`        INT UNSIGNED DEFAULT NULL COMMENT 'Paiements nes d une meme saisie : numero du premier ; NULL = paiement seul',
   `note`             VARCHAR(255) DEFAULT NULL COMMENT 'Numero de cheque, banque, precision',
   `est_annule`       TINYINT(1) NOT NULL DEFAULT 0,
   `annule_le`        DATETIME DEFAULT NULL,
@@ -526,10 +533,12 @@ CREATE TABLE IF NOT EXISTS `paiements` (
   PRIMARY KEY (`id`),
   KEY `idx_paiements_dossier` (`dossier_id`, `est_annule`),
   KEY `idx_paiements_date` (`date_paiement`),
+  KEY `idx_paiements_groupe` (`groupe_id`),
   KEY `idx_paiements_annulation_par` (`annulation_par`),
   KEY `idx_paiements_creation_par` (`creation_par`),
   KEY `idx_paiements_modification_par` (`modification_par`),
   CONSTRAINT `fk_paiements_dossier` FOREIGN KEY (`dossier_id`) REFERENCES `dossiers` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_paiements_groupe` FOREIGN KEY (`groupe_id`) REFERENCES `paiements` (`id`) ON DELETE RESTRICT,
   CONSTRAINT `fk_paiements_annulation_par` FOREIGN KEY (`annulation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_paiements_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_paiements_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`),
