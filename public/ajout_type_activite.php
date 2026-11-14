@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 // Ajout d'un type d'activité (administrateurs seulement).
-// Même page que ajout_secteur.php : seule la liste de choix change.
+// Même page que ajout_secteur.php et ajout_recurrence.php : seule la liste de choix change.
 
 require __DIR__ . '/_chemins.php';
 require DOSSIER_PRIVE . '/includes/init.php';

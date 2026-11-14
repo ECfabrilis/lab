@@ -104,10 +104,10 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 | Champ | Remarques |
 |---|---|
 | Nom | |
-| Type | **un seul** type par activité. Liste créée à l'installation (atelier, sortie loisirs, sortie culturelle, évènement, séjour), modifiable par un admin dans les paramètres |
+| Type | **un seul** type par activité. Liste créée à l'installation (atelier, sortie loisirs, sortie culturelle, évènement, séjour), modifiable par un admin dans les paramètres (Options des activités) |
 | Secteur | **un seul** secteur par activité (liste modifiable par un admin) ; dans le formulaire, il se choisit juste après le nom |
 | Référent | obligatoire ; texte libre (un référent n'a pas forcément de compte dans l'application) |
-| Récurrence | obligatoire : ponctuel, régulier ou vacances |
+| Récurrence | obligatoire ; **une seule** par activité. Liste créée à l'installation (ponctuel, régulier, vacances), modifiable par un admin dans les paramètres (Options des activités) |
 | Tarif | **un seul** tarif par activité et par saison, de type « forfait » ou « autre » ; sans tarif, l'activité est gratuite (c'est le cas d'une activité qui ne demande que l'adhésion) |
 | Date de début | obligatoire, dans la saison de l'activité |
 | Date de fin | facultative |
@@ -119,7 +119,7 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 
 Pas de gestion d'horaires, de séances ni de lieu. Les séances et heures d'animation sont suivies dans un calendrier, **hors de la base** : rien n'est stocké dans l'application.
 
-**Secteurs et types** : deux listes **communes à toutes les saisons**. Un secteur ou un type peut être rendu **inactif** (il n'est plus proposé pour les nouvelles activités ; celles qui l'utilisent le gardent) ; il ne se **supprime** que si aucune activité ne l'utilise. Un secteur a une **description** facultative.
+**Secteurs, types et récurrences** : trois listes **communes à toutes les saisons**. Un secteur, un type ou une récurrence peut être rendu **inactif** (il n'est plus proposé pour les nouvelles activités ; celles qui l'utilisent le gardent) ; il ne se **supprime** que si aucune activité ne l'utilise. Un secteur a une **description** facultative. Les types et les récurrences se gèrent sur une même page, « Options des activités ».
 
 **Tarifs** : un tarif est une ligne nommée d'une saison (exemple : « Atelier annuel — 120 € ») ; plusieurs activités peuvent le partager. Un tarif ne se supprime que si aucune activité ne l'utilise.
 
@@ -320,8 +320,8 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 | Partie | Choix |
 |---|---|
 | Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
-| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul) |
-| La base de données | Saisons ; Sauvegarde ; Logs ; Données de référence (pays, quartiers, QP, QPV, codes postaux ; pour les quartiers : « Remplacer la table » ou « Ajouter à la table ») ; Types d'activité ; RGPD (anonymisation) |
+| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Options des activités (une seule page : types d'activité et récurrences) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul) |
+| La base de données | Saisons ; Données de référence (pays, quartiers, QP, QPV, codes postaux ; pour les quartiers : « Remplacer la table » ou « Ajouter à la table ») ; Logs ; Sauvegarde ; RGPD (anonymisation) |
 | Configuration | Paramètres des mails (avec l'essai d'envoi) |
 
 **Règles**

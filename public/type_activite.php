@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Fiche d'un type d'activité : nom, actif ou inactif, suppression s'il
 // n'est utilisé par aucune activité (administrateurs seulement).
-// Même page que secteur.php : seule la liste de choix change.
+// Même page que secteur.php et recurrence.php : seule la liste de choix change.
 
 require __DIR__ . '/_chemins.php';
 require DOSSIER_PRIVE . '/includes/init.php';

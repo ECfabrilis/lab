@@ -59,9 +59,18 @@ if (est_post()) {
     rediriger('activite.php?id=' . $nouvel_id);
 }
 
-// Il faut au moins un secteur et un type actifs pour créer une activité.
+// Il faut au moins un secteur, un type et une récurrence actifs pour créer une activité.
 $manque_secteur = choix_proposes('secteurs') === [];
-$manque_type = choix_proposes('types_activite') === [];
+$listes_a_completer = [];
+if ($manque_secteur) {
+    $listes_a_completer[] = 'les secteurs (« Secteurs d\'activité » sur le tableau de bord)';
+}
+if (choix_proposes('types_activite') === []) {
+    $listes_a_completer[] = 'les types d\'activité (« Options des activités » dans les paramètres)';
+}
+if (choix_proposes('recurrences') === []) {
+    $listes_a_completer[] = 'les récurrences (« Options des activités » dans les paramètres)';
+}
 
 // La case « Créer quand même » n'apparaît qu'après la découverte d'une activité semblable.
 $confirmation_demandee = ($_SESSION['activite_similaire'] ?? false) === true && ancien_existe();
@@ -80,12 +89,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <p class="text-body-secondary small mt-3 mb-0">Le tarif voulu n'est pas dans la liste ? Ajoutez-le d'abord dans « Les tarifs ».</p>
     </div>
     <div class="col-md-8 order-md-1">
-        <?php if ($manque_secteur || $manque_type) : ?>
+        <?php if ($listes_a_completer !== []) : ?>
             <div class="alert alert-warning" role="alert">
-                <?= $manque_secteur ? 'Aucun secteur d\'activité n\'est actif.' : '' ?>
-                <?= $manque_type ? 'Aucun type d\'activité n\'est actif.' : '' ?>
-                Un administrateur doit d'abord compléter ces listes
-                (<?= $manque_secteur ? '« Secteurs d\'activité » sur le tableau de bord' : '' ?><?= $manque_secteur && $manque_type ? ', ' : '' ?><?= $manque_type ? '« Types d\'activité » dans les paramètres' : '' ?>).
+                Une activité a besoin d'un secteur, d'un type et d'une récurrence actifs.
+                Un administrateur doit d'abord compléter : <?= e(implode(' ; ', $listes_a_completer)) ?>.
             </div>
         <?php else : ?>
             <form method="post" action="<?= e(chemin_site('ajout_activite.php')) ?>">

@@ -5,8 +5,8 @@ declare(strict_types=1);
 /**
  * Activités et inscriptions aux activités.
  *
- *  - Secteurs et types d'activité : deux listes de choix communes à toutes
- *    les saisons (fonctions choix_*). Un choix utilisé par une activité ne se
+ *  - Secteurs, types d'activité et récurrences : trois listes de choix communes
+ *    à toutes les saisons (fonctions choix_*). Un choix utilisé par une activité ne se
  *    supprime pas : il se rend inactif.
  *  - Activités : rattachées à une saison, avec un type, un secteur, un tarif
  *    (ou gratuites), des places limitées ou non, une liste d'attente ou non.
@@ -16,14 +16,14 @@ declare(strict_types=1);
  */
 
 // ---------------------------------------------------------------------------
-// Listes de choix : secteurs et types d'activité
+// Listes de choix : secteurs, types d'activité et récurrences
 // ---------------------------------------------------------------------------
 
 /**
  * Description d'une liste de choix. Le nom de la table vient toujours du code
  * (jamais d'une saisie) : il peut être écrit dans les requêtes.
  *
- * @param 'secteurs'|'types_activite' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences' $liste
  * @return array{table: string, colonne: string, a_description: bool, un: string, le: string, titre: string, page_liste: string, page_fiche: string, page_ajout: string}
  */
 function choix_definition(string $liste): array
@@ -47,9 +47,20 @@ function choix_definition(string $liste): array
             'un'         => 'un type d\'activité',
             'le'         => 'le type d\'activité',
             'titre'      => 'Types d\'activité',
-            'page_liste' => 'types_activite.php',
+            'page_liste' => 'options_activites.php',
             'page_fiche' => 'type_activite.php',
             'page_ajout' => 'ajout_type_activite.php',
+        ],
+        'recurrences' => [
+            'table'      => 'recurrences',
+            'colonne'    => 'recurrence_id',
+            'a_description' => false,
+            'un'         => 'une récurrence',
+            'le'         => 'la récurrence',
+            'titre'      => 'Récurrences',
+            'page_liste' => 'options_activites.php',
+            'page_fiche' => 'recurrence.php',
+            'page_ajout' => 'ajout_recurrence.php',
         ],
     };
 }
@@ -57,7 +68,7 @@ function choix_definition(string $liste): array
 /**
  * Tous les choix d'une liste, avec le nombre d'activités qui les utilisent (toutes saisons).
  *
- * @param 'secteurs'|'types_activite' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences' $liste
  * @return list<array<string, mixed>>
  */
 function choix_liste(string $liste): array
@@ -75,7 +86,7 @@ function choix_liste(string $liste): array
  * Choix proposés dans le formulaire d'une activité : les choix actifs, plus
  * celui que l'activité utilise déjà (même s'il a été rendu inactif depuis).
  *
- * @param 'secteurs'|'types_activite' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences' $liste
  * @return array<int, string> identifiant => nom
  */
 function choix_proposes(string $liste, int $courant_id = 0): array
@@ -95,7 +106,7 @@ function choix_proposes(string $liste, int $courant_id = 0): array
 /**
  * Un choix par son identifiant, avec le nombre d'activités qui l'utilisent, ou null.
  *
- * @param 'secteurs'|'types_activite' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences' $liste
  * @return array<string, mixed>|null
  */
 function choix_par_id(string $liste, int $id): ?array
@@ -113,7 +124,7 @@ function choix_par_id(string $liste, int $id): ?array
 /**
  * Vérifie le nom d'un choix avant création ou modification.
  *
- * @param 'secteurs'|'types_activite' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences' $liste
  * @param int $sauf_id identifiant du choix modifié (0 pour une création)
  * @return string|null message d'erreur, ou null si tout va bien
  */
@@ -139,7 +150,7 @@ function choix_erreur_description(string $description): ?string
  * Ajoute un choix (nom et description déjà vérifiés) et renvoie son identifiant.
  * La description n'est enregistrée que pour les listes qui en ont une (secteurs).
  *
- * @param 'secteurs'|'types_activite' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences' $liste
  */
 function choix_creer(string $liste, string $nom, string $description = ''): int
 {
@@ -159,7 +170,7 @@ function choix_creer(string $liste, string $nom, string $description = ''): int
 /**
  * Modifie le nom d'un choix, sa description (secteurs), ou le rend actif ou inactif (valeurs déjà vérifiées).
  *
- * @param 'secteurs'|'types_activite' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences' $liste
  * @param array<string, mixed> $actuel choix en base avant la modification
  * @return bool false s'il n'y avait rien à modifier
  */
@@ -187,7 +198,7 @@ function choix_modifier(string $liste, array $actuel, string $nom, bool $est_act
 /**
  * Supprime un choix qu'aucune activité n'utilise.
  *
- * @param 'secteurs'|'types_activite' $liste
+ * @param 'secteurs'|'types_activite'|'recurrences' $liste
  * @param array<string, mixed> $choix
  * @return bool false si une activité l'utilise (il faut alors le rendre inactif)
  */
@@ -211,7 +222,7 @@ function choix_supprimer(string $liste, array $choix): bool
 // ---------------------------------------------------------------------------
 
 /** Début commun des requêtes qui lisent une activité avec ses libellés et ses places. */
-const ACTIVITE_SELECT = 'SELECT ac.*, t.nom AS type_nom, se.nom AS secteur_nom,
+const ACTIVITE_SELECT = 'SELECT ac.*, t.nom AS type_nom, se.nom AS secteur_nom, r.nom AS recurrence_nom,
             ta.nom AS tarif_nom, ta.montant_individuel AS tarif_montant, ta.montant_familial AS tarif_montant_familial,
             s.nom AS saison_nom, s.date_debut AS saison_debut, s.date_fin AS saison_fin,
             (SELECT COALESCE(SUM(i.nb_places), 0) FROM inscriptions i
@@ -222,6 +233,7 @@ const ACTIVITE_SELECT = 'SELECT ac.*, t.nom AS type_nom, se.nom AS secteur_nom,
        FROM activites ac
        JOIN types_activite t ON t.id = ac.type_id
        JOIN secteurs se ON se.id = ac.secteur_id
+       JOIN recurrences r ON r.id = ac.recurrence_id
        LEFT JOIN tarifs ta ON ta.id = ac.tarif_id
        JOIN saisons s ON s.id = ac.saison_id';
 
@@ -303,16 +315,6 @@ function activite_prix(array $activite): string
         : tarif_montants($activite['tarif_montant'] ?? 0, $activite['tarif_montant_familial'] ?? null);
 }
 
-/**
- * Libellés des récurrences d'une activité.
- *
- * @return array<string, string>
- */
-function libelles_recurrences(): array
-{
-    return ['ponctuel' => 'Ponctuel', 'regulier' => 'Régulier', 'vacances' => 'Vacances'];
-}
-
 /** Écart maximal, en jours, entre deux dates de début pour dire que deux activités ont des dates similaires. */
 const ACTIVITES_SIMILAIRES_JOURS = 7;
 
@@ -365,7 +367,7 @@ function activite_saisie(): array
         'type_id'            => post('type_id'),
         'secteur_id'         => post('secteur_id'),
         'referent'           => post('referent'),
-        'recurrence'         => post('recurrence'),
+        'recurrence_id'      => post('recurrence_id'),
         'tarif_id'           => post('tarif_id'),
         'date_debut'         => post('date_debut'),
         'date_fin'           => post('date_fin'),
@@ -402,8 +404,8 @@ function erreurs_activite(array $saisie, array $saison, ?array $actuelle = null)
     if ($saisie['referent'] === '' || mb_strlen($saisie['referent']) > 150) {
         $erreurs[] = 'Le référent est obligatoire (150 caractères au maximum).';
     }
-    if (!array_key_exists($saisie['recurrence'], libelles_recurrences())) {
-        $erreurs[] = 'Choisissez la récurrence : ponctuel, régulier ou vacances.';
+    if (!array_key_exists(entier($saisie['recurrence_id']), choix_proposes('recurrences', entier($actuelle['recurrence_id'] ?? 0)))) {
+        $erreurs[] = 'Choisissez une récurrence dans la liste.';
     }
     if ($saisie['tarif_id'] !== '') {
         $tarif = tarif_par_id(entier($saisie['tarif_id']));
@@ -456,7 +458,7 @@ function activite_valeurs(array $saisie): array
         'type_id'            => entier($saisie['type_id']),
         'secteur_id'         => entier($saisie['secteur_id']),
         'referent'           => $saisie['referent'],
-        'recurrence'         => $saisie['recurrence'],
+        'recurrence_id'      => entier($saisie['recurrence_id']),
         'tarif_id'           => $saisie['tarif_id'] === '' ? null : entier($saisie['tarif_id']),
         'date_debut'         => $saisie['date_debut'],
         'date_fin'           => nul_si_vide($saisie['date_fin']),
@@ -477,7 +479,7 @@ function creer_activite(int $saison_id, array $saisie): int
 {
     $valeurs = activite_valeurs($saisie);
     db_executer(
-        'INSERT INTO activites (nom, type_id, secteur_id, referent, recurrence, tarif_id, date_debut, date_fin, nb_places,
+        'INSERT INTO activites (nom, type_id, secteur_id, referent, recurrence_id, tarif_id, date_debut, date_fin, nb_places,
                                 a_liste_attente, nb_accompagnateurs, description, est_sans_adhesion, saison_id, creation_par)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [...array_values($valeurs), $saison_id, entier($_SESSION['utilisateur_id'] ?? 0)]
@@ -508,7 +510,7 @@ function modifier_activite(array $actuelle, array $saisie): bool
     $activite_id = entier($actuelle['id'] ?? 0);
     db_executer(
         'UPDATE activites
-            SET nom = ?, type_id = ?, secteur_id = ?, referent = ?, recurrence = ?, tarif_id = ?, date_debut = ?, date_fin = ?,
+            SET nom = ?, type_id = ?, secteur_id = ?, referent = ?, recurrence_id = ?, tarif_id = ?, date_debut = ?, date_fin = ?,
                 nb_places = ?, a_liste_attente = ?, nb_accompagnateurs = ?, description = ?, est_sans_adhesion = ?, modification_par = ?
           WHERE id = ?',
         [...array_values($valeurs), entier($_SESSION['utilisateur_id'] ?? 0), $activite_id]
@@ -530,7 +532,7 @@ function supprimer_activite(array $activite): bool
         return false;
     }
     $ancien = [];
-    foreach (['saison_id', 'nom', 'type_id', 'secteur_id', 'referent', 'recurrence', 'tarif_id', 'date_debut', 'date_fin', 'nb_places', 'a_liste_attente', 'nb_accompagnateurs', 'description', 'est_sans_adhesion'] as $champ) {
+    foreach (['saison_id', 'nom', 'type_id', 'secteur_id', 'referent', 'recurrence_id', 'tarif_id', 'date_debut', 'date_fin', 'nb_places', 'a_liste_attente', 'nb_accompagnateurs', 'description', 'est_sans_adhesion'] as $champ) {
         $ancien[$champ] = $activite[$champ] ?? null;
     }
     db_executer('DELETE FROM activites WHERE id = ?', [$activite_id]);
@@ -556,7 +558,7 @@ function afficher_champs_activite(array $defauts, array $saison): void
     $type_choisi = entier(ancien('type_id', $defauts['type_id'] ?? ''));
     $secteur_choisi = entier(ancien('secteur_id', $defauts['secteur_id'] ?? ''));
     $tarif_choisi = entier(ancien('tarif_id', $defauts['tarif_id'] ?? ''));
-    $recurrence_choisie = ancien('recurrence', $defauts['recurrence'] ?? '');
+    $recurrence_choisie = entier(ancien('recurrence_id', $defauts['recurrence_id'] ?? ''));
     ?>
     <div class="row g-3 mb-3">
         <div class="col-sm-12">
@@ -586,11 +588,11 @@ function afficher_champs_activite(array $defauts, array $saison): void
             <input class="form-control" type="text" id="referent" name="referent" maxlength="150" value="<?= e(ancien('referent', $defauts['referent'] ?? '')) ?>" required>
         </div>
         <div class="col-sm-6">
-            <label class="form-label" for="recurrence">Récurrence</label>
-            <select class="form-select" id="recurrence" name="recurrence" required>
+            <label class="form-label" for="recurrence_id">Récurrence</label>
+            <select class="form-select" id="recurrence_id" name="recurrence_id" required>
                 <option value="">Choisir…</option>
-                <?php foreach (libelles_recurrences() as $code_recurrence => $libelle_recurrence) : ?>
-                    <option value="<?= e($code_recurrence) ?>" <?= $recurrence_choisie === $code_recurrence ? 'selected' : '' ?>><?= e($libelle_recurrence) ?></option>
+                <?php foreach (choix_proposes('recurrences', entier($defauts['recurrence_id'] ?? 0)) as $choix_id => $choix_nom) : ?>
+                    <option value="<?= $choix_id ?>" <?= $recurrence_choisie === $choix_id ? 'selected' : '' ?>><?= e($choix_nom) ?></option>
                 <?php endforeach; ?>
             </select>
         </div>

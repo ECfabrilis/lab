@@ -99,6 +99,7 @@ function cards_parametres(): array
             'role'  => 'admin',
             'cards' => [
                 ['titre' => 'Options d\'affichage', 'texte' => 'Nom de la structure, logo et couleur principale.', 'page' => 'options.php', 'role' => 'admin'],
+                ['titre' => 'Options des activités', 'texte' => 'Types d\'activité et récurrences : les listes proposées pour les activités.', 'page' => 'options_activites.php', 'role' => 'admin'],
                 ['titre' => 'Quartiers', 'texte' => 'Communes et arrondissements dont les quartiers sont pris en compte pour les adresses.', 'page' => 'quartiers.php', 'role' => 'admin'],
             ],
         ],
@@ -107,10 +108,9 @@ function cards_parametres(): array
             'role'  => 'admin',
             'cards' => [
                 ['titre' => 'Saisons', 'texte' => 'Créer et modifier les saisons.', 'page' => 'saisons.php', 'role' => 'admin'],
-                ['titre' => 'Sauvegarde', 'texte' => 'Exporter la base et télécharger les sauvegardes.', 'page' => 'sauvegarde.php', 'role' => 'admin'],
-                ['titre' => 'Logs', 'texte' => 'Journal des actions de la saison en cours.', 'page' => 'journal.php', 'role' => 'admin'],
                 ['titre' => 'Données de référence', 'texte' => 'Pays, quartiers, QP, QPV, codes postaux : consulter et mettre à jour.', 'page' => 'donnees_reference.php', 'role' => 'admin'],
-                ['titre' => 'Types d\'activité', 'texte' => 'Atelier, sortie, évènement, séjour… : la liste proposée pour les activités.', 'page' => 'types_activite.php', 'role' => 'admin'],
+                ['titre' => 'Logs', 'texte' => 'Journal des actions de la saison en cours.', 'page' => 'journal.php', 'role' => 'admin'],
+                ['titre' => 'Sauvegarde', 'texte' => 'Exporter la base et télécharger les sauvegardes.', 'page' => 'sauvegarde.php', 'role' => 'admin'],
                 ['titre' => 'RGPD', 'texte' => 'Anonymisation des familles inactives.', 'page' => 'rgpd.php', 'role' => 'admin'],
             ],
         ],

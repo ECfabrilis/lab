@@ -294,12 +294,12 @@ CREATE TABLE IF NOT EXISTS `dossiers_adherents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
--- 9. Secteurs et types d'activité (étape 2)
---    Deux listes communes à toutes les saisons. Une ligne utilisée par une
+-- 9. Secteurs, types d'activité et récurrences (étape 2)
+--    Trois listes communes à toutes les saisons. Une ligne utilisée par une
 --    activité ne se supprime pas : elle se rend inactive (est_actif = 0) et
 --    n'est alors plus proposée pour les nouvelles activités.
---    Les cinq types d'origine sont créés ici ; ils se gèrent ensuite dans les
---    paramètres.
+--    Les cinq types et les trois récurrences d'origine sont créés ici ; ils
+--    se gèrent ensuite dans les paramètres (Options des activités).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `secteurs` (
   `id`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -326,6 +326,20 @@ INSERT IGNORE INTO `types_activite` (`id`, `nom`) VALUES
   (3, 'Sortie culturelle'),
   (4, 'Évènement'),
   (5, 'Séjour');
+
+CREATE TABLE IF NOT EXISTS `recurrences` (
+  `id`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nom`       VARCHAR(100) NOT NULL,
+  `est_actif` TINYINT(1) NOT NULL DEFAULT 1,
+  `date_crea` DATETIME NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_recurrences_nom` (`nom`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `recurrences` (`id`, `nom`) VALUES
+  (1, 'Ponctuel'),
+  (2, 'Régulier'),
+  (3, 'Vacances');
 
 -- ----------------------------------------------------------------------------
 -- 10. Tarifs des activités (étape 2)
@@ -372,7 +386,7 @@ CREATE TABLE IF NOT EXISTS `activites` (
   `type_id`            INT UNSIGNED NOT NULL,
   `secteur_id`         INT UNSIGNED NOT NULL,
   `referent`           VARCHAR(150) NOT NULL COMMENT 'Personne referente (texte libre)',
-  `recurrence`         ENUM('ponctuel','regulier','vacances') NOT NULL,
+  `recurrence_id`      INT UNSIGNED NOT NULL,
   `tarif_id`         INT UNSIGNED DEFAULT NULL COMMENT 'NULL = gratuit',
   `date_debut`         DATE NOT NULL,
   `date_fin`           DATE DEFAULT NULL,
@@ -389,12 +403,14 @@ CREATE TABLE IF NOT EXISTS `activites` (
   KEY `idx_activites_saison` (`saison_id`, `date_debut`),
   KEY `idx_activites_type` (`type_id`),
   KEY `idx_activites_secteur` (`secteur_id`),
+  KEY `idx_activites_recurrence` (`recurrence_id`),
   KEY `idx_activites_tarif` (`tarif_id`, `saison_id`),
   KEY `idx_activites_creation_par` (`creation_par`),
   KEY `idx_activites_modification_par` (`modification_par`),
   CONSTRAINT `fk_activites_saison` FOREIGN KEY (`saison_id`) REFERENCES `saisons` (`id`),
   CONSTRAINT `fk_activites_type` FOREIGN KEY (`type_id`) REFERENCES `types_activite` (`id`),
   CONSTRAINT `fk_activites_secteur` FOREIGN KEY (`secteur_id`) REFERENCES `secteurs` (`id`),
+  CONSTRAINT `fk_activites_recurrence` FOREIGN KEY (`recurrence_id`) REFERENCES `recurrences` (`id`),
   CONSTRAINT `fk_activites_tarif` FOREIGN KEY (`tarif_id`, `saison_id`) REFERENCES `tarifs` (`id`, `saison_id`),
   CONSTRAINT `fk_activites_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_activites_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`),

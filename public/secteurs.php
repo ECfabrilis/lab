@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 // Liste des secteurs d'activité (administrateurs seulement).
-// Même page que types_activite.php : seule la liste de choix change.
+// Les types d'activité et les récurrences, gérés de la même façon, sont sur options_activites.php.
 
 require __DIR__ . '/_chemins.php';
 require DOSSIER_PRIVE . '/includes/init.php';

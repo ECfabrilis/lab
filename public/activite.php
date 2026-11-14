@@ -224,7 +224,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <dt class="small text-body-secondary fw-normal">Secteur</dt>
             <dd><?= e($fiche['secteur_nom']) ?></dd>
             <dt class="small text-body-secondary fw-normal">Type</dt>
-            <dd><?= e($fiche['type_nom']) ?> — <?= e(libelles_recurrences()[texte($fiche['recurrence'])] ?? '') ?></dd>
+            <dd><?= e($fiche['type_nom']) ?> — <?= e($fiche['recurrence_nom']) ?></dd>
             <dt class="small text-body-secondary fw-normal">Référent</dt>
             <dd><?= e($fiche['referent']) ?></dd>
             <dt class="small text-body-secondary fw-normal">Dates</dt>
