@@ -11,6 +11,11 @@ declare(strict_types=1);
  *
  * Montant dû = cotisations + inscriptions en cours aux activités (hors liste
  * d'attente ; le tarif familial ne compte qu'une fois par activité) − réductions.
+ * Un tarif « forfait » ne se paie qu'une fois, comme une cotisation : il compte
+ * une fois par personne et par forfait (une fois par famille et par forfait au
+ * montant familial), quel que soit le nombre d'activités qui l'utilisent. Pris
+ * au montant familial, il couvre toute la famille, inscriptions au montant
+ * individuel du même forfait comprises.
  * Reste à payer = montant dû − paiements non annulés ; s'il est négatif, c'est
  * un trop-perçu. Un don ne compte pas dans ce qui a été payé.
  *
@@ -143,7 +148,28 @@ function compte_dossier_id(array $titulaire, int $saison_id): int
 // ---------------------------------------------------------------------------
 
 /**
+ * Inscriptions qui comptent dans le montant dû (en cours, hors liste d'attente),
+ * selon leur tarif : la suite « FROM … WHERE … » d'une requête sur inscriptions (i).
+ * Hors forfait : chaque inscription compte (le montant familial, une fois par activité).
+ */
+const INSCRIPTIONS_DUES_HORS_FORFAIT = 'FROM inscriptions i
+                                LEFT JOIN tarifs t ON t.id = i.tarif_id
+                               WHERE i.est_annulee = 0 AND i.statut = \'inscrit\' AND COALESCE(t.type, \'\') <> \'forfait\'';
+
+/**
+ * Au forfait : une fois par personne et par forfait (le montant familial, une fois par famille et par forfait).
+ * Un forfait pris au montant familial couvre toute la famille : ses inscriptions
+ * au montant individuel du même forfait ne comptent alors plus.
+ */
+const INSCRIPTIONS_DUES_FORFAIT = 'FROM inscriptions i
+                                JOIN tarifs t ON t.id = i.tarif_id
+                               WHERE i.est_annulee = 0 AND i.statut = \'inscrit\' AND t.type = \'forfait\'';
+
+/**
  * Comptes des familles et structures : une ligne par dossier, montants en centimes.
+ *
+ * Un forfait ne compte qu'une fois : si ses inscriptions portent des montants
+ * différents (tarif modifié entre-temps), le plus élevé est retenu.
  *
  * solde = montant dû − payé : positif, c'est le reste à payer ; négatif, un trop-perçu.
  * Les dons sont à part : ils ne comptent pas dans « payé ».
@@ -177,14 +203,23 @@ function comptes_lignes(int $saison_id, int $dossier_id = 0): array
            LEFT JOIN (SELECT dossier_id, SUM(montant) AS total
                         FROM cotisations WHERE est_annulee = 0 GROUP BY dossier_id) c ON c.dossier_id = d.id
            LEFT JOIN (SELECT x.dossier_id, SUM(x.montant) AS total
-                        FROM (SELECT dossier_id, montant
-                                FROM inscriptions
-                               WHERE est_annulee = 0 AND statut = \'inscrit\' AND est_tarif_familial = 0
+                        FROM (SELECT i.dossier_id, i.montant
+                                ' . INSCRIPTIONS_DUES_HORS_FORFAIT . ' AND i.est_tarif_familial = 0
                               UNION ALL
-                              SELECT dossier_id, MAX(montant) AS montant
-                                FROM inscriptions
-                               WHERE est_annulee = 0 AND statut = \'inscrit\' AND est_tarif_familial = 1
-                               GROUP BY dossier_id, activite_id) x
+                              SELECT i.dossier_id, MAX(i.montant) AS montant
+                                ' . INSCRIPTIONS_DUES_HORS_FORFAIT . ' AND i.est_tarif_familial = 1
+                               GROUP BY i.dossier_id, i.activite_id
+                              UNION ALL
+                              SELECT i.dossier_id, MAX(i.montant) AS montant
+                                ' . INSCRIPTIONS_DUES_FORFAIT . ' AND i.est_tarif_familial = 0
+                                 AND NOT EXISTS (SELECT 1 FROM inscriptions fam
+                                                  WHERE fam.dossier_id = i.dossier_id AND fam.tarif_id = i.tarif_id
+                                                    AND fam.est_tarif_familial = 1 AND fam.est_annulee = 0 AND fam.statut = \'inscrit\')
+                               GROUP BY i.dossier_id, i.adherent_id, i.tarif_id
+                              UNION ALL
+                              SELECT i.dossier_id, MAX(i.montant) AS montant
+                                ' . INSCRIPTIONS_DUES_FORFAIT . ' AND i.est_tarif_familial = 1
+                               GROUP BY i.dossier_id, i.tarif_id) x
                        GROUP BY x.dossier_id) i ON i.dossier_id = d.id
            LEFT JOIN (SELECT dossier_id, SUM(montant) AS total
                         FROM reductions GROUP BY dossier_id) r ON r.dossier_id = d.id
@@ -237,33 +272,62 @@ function compte_du_dossier(int $dossier_id): ?array
 
 /**
  * Inscriptions qui comptent dans le montant dû d'un dossier : en cours, hors
- * liste d'attente. « compte » vaut 0 pour les inscriptions au tarif familial
- * déjà comptées par une autre inscription de la famille à la même activité.
+ * liste d'attente. « compte » vaut 0 pour les inscriptions déjà comptées par
+ * une autre : même forfait pour la même personne, forfait que la famille a au
+ * montant familial (il couvre tous ses membres), ou même activité au montant familial (hors
+ * forfait). « forfait_nom » porte le nom du forfait, ou '' hors forfait.
+ *
+ * Mêmes regroupements que comptes_lignes() : la somme des lignes comptées est
+ * le total « activités » du compte.
  *
  * @return list<array<string, mixed>>
  */
 function compte_inscriptions(int $dossier_id): array
 {
     $lignes = db_lignes(
-        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial,
-                ac.nom AS activite_nom, a.nom, a.prenom
+        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.tarif_id, i.montant, i.est_tarif_familial,
+                ac.nom AS activite_nom, a.nom, a.prenom,
+                CASE WHEN t.type = \'forfait\' THEN t.nom ELSE \'\' END AS forfait_nom
            FROM inscriptions i
            JOIN activites ac ON ac.id = i.activite_id
            JOIN adherents a ON a.id = i.adherent_id
+           LEFT JOIN tarifs t ON t.id = i.tarif_id
           WHERE i.dossier_id = ? AND i.est_annulee = 0 AND i.statut = \'inscrit\'
           ORDER BY ac.date_debut, ac.nom, i.montant DESC, i.id',
         [$dossier_id]
     );
-    $familial_compte = [];
-    foreach ($lignes as $cle => $ligne) {
-        $compte = 1;
-        if (entier($ligne['est_tarif_familial']) === 1) {
-            // Les lignes sont triées par montant décroissant : la première porte le montant retenu.
-            $activite_id = entier($ligne['activite_id']);
-            $compte = isset($familial_compte[$activite_id]) ? 0 : 1;
-            $familial_compte[$activite_id] = true;
+    // Dans chaque regroupement, la ligne au montant le plus élevé porte le montant
+    // retenu (la première dans l'ordre d'affichage en cas d'égalité).
+    $retenues = [];
+    $groupes = [];
+    // Forfaits pris au montant familial : ils couvrent toute la famille.
+    $forfaits_famille = [];
+    foreach ($lignes as $ligne) {
+        if (texte($ligne['forfait_nom']) !== '' && entier($ligne['est_tarif_familial']) === 1) {
+            $forfaits_famille[entier($ligne['tarif_id'])] = true;
         }
-        $lignes[$cle]['compte'] = $compte;
+    }
+    foreach ($lignes as $cle => $ligne) {
+        $familial = entier($ligne['est_tarif_familial']) === 1;
+        $groupe = null;
+        if (texte($ligne['forfait_nom']) !== '') {
+            $tarif_id = entier($ligne['tarif_id']);
+            if (!$familial && isset($forfaits_famille[$tarif_id])) {
+                // Montant individuel d'un forfait que la famille a au montant familial : déjà couvert.
+                $lignes[$cle]['compte'] = 0;
+                continue;
+            }
+            $groupe = 'forfait-' . $tarif_id . ($familial ? '-famille' : '-personne-' . entier($ligne['adherent_id']));
+        } elseif ($familial) {
+            $groupe = 'activite-' . entier($ligne['activite_id']);
+        }
+        $groupes[$cle] = $groupe;
+        if ($groupe !== null && (!isset($retenues[$groupe]) || centimes($ligne['montant']) > centimes($lignes[$retenues[$groupe]]['montant']))) {
+            $retenues[$groupe] = $cle;
+        }
+    }
+    foreach ($groupes as $cle => $groupe) {
+        $lignes[$cle]['compte'] = $groupe === null || $retenues[$groupe] === $cle ? 1 : 0;
     }
     return $lignes;
 }

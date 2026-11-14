@@ -141,6 +141,15 @@ $restantes = $activite !== null ? places_restantes($activite) : null;
 $montant_familial = $activite !== null && !$est_structure ? ($activite['tarif_montant_familial'] ?? null) : null;
 $famille_deja_au_familial = $montant_familial !== null && $inscrit !== null
     && inscription_familiale_existe($activite_id, dossier_id_de_adherent($inscrit, $saison_id));
+// Forfait : il ne se paie qu'une fois par personne (ou par famille, au montant familial).
+$forfait_nom = $activite !== null && !$est_structure && texte($activite['tarif_type'] ?? '') === 'forfait' ? texte($activite['tarif_nom']) : '';
+$forfait_pris = $forfait_nom !== '' && $inscrit !== null
+    ? forfait_deja_pris(entier($activite['tarif_id']), dossier_id_de_adherent($inscrit, $saison_id), $adherent_id)
+    : ['individuel' => false, 'familial' => false];
+if ($montant_familial !== null && $forfait_pris['familial']) {
+    // La famille a déjà ce forfait au montant familial : c'est le choix proposé.
+    $famille_deja_au_familial = true;
+}
 $a_liste_attente = $activite !== null && entier($activite['a_liste_attente']) === 1;
 // Les propositions pendant la frappe portent sur la saison affichée : elles ne
 // sont utiles que si c'est aussi la saison de l'activité.
@@ -299,12 +308,22 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                 <label class="form-check-label" for="tarif_familial">Tarif familial : <strong><?= e(montant_fr($montant_familial)) ?></strong> pour toute la famille</label>
                             </div>
                             <div class="form-text">
-                                <?= $famille_deja_au_familial ? 'Un membre de la famille est déjà inscrit à cette activité au tarif familial.' : '' ?>
+                                <?= $famille_deja_au_familial ? 'Un membre de la famille est déjà inscrit au tarif familial' . ($forfait_pris['familial'] ? ' à ce forfait.' : ' à cette activité.') : '' ?>
                                 Le montant familial ne compte qu'une fois, quel que soit le nombre de membres de la famille inscrits à ce tarif.
                             </div>
                         </fieldset>
                     <?php else : ?>
                         <p>Une place, au tarif de l'activité : <strong><?= e(activite_prix($activite)) ?></strong>.</p>
+                    <?php endif; ?>
+                    <?php if ($forfait_nom !== '') : ?>
+                        <div class="alert alert-info" role="note">
+                            Forfait « <?= e($forfait_nom) ?> » : il ne se paie qu'une fois par personne (ou par famille, au tarif familial), quel que soit le nombre d'activités qui l'utilisent.
+                            <?php if ($forfait_pris['familial']) : ?>
+                                <strong>La famille a déjà ce forfait au tarif familial, qui couvre tous ses membres : cette inscription n'ajoute rien au montant dû.</strong>
+                            <?php elseif ($forfait_pris['individuel']) : ?>
+                                <strong><?= e(nom_adherent($inscrit)) ?> a déjà ce forfait : au tarif individuel, cette inscription n'ajoute rien au montant dû.</strong>
+                            <?php endif; ?>
+                        </div>
                     <?php endif; ?>
                     <?php if ($a_liste_attente && $restantes !== 0) : ?>
                         <div class="form-check mb-3">

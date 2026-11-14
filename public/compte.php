@@ -258,6 +258,9 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <?php if ($inscriptions_comptees === []) : ?>
                     <p class="text-body-secondary mb-0">Aucune inscription en cours à une activité.</p>
                 <?php else : ?>
+                    <?php if (array_filter(array_column($inscriptions_comptees, 'forfait_nom')) !== []) : ?>
+                        <p class="small text-body-secondary">Un forfait ne se paie qu'une fois par personne (ou par famille, au tarif familial), quel que soit le nombre d'activités qui l'utilisent.</p>
+                    <?php endif; ?>
                     <div class="table-responsive">
                         <table class="table table-sm align-middle mb-0">
                             <thead>
@@ -282,6 +285,9 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                                 <?= e(montant_fr($ligne_inscription['montant'])) ?>
                                             <?php else : ?>
                                                 <span class="text-body-secondary">déjà compté</span>
+                                            <?php endif; ?>
+                                            <?php if (texte($ligne_inscription['forfait_nom']) !== '') : ?>
+                                                <span class="d-block small text-body-secondary">forfait « <?= e($ligne_inscription['forfait_nom']) ?> »</span>
                                             <?php endif; ?>
                                             <?php if (entier($ligne_inscription['est_tarif_familial']) === 1) : ?>
                                                 <span class="d-block small text-body-secondary">tarif familial</span>

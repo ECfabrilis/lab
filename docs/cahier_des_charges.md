@@ -93,7 +93,7 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 - **Structure** : le montant de sa cotisation est **saisi** (négocié), comme pour ses inscriptions.
 - Une personne qui a une cotisation individuelle en cours ne peut pas être retirée de la saison.
 - Certaines activités sont **sans adhésion** (simple indicateur sur l'activité).
-- L'application calcule le **montant dû** et signale un **trop-perçu**. Montant dû = cotisations + inscriptions en cours aux activités (hors liste d'attente ; un tarif familial compte une fois par activité) − réductions.
+- L'application calcule le **montant dû** et signale un **trop-perçu**. Montant dû = cotisations + inscriptions en cours aux activités (hors liste d'attente ; un tarif familial compte une fois par activité ; un **forfait** compte une seule fois, voir section 6.2) − réductions.
 
 ---
 
@@ -121,12 +121,12 @@ Pas de gestion d'horaires, de séances ni de lieu. Les séances et heures d'anim
 
 **Secteurs, types et récurrences** : trois listes **communes à toutes les saisons**. Un secteur, un type ou une récurrence peut être rendu **inactif** (il n'est plus proposé pour les nouvelles activités ; celles qui l'utilisent le gardent) ; il ne se **supprime** que si aucune activité ne l'utilise. Un secteur a une **description** facultative. Les types et les récurrences se gèrent sur une même page, « Options des activités ».
 
-**Tarifs** : un tarif est une ligne nommée d'une saison (exemple : « Atelier annuel — 120 € ») ; plusieurs activités peuvent le partager. Un tarif ne se supprime que si aucune activité ne l'utilise.
+**Tarifs** : un tarif est une ligne nommée d'une saison (exemple : « Atelier annuel — 120 € ») ; plusieurs activités peuvent le partager. Un tarif ne se supprime que si aucune activité ne l'utilise et qu'aucune inscription (même annulée) n'a été faite à ce tarif.
 
 | Champ | Remarques |
 |---|---|
 | Nom | unique dans la saison |
-| Type | obligatoire : **forfait**, **adhésion** ou **autre**. Les tarifs « adhésion » sont réservés aux cotisations (section 5) : une activité ne peut pas en choisir un |
+| Type | obligatoire : **forfait**, **adhésion** ou **autre**. Les tarifs « adhésion » sont réservés aux cotisations (section 5) : une activité ne peut pas en choisir un. Un **forfait** ne se paie qu'une fois, comme une cotisation (section 6.2) ; un tarif « autre » est dû à chaque inscription |
 | Montant individuel | obligatoire |
 | Montant familial | facultatif ; il vaut pour **toute la famille** (exemple : centre de loisirs, 5 € par enfant ou 10 € pour l'ensemble des enfants) |
 | Description | texte libre facultatif |
@@ -144,6 +144,7 @@ Une activité ne se **supprime** que si elle est vide (aucune inscription, même
 - Une personne n'a qu'**une inscription en cours** par activité ; une structure peut en avoir plusieurs.
 - Le **montant est copié** sur l'inscription au moment où elle est faite : modifier un tarif ne change pas les inscriptions déjà enregistrées.
 - **Tarif familial** : quand le tarif de l'activité a un montant familial, l'accueil choisit à l'inscription d'une personne entre le tarif individuel et le tarif familial. Chaque inscription au tarif familial porte le montant familial, qui ne **compte qu'une fois par famille et par activité**, quel que soit le nombre de membres inscrits à ce tarif (calcul du montant dû, étape 3).
+- **Forfait** : un tarif de type « forfait » ne se paie **qu'une seule fois**, comme une cotisation. Il compte **une fois par personne et par forfait**, quel que soit le nombre d'activités qui partagent ce forfait (exemple : trois ateliers au « Forfait ateliers — 120 € » : 120 € et non 360 €) ; au montant familial, il compte **une fois par famille et par forfait** et **couvre toute la famille** : les inscriptions de ses membres au montant individuel du même forfait ne comptent alors plus. Deux forfaits différents se paient chacun une fois. L'inscription garde le tarif appliqué : changer ensuite le tarif d'une activité ne change pas les inscriptions déjà faites. Si les montants copiés diffèrent (tarif modifié entre deux inscriptions), le plus élevé est retenu. Une structure n'est pas concernée : son montant est négocié à chaque inscription.
 - **Places** : si les places demandées ne tiennent pas en entier, l'inscription va **entièrement en liste d'attente** quand l'activité en a une (exemple : une structure demande 5 places, il en reste 3) ; sinon elle est refusée.
 - **Liste d'attente** : on peut y inscrire quelqu'un **directement**, même s'il reste des places. Quand une place se libère, rien n'est automatique : la fiche de l'activité le signale et l'accueil **choisit** qui passe de la liste d'attente aux inscrits. À l'inverse, un inscrit peut être **passé en liste d'attente** (si l'activité en a une) : ses places sont libérées. La liste d'attente s'affiche dans l'**ordre d'entrée** dans cette liste.
 - Annulation par indicateur (pas de suppression), pour garder l'historique.

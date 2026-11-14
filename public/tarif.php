@@ -19,6 +19,7 @@ if ($fiche === null) {
 $page_fiche = 'tarif.php?id=' . $fiche_id;
 $nb_activites = entier($fiche['nb_activites']);
 $nb_cotisations = entier($fiche['nb_cotisations']);
+$nb_inscriptions = entier($fiche['nb_inscriptions']);
 
 if (est_post()) {
     if (!csrf_valide()) {
@@ -31,7 +32,7 @@ if (est_post()) {
             flash('succes', 'Le tarif « ' . texte($fiche['nom']) . ' » est supprimé.');
             rediriger('tarifs.php');
         }
-        flash('erreur', 'Des activités ou des cotisations utilisent ce tarif : il ne peut pas être supprimé.');
+        flash('erreur', 'Des activités, des inscriptions ou des cotisations utilisent ce tarif : il ne peut pas être supprimé.');
         rediriger($page_fiche);
     }
 
@@ -59,7 +60,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2">
-            <?php if ($nb_activites === 0 && $nb_cotisations === 0) : ?>
+            <?php if ($nb_activites === 0 && $nb_cotisations === 0 && $nb_inscriptions === 0) : ?>
                 <form class="d-grid" method="post" action="<?= e(chemin_site('tarif.php')) ?>">
                     <?= csrf_champ() ?>
                     <input type="hidden" name="id" value="<?= $fiche_id ?>">
@@ -71,10 +72,15 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <p class="text-body-secondary small mt-3 mb-0">
             <?php if ($nb_cotisations > 0) : ?>
                 <?= $nb_cotisations ?> cotisation<?= $nb_cotisations > 1 ? 's utilisent' : ' utilise' ?> ce tarif : il ne peut pas être supprimé.
-            <?php elseif ($nb_activites === 0) : ?>
-                Ce tarif n'est pas utilisé : il peut être supprimé.
-            <?php else : ?>
+            <?php elseif ($nb_activites > 0) : ?>
                 <?= $nb_activites ?> activité<?= $nb_activites > 1 ? 's utilisent' : ' utilise' ?> ce tarif : il ne peut pas être supprimé.
+            <?php elseif ($nb_inscriptions > 0) : ?>
+                <?= $nb_inscriptions ?> inscription<?= $nb_inscriptions > 1 ? 's ont été faites' : ' a été faite' ?> à ce tarif : il ne peut pas être supprimé.
+            <?php else : ?>
+                Ce tarif n'est pas utilisé : il peut être supprimé.
+            <?php endif; ?>
+            <?php if (texte($fiche['type']) === 'forfait') : ?>
+                Un forfait ne se paie qu'une fois par personne (ou par famille, au montant familial), quel que soit le nombre d'activités qui l'utilisent.
             <?php endif; ?>
             Modifier les montants ne change ni les inscriptions ni les cotisations déjà enregistrées.
         </p>

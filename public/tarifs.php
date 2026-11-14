@@ -26,6 +26,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <ul class="text-body-secondary small mt-3 mb-0 ps-3">
             <li>Un tarif appartient à une saison ; plusieurs activités peuvent le partager.</li>
             <li>Les tarifs « Adhésion » sont réservés aux cotisations : une activité choisit un tarif « Forfait » ou « Autre ».</li>
+            <li>Un « Forfait » ne se paie qu'une fois, comme une cotisation : il compte une fois par personne (une fois par famille au montant familial, qui couvre alors tous ses membres), quel que soit le nombre d'activités qui l'utilisent. Un tarif « Autre » est dû à chaque inscription.</li>
             <li>Le montant familial, facultatif, vaut pour toute la famille (exemple : 5 € par enfant, ou 10 € pour tous les enfants).</li>
             <li>Le montant est copié sur chaque inscription au moment où elle est faite : modifier un tarif ne change pas les inscriptions déjà enregistrées.</li>
             <li>La modification et la suppression sont réservées aux administrateurs.</li>

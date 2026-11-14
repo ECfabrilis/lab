@@ -17,6 +17,11 @@ declare(strict_types=1);
  * Le montant est copié sur chaque inscription au moment où elle est faite :
  * modifier un tarif ne change pas les inscriptions déjà enregistrées.
  *
+ * Un « forfait » ne se paie qu'une fois, comme une cotisation : il compte une
+ * fois par personne (une fois par famille au montant familial), quel que soit
+ * le nombre d'activités qui l'utilisent. Un tarif « autre » est dû à chaque
+ * inscription. Le calcul est dans fonctions_paiements.php (comptes_lignes()).
+ *
  * Droits : consulter et ajouter, rôle standard ; modifier et supprimer, admin.
  */
 
@@ -49,7 +54,7 @@ function tarifs_liste(int $saison_id, bool $pour_activite = false): array
 }
 
 /**
- * Un tarif par son identifiant, avec le nom de sa saison et le nombre d'activités et de cotisations qui l'utilisent, ou null.
+ * Un tarif par son identifiant, avec le nom de sa saison et le nombre d'activités, d'inscriptions (même annulées) et de cotisations qui l'utilisent, ou null.
  *
  * @return array<string, mixed>|null
  */
@@ -58,6 +63,7 @@ function tarif_par_id(int $id): ?array
     return db_ligne(
         'SELECT t.id, t.saison_id, t.nom, t.type, t.montant_individuel, t.montant_familial, t.description, s.nom AS saison_nom,
                 (SELECT COUNT(*) FROM activites ac WHERE ac.tarif_id = t.id) AS nb_activites,
+                (SELECT COUNT(*) FROM inscriptions i WHERE i.tarif_id = t.id) AS nb_inscriptions,
                 (SELECT COUNT(*) FROM cotisations c WHERE c.tarif_id = t.id) AS nb_cotisations
            FROM tarifs t
            JOIN saisons s ON s.id = t.saison_id
@@ -112,6 +118,8 @@ function erreurs_tarif(array $saisie, int $saison_id, int $sauf_id = 0): array
         $erreurs[] = 'Choisissez le type du tarif : forfait, adhésion ou autre.';
     } elseif ($saisie['type'] === 'adhesion' && $sauf_id > 0 && entier(db_valeur('SELECT COUNT(*) FROM activites WHERE tarif_id = ?', [$sauf_id])) > 0) {
         $erreurs[] = 'Des activités utilisent ce tarif : il ne peut pas devenir un tarif « adhésion », réservé aux cotisations.';
+    } elseif ($saisie['type'] === 'adhesion' && $sauf_id > 0 && entier(db_valeur('SELECT COUNT(*) FROM inscriptions WHERE tarif_id = ?', [$sauf_id])) > 0) {
+        $erreurs[] = 'Des inscriptions à des activités ont été faites à ce tarif : il ne peut pas devenir un tarif « adhésion », réservé aux cotisations.';
     } elseif ($saisie['type'] !== 'adhesion' && $sauf_id > 0 && entier(db_valeur('SELECT COUNT(*) FROM cotisations WHERE tarif_id = ?', [$sauf_id])) > 0) {
         $erreurs[] = 'Des cotisations utilisent ce tarif : il doit rester un tarif « adhésion ».';
     }
@@ -188,7 +196,7 @@ function modifier_tarif(array $actuel, array $saisie): bool
 }
 
 /**
- * Supprime un tarif qu'aucune activité ni aucune cotisation (même annulée) n'utilise.
+ * Supprime un tarif qu'aucune activité, aucune inscription ni aucune cotisation (même annulées) n'utilise.
  *
  * @param array<string, mixed> $tarif
  * @return bool false s'il est encore utilisé
@@ -197,6 +205,7 @@ function supprimer_tarif(array $tarif): bool
 {
     $tarif_id = entier($tarif['id'] ?? 0);
     if (entier(db_valeur('SELECT COUNT(*) FROM activites WHERE tarif_id = ?', [$tarif_id])) > 0
+        || entier(db_valeur('SELECT COUNT(*) FROM inscriptions WHERE tarif_id = ?', [$tarif_id])) > 0
         || entier(db_valeur('SELECT COUNT(*) FROM cotisations WHERE tarif_id = ?', [$tarif_id])) > 0) {
         return false;
     }

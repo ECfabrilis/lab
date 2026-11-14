@@ -223,7 +223,7 @@ function choix_supprimer(string $liste, array $choix): bool
 
 /** Début commun des requêtes qui lisent une activité avec ses libellés et ses places. */
 const ACTIVITE_SELECT = 'SELECT ac.*, t.nom AS type_nom, se.nom AS secteur_nom, r.nom AS recurrence_nom,
-            ta.nom AS tarif_nom, ta.montant_individuel AS tarif_montant, ta.montant_familial AS tarif_montant_familial,
+            ta.nom AS tarif_nom, ta.type AS tarif_type, ta.montant_individuel AS tarif_montant, ta.montant_familial AS tarif_montant_familial,
             s.nom AS saison_nom, s.date_debut AS saison_debut, s.date_fin AS saison_fin,
             (SELECT COALESCE(SUM(i.nb_places), 0) FROM inscriptions i
               WHERE i.activite_id = ac.id AND i.est_annulee = 0 AND i.statut = \'inscrit\') AS places_prises,
@@ -613,7 +613,7 @@ function afficher_champs_activite(array $defauts, array $saison): void
                     <option value="<?= entier($tarif['id']) ?>" <?= $tarif_choisi === entier($tarif['id']) ? 'selected' : '' ?>><?= e(texte($tarif['nom']) . ' — ' . tarif_montants($tarif['montant_individuel'], $tarif['montant_familial'])) ?></option>
                 <?php endforeach; ?>
             </select>
-            <div class="form-text" id="aide_tarif">Tarifs « forfait » et « autre » de la saison <?= e($saison['nom'] ?? '') ?>. Une activité qui ne demande que l'adhésion est gratuite. Le montant est copié sur chaque inscription au moment où elle est faite.</div>
+            <div class="form-text" id="aide_tarif">Tarifs « forfait » et « autre » de la saison <?= e($saison['nom'] ?? '') ?>. Une activité qui ne demande que l'adhésion est gratuite. Un forfait ne se paie qu'une fois par personne, même s'il est partagé par plusieurs activités. Le montant est copié sur chaque inscription au moment où elle est faite.</div>
         </div>
         <div class="col-sm-12">
             <div class="form-check form-switch">
@@ -773,6 +773,29 @@ function inscription_familiale_existe(int $activite_id, int $dossier_id): bool
 }
 
 /**
+ * Ce qu'un forfait couvre déjà : la personne a-t-elle une inscription en cours
+ * (hors liste d'attente) à ce forfait au montant individuel, et sa famille une
+ * inscription au montant familial ? Dans ces cas, une nouvelle inscription au
+ * même forfait n'ajoute rien au montant dû.
+ *
+ * @return array{individuel: bool, familial: bool}
+ */
+function forfait_deja_pris(int $tarif_id, int $dossier_id, int $adherent_id): array
+{
+    $ligne = db_ligne(
+        'SELECT COALESCE(SUM(est_tarif_familial = 0 AND adherent_id = ?), 0) AS individuel,
+                COALESCE(SUM(est_tarif_familial = 1), 0) AS familial
+           FROM inscriptions
+          WHERE tarif_id = ? AND dossier_id = ? AND est_annulee = 0 AND statut = \'inscrit\'',
+        [$adherent_id, $tarif_id, $dossier_id]
+    );
+    return [
+        'individuel' => entier($ligne['individuel'] ?? 0) > 0,
+        'familial'   => entier($ligne['familial'] ?? 0) > 0,
+    ];
+}
+
+/**
  * Vrai si l'adhérent a déjà une inscription non annulée (inscrit ou en attente) à cette activité.
  */
 function inscription_existe(int $activite_id, int $adherent_id): bool
@@ -787,7 +810,7 @@ function inscription_existe(int $activite_id, int $adherent_id): bool
  * Verrouille une activité le temps d'une transaction et renvoie ses places :
  * deux inscriptions simultanées ne peuvent pas prendre la même dernière place.
  *
- * @return array{nom: string, saison_id: int, nb_places: int|null, a_liste_attente: bool, tarif_montant: string, tarif_montant_familial: string|null, places_prises: int}|null
+ * @return array{nom: string, saison_id: int, nb_places: int|null, a_liste_attente: bool, tarif_id: int|null, tarif_montant: string, tarif_montant_familial: string|null, places_prises: int}|null
  */
 function activite_verrouiller(int $activite_id): ?array
 {
@@ -807,6 +830,7 @@ function activite_verrouiller(int $activite_id): ?array
         'saison_id'       => entier($activite['saison_id']),
         'nb_places'       => $activite['nb_places'] === null ? null : entier($activite['nb_places']),
         'a_liste_attente' => entier($activite['a_liste_attente']) === 1,
+        'tarif_id'        => $activite['tarif_id'] === null ? null : entier($activite['tarif_id']),
         'tarif_montant'   => $montant !== '' ? $montant : '0.00',
         'tarif_montant_familial' => ($tarif['montant_familial'] ?? null) === null ? null : texte($tarif['montant_familial']),
         'places_prises'   => entier(db_valeur(
@@ -830,6 +854,11 @@ function activite_verrouiller(int $activite_id): ?array
  * personne peut être inscrite « au tarif familial ». Chaque inscription de ce
  * genre porte le montant familial, qui ne compte qu'une seule fois par famille
  * et par activité (calcul du montant dû, étape 3).
+ *
+ * Forfait : le tarif appliqué est gardé sur l'inscription (tarif_id). Un tarif
+ * « forfait » ne compte qu'une fois par personne (ou par famille, au montant
+ * familial), quel que soit le nombre d'activités qui l'utilisent. Une structure
+ * n'a pas de tarif : son montant est négocié à chaque inscription.
  *
  * @param array<string, mixed> $adherent       fiche de l'adhérent
  * @param int                  $nb_places      1 pour une personne
@@ -895,10 +924,12 @@ function inscription_creer(int $activite_id, array $adherent, int $nb_places, ?s
         } elseif ($familial && $activite['tarif_montant_familial'] !== null) {
             $montant_retenu = $activite['tarif_montant_familial'];
         }
+        // Le tarif appliqué : aucun pour une structure, dont le montant est négocié.
+        $tarif_retenu = $est_structure ? null : $activite['tarif_id'];
         db_executer(
-            'INSERT INTO inscriptions (activite_id, dossier_id, adherent_id, nb_places, montant, est_tarif_familial, statut, attente_le, creation_par)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [$activite_id, $dossier_id, $adherent_id, $nb_places, $montant_retenu, $familial ? 1 : 0, $statut, $statut === 'attente' ? date('Y-m-d H:i:s') : null, entier($_SESSION['utilisateur_id'] ?? 0)]
+            'INSERT INTO inscriptions (activite_id, dossier_id, adherent_id, nb_places, tarif_id, montant, est_tarif_familial, statut, attente_le, creation_par)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [$activite_id, $dossier_id, $adherent_id, $nb_places, $tarif_retenu, $montant_retenu, $familial ? 1 : 0, $statut, $statut === 'attente' ? date('Y-m-d H:i:s') : null, entier($_SESSION['utilisateur_id'] ?? 0)]
         );
         $inscription_id = entier(db()->lastInsertId());
         journaliser(
@@ -907,7 +938,7 @@ function inscription_creer(int $activite_id, array $adherent, int $nb_places, ?s
             $inscription_id,
             ($statut === 'attente' ? 'Liste d\'attente : ' : 'Inscription : ') . nom_adherent($adherent) . ' — ' . $activite['nom'],
             null,
-            ['activite_id' => $activite_id, 'adherent_id' => $adherent_id, 'nb_places' => $nb_places, 'montant' => $montant_retenu, 'est_tarif_familial' => $familial ? 1 : 0, 'statut' => $statut]
+            ['activite_id' => $activite_id, 'adherent_id' => $adherent_id, 'nb_places' => $nb_places, 'tarif_id' => $tarif_retenu, 'montant' => $montant_retenu, 'est_tarif_familial' => $familial ? 1 : 0, 'statut' => $statut]
         );
         db()->commit();
         return ['erreur' => '', 'statut' => $statut, 'id' => $inscription_id];
