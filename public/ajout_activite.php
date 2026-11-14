@@ -72,6 +72,9 @@ if (choix_proposes('recurrences') === []) {
     $listes_a_completer[] = 'les récurrences (« Options des activités » dans les paramètres)';
 }
 
+// Récurrence choisie par défaut : « Ponctuel », si elle est toujours proposée.
+$defauts_activite = array_key_exists(RECURRENCE_DEFAUT, choix_proposes('recurrences')) ? ['recurrence_id' => RECURRENCE_DEFAUT] : [];
+
 // La case « Créer quand même » n'apparaît qu'après la découverte d'une activité semblable.
 $confirmation_demandee = ($_SESSION['activite_similaire'] ?? false) === true && ancien_existe();
 unset($_SESSION['activite_similaire']);
@@ -100,7 +103,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <?= jeton_unique_champ('ajout_activite') ?>
                 <input type="hidden" name="saison_id" value="<?= $saison_affichee_id ?>">
                 <input type="hidden" name="formulaire" value="activite">
-                <?php afficher_champs_activite([], $saison_affichee); ?>
+                <?php afficher_champs_activite($defauts_activite, $saison_affichee); ?>
                 <?php if ($confirmation_demandee) : ?>
                     <div class="form-check mb-3">
                         <input class="form-check-input" type="checkbox" id="confirmer_similaire" name="confirmer_similaire" value="1">

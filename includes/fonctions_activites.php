@@ -399,6 +399,12 @@ function activite_prix(array $activite): string
 const ACTIVITES_SIMILAIRES_JOURS = 7;
 
 /**
+ * Récurrence proposée par défaut pour une nouvelle activité : « Ponctuel », créée à
+ * l'installation (identifiant 1). Elle n'est proposée que si elle est encore active.
+ */
+const RECURRENCE_DEFAUT = 1;
+
+/**
  * Activités de la saison qui ressemblent à celle que l'on s'apprête à créer :
  * un nom presque identique (sans tenir compte des accents ni des majuscules,
  * avec le même écart toléré que pour les doublons d'adhérents) et des dates
