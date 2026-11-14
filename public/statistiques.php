@@ -5,7 +5,8 @@ declare(strict_types=1);
 // Statistiques (cahier des charges, section 10) : adhérents, activités,
 // scolarité, pour une saison ou une période libre, avec la comparaison à la
 // saison précédente (ou à la même période un an plus tôt). Les activités se
-// filtrent par secteur, type et récurrence.
+// filtrent par secteur, type et récurrence. Un bouton affiche ou retire les
+// chiffres de comparaison (N-1).
 // Les filtres sont dans l'adresse de la page : aucune donnée personnelle n'y figure.
 // Consultation : tout utilisateur connecté (aucun montant n'est affiché).
 
@@ -47,6 +48,9 @@ foreach (choix_liste('recurrences') as $ligne_choix) {
 $filtre_recurrence = entier($_GET['recurrence'] ?? 0);
 $filtre_recurrence = array_key_exists($filtre_recurrence, $recurrences_filtre) ? $filtre_recurrence : 0;
 
+// Évolution : la comparaison avec la saison précédente (N-1) s'affiche, sauf si elle a été retirée.
+$afficher_evolution = texte($_GET['evolution'] ?? '1') !== '0';
+
 // Période libre : elle remplace la saison quand ses deux dates sont valables.
 $filtre_debut = texte($_GET['debut'] ?? '');
 $filtre_fin = texte($_GET['fin'] ?? '');
@@ -73,7 +77,7 @@ if ($periode_valable) {
 } elseif (isset($saisons_filtre[$filtre_saison])) {
     $perimetre = stats_perimetre_saison($saisons_filtre[$filtre_saison], $filtre_secteur, $filtre_type, $filtre_recurrence);
 }
-$perimetre_precedent = $perimetre === null ? null : stats_perimetre_precedent($perimetre);
+$perimetre_precedent = $perimetre === null || !$afficher_evolution ? null : stats_perimetre_precedent($perimetre);
 $nom_serie = $perimetre === null ? '' : ($perimetre['mode'] === 'saison' ? mb_substr($perimetre['libelle'], 7) : 'Période');
 $nom_precedent = '';
 if ($perimetre_precedent !== null) {
@@ -103,7 +107,9 @@ $filtres_adresse = array_filter([
     'type'    => $filtre_type,
     'recurrence' => $filtre_recurrence,
 ], static fn (int|string $valeur): bool => $valeur !== 0 && $valeur !== '');
-$adresse_vue = static fn (string $nom_vue): string => chemin_site('statistiques.php?' . http_build_query(['vue' => $nom_vue] + $filtres_adresse));
+// Le choix d'afficher ou non l'évolution suit l'utilisateur d'un onglet à l'autre, et survit à « Effacer ».
+$choix_evolution = $afficher_evolution ? [] : ['evolution' => '0'];
+$adresse_vue = static fn (string $nom_vue): string => chemin_site('statistiques.php?' . http_build_query(['vue' => $nom_vue] + $filtres_adresse + $choix_evolution));
 
 $public_filtre = $filtre_secteur > 0 || $filtre_type > 0 || $filtre_recurrence > 0;
 $mot_adherents = $public_filtre ? 'Participants' : 'Adhérents';
@@ -167,10 +173,16 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
+            <div class="mb-3">
+                <?php // Case décochée : rien n'est envoyé ; le champ caché dit alors « sans évolution ». ?>
+                <input type="hidden" name="evolution" value="0">
+                <input class="btn-check" type="checkbox" id="evolution" name="evolution" value="1" autocomplete="off" <?= $afficher_evolution ? 'checked' : '' ?> data-envoi-auto>
+                <label class="btn btn-outline-primary w-100" for="evolution">Afficher l'évolution (N-1 / N)</label>
+            </div>
             <div class="d-flex flex-wrap gap-2">
                 <button class="btn btn-primary" type="submit">Afficher</button>
                 <?php if ($filtres_adresse !== [] || $erreur_periode !== '') : ?>
-                    <a class="btn btn-outline-secondary" href="<?= e(chemin_site('statistiques.php?vue=' . $vue)) ?>">Effacer</a>
+                    <a class="btn btn-outline-secondary" href="<?= e(chemin_site('statistiques.php?' . http_build_query(['vue' => $vue] + $choix_evolution))) ?>">Effacer</a>
                 <?php endif; ?>
                 <button class="btn btn-outline-secondary d-none" type="button" data-imprimer>Imprimer</button>
             </div>
