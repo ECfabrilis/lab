@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-// Liste des activités de la saison affichée, avec leurs places.
+// Liste des activités de la saison affichée, avec leurs places : d'abord celles
+// en cours ou à venir, puis les activités passées, repliées et classées par mois.
 // Les filtres (secteur, type, nom d'activité cherché) sont dans l'adresse de
 // la page : aucune donnée personnelle n'y figure.
 // Consultation : tout utilisateur connecté. Création : rôle standard au minimum.
@@ -32,6 +33,12 @@ $recherche_nom = mb_substr(trim(mb_scrub(texte($_GET['q'] ?? ''), 'UTF-8')), 0, 
 
 $liste_activites = activites_liste($saison_affichee_id, $filtre_secteur, $filtre_type, $recherche_nom);
 $nb_activites = count($liste_activites);
+// Les activités passées sont affichées à part, classées par mois de début.
+$activites_separees = activites_separer_passees($liste_activites);
+$activites_en_cours = $activites_separees['en_cours'];
+$activites_passees = $activites_separees['passees'];
+$nb_en_cours = count($activites_en_cours);
+$nb_passees = $activites_separees['nb_passees'];
 $peut_creer = role_au_moins('standard');
 
 $titre_page = 'Activités';
@@ -88,39 +95,24 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <?php elseif ($liste_activites === []) : ?>
             <div class="alert alert-info" role="alert">Aucune activité ne correspond pour cette saison.</div>
         <?php else : ?>
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th scope="col">Activité</th>
-                            <th scope="col">Dates</th>
-                            <th scope="col">Tarif</th>
-                            <th scope="col">Places</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($liste_activites as $ligne_activite) : ?>
-                            <?php
-                            $restantes = places_restantes($ligne_activite);
-                            $en_attente = entier($ligne_activite['places_attente']);
-                            ?>
-                            <tr>
-                                <td>
-                                    <a href="<?= e(chemin_site('activite.php?id=' . entier($ligne_activite['id']))) ?>"><?= e($ligne_activite['nom']) ?></a>
-                                    <span class="d-block small text-body-secondary"><?= e($ligne_activite['secteur_nom']) ?> — <?= e($ligne_activite['type_nom']) ?> — réf. <?= e($ligne_activite['referent']) ?></span>
-                                </td>
-                                <td class="small"><?= e(activite_dates($ligne_activite)) ?></td>
-                                <td><?= e(activite_prix($ligne_activite)) ?></td>
-                                <td>
-                                    <?= entier($ligne_activite['places_prises']) ?><?= $restantes === null ? '' : ' / ' . entier($ligne_activite['nb_places']) ?>
-                                    <?php if ($restantes === 0) : ?><span class="badge text-bg-danger">Complet</span><?php endif; ?>
-                                    <?php if ($en_attente > 0) : ?><span class="badge text-bg-warning"><?= $en_attente ?> en attente</span><?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
+            <h2 class="h5">Activités en cours et à venir <span class="badge text-bg-secondary"><?= $nb_en_cours ?></span></h2>
+            <?php if ($activites_en_cours === []) : ?>
+                <p class="text-body-secondary">Aucune activité en cours ou à venir.</p>
+            <?php else : ?>
+                <?php afficher_tableau_activites($activites_en_cours); ?>
+            <?php endif; ?>
+            <?php if ($nb_passees === 0) : ?>
+                <h2 class="h5 mt-4">Activités passées <span class="badge text-bg-secondary">0</span></h2>
+                <p class="text-body-secondary">Aucune activité passée.</p>
+            <?php else : ?>
+                <details class="activites-passees mt-4" <?= $nb_en_cours === 0 ? 'open' : '' ?>>
+                    <summary class="h5">Activités passées <span class="badge text-bg-secondary"><?= $nb_passees ?></span></summary>
+                    <?php foreach ($activites_passees as $mois_passe => $activites_du_mois) : ?>
+                        <h3 class="h6 mt-3"><?= e(mois_fr($mois_passe . '-01')) ?></h3>
+                        <?php afficher_tableau_activites($activites_du_mois); ?>
+                    <?php endforeach; ?>
+                </details>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
 </div>

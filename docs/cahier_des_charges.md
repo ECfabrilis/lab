@@ -141,6 +141,8 @@ Une activité ne se **supprime** que si elle est vide (aucune inscription, même
 
 **Activité déjà créée ?** À la création, l'application cherche dans la saison une activité au **nom presque identique** (sans tenir compte des accents ni des majuscules, à une ou deux lettres près) et aux **dates similaires** (périodes qui se chevauchent, ou débuts à 7 jours d'écart au plus). Si elle en trouve une, elle la cite et demande de cocher « Créer quand même ».
 
+**Liste des activités** : les activités **en cours ou à venir** sont affichées d'abord, par date de début. Les activités **passées** sont affichées à part, dans un bloc **replié** qui s'ouvre d'un clic (il est ouvert d'office quand il n'y a aucune activité en cours ou à venir, par exemple pour une saison passée) ; elles y sont **classées par mois de début**, du plus récent au plus ancien. Une activité est passée quand sa **date de fin** est avant aujourd'hui ; sans date de fin, c'est sa date de début qui compte : une activité régulière doit donc avoir une date de fin pour rester « en cours ». Les filtres s'appliquent aux deux blocs, et chaque bloc affiche son nombre d'activités.
+
 **Recherche** : la liste des activités se filtre par nom (n'importe où dans le nom), secteur et type ; la même recherche par nom existe au moment de choisir l'activité d'une inscription.
 
 ### 6.2 Inscription

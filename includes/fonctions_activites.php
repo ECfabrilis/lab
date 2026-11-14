@@ -359,6 +359,93 @@ function activites_liste(int $saison_id, int $secteur_id = 0, int $type_id = 0, 
 }
 
 /**
+ * Une activité est passée quand sa date de fin est avant aujourd'hui ; sans
+ * date de fin, c'est sa date de début qui compte.
+ *
+ * @param array<string, mixed> $activite
+ * @param string $aujourdhui date du jour (AAAA-MM-JJ) ; '' pour la date réelle
+ */
+function activite_est_passee(array $activite, string $aujourdhui = ''): bool
+{
+    $derniere = texte($activite['date_fin'] ?? '');
+    if ($derniere === '') {
+        $derniere = texte($activite['date_debut'] ?? '');
+    }
+    return $derniere !== '' && $derniere < ($aujourdhui === '' ? date('Y-m-d') : $aujourdhui);
+}
+
+/**
+ * Sépare une liste d'activités : celles en cours ou à venir (dans l'ordre de
+ * la liste), et les passées regroupées par mois de début (clé « AAAA-MM »),
+ * du mois le plus récent au plus ancien, la plus récente d'abord dans un mois.
+ *
+ * @param list<array<string, mixed>> $activites liste lue par activites_liste()
+ * @param string $aujourdhui date du jour (AAAA-MM-JJ) ; '' pour la date réelle
+ * @return array{en_cours: list<array<string, mixed>>, passees: array<string, list<array<string, mixed>>>, nb_passees: int}
+ */
+function activites_separer_passees(array $activites, string $aujourdhui = ''): array
+{
+    $en_cours = [];
+    $passees = [];
+    $nb_passees = 0;
+    // La liste est triée par date de début : on la parcourt à l'envers pour
+    // avoir les activités passées de la plus récente à la plus ancienne.
+    foreach (array_reverse($activites) as $activite) {
+        if (activite_est_passee($activite, $aujourdhui)) {
+            $passees[substr(texte($activite['date_debut'] ?? ''), 0, 7)][] = $activite;
+            $nb_passees++;
+        } else {
+            array_unshift($en_cours, $activite);
+        }
+    }
+    return ['en_cours' => $en_cours, 'passees' => $passees, 'nb_passees' => $nb_passees];
+}
+
+/**
+ * Affiche un tableau d'activités (nom, dates, tarif, places).
+ *
+ * @param list<array<string, mixed>> $activites lignes lues par activites_liste()
+ */
+function afficher_tableau_activites(array $activites): void
+{
+    ?>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th scope="col">Activité</th>
+                    <th scope="col">Dates</th>
+                    <th scope="col">Tarif</th>
+                    <th scope="col">Places</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach ($activites as $activite) : ?>
+                    <?php
+                    $restantes = places_restantes($activite);
+                    $en_attente = entier($activite['places_attente']);
+                    ?>
+                    <tr>
+                        <td>
+                            <a href="<?= e(chemin_site('activite.php?id=' . entier($activite['id']))) ?>"><?= e($activite['nom']) ?></a>
+                            <span class="d-block small text-body-secondary"><?= e($activite['secteur_nom']) ?> — <?= e($activite['type_nom']) ?> — réf. <?= e($activite['referent']) ?></span>
+                        </td>
+                        <td class="small"><?= e(activite_dates($activite)) ?></td>
+                        <td><?= e(activite_prix($activite)) ?></td>
+                        <td>
+                            <?= entier($activite['places_prises']) ?><?= $restantes === null ? '' : ' / ' . entier($activite['nb_places']) ?>
+                            <?php if ($restantes === 0) : ?><span class="badge text-bg-danger">Complet</span><?php endif; ?>
+                            <?php if ($en_attente > 0) : ?><span class="badge text-bg-warning"><?= $en_attente ?> en attente</span><?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <?php
+}
+
+/**
  * Places encore libres d'une activité ; null si les places ne sont pas limitées.
  *
  * @param array<string, mixed> $activite ligne lue par activite_par_id() ou activites_liste()

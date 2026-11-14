@@ -13249,3 +13249,6 @@ textarea.form-control-lg {
     break-inside: avoid;
   }
 }
+.activites-passees > summary {
+  cursor: pointer;
+}

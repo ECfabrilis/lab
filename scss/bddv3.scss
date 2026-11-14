@@ -270,3 +270,9 @@ $utilities: map-merge(
     }
   }
 }
+
+// Liste des activités : le bloc replié des activités passées. Le titre du bloc
+// se clique pour l'ouvrir.
+.activites-passees > summary {
+  cursor: pointer;
+}

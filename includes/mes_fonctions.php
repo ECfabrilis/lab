@@ -454,6 +454,20 @@ function date_fr(mixed $date): string
     return $horodatage === false ? '' : date('d/m/Y', $horodatage);
 }
 
+/** Mois d'une date de la base, en toutes lettres : « Octobre 2026 ». */
+function mois_fr(mixed $date): string
+{
+    $horodatage = strtotime(texte($date));
+    if ($horodatage === false) {
+        return '';
+    }
+    $mois = [
+        1 => 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin',
+        'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
+    ];
+    return $mois[(int) date('n', $horodatage)] . ' ' . date('Y', $horodatage);
+}
+
 /** Date et heure de la base au format JJ/MM/AAAA à HH:MM. */
 function date_heure_fr(mixed $date): string
 {
