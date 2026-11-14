@@ -5,7 +5,7 @@ declare(strict_types=1);
 // Statistiques (cahier des charges, section 10) : adhérents, activités,
 // scolarité, pour une saison ou une période libre, avec la comparaison à la
 // saison précédente (ou à la même période un an plus tôt). Les activités se
-// filtrent par secteur, type et récurrence. Un bouton affiche ou retire les
+// filtrent par secteur, type et récurrence. Un interrupteur affiche ou retire les
 // chiffres de comparaison (N-1).
 // Les filtres sont dans l'adresse de la page : aucune donnée personnelle n'y figure.
 // Consultation : tout utilisateur connecté (aucun montant n'est affiché).
@@ -173,11 +173,11 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="mb-3">
+            <div class="form-check form-switch mb-3">
                 <?php // Case décochée : rien n'est envoyé ; le champ caché dit alors « sans évolution ». ?>
                 <input type="hidden" name="evolution" value="0">
-                <input class="btn-check" type="checkbox" id="evolution" name="evolution" value="1" autocomplete="off" <?= $afficher_evolution ? 'checked' : '' ?> data-envoi-auto>
-                <label class="btn btn-outline-primary w-100" for="evolution">Afficher l'évolution (N-1 / N)</label>
+                <input class="form-check-input" type="checkbox" role="switch" id="evolution" name="evolution" value="1" <?= $afficher_evolution ? 'checked' : '' ?> data-envoi-auto>
+                <label class="form-check-label" for="evolution">Afficher l'évolution (N-1 / N)</label>
             </div>
             <div class="d-flex flex-wrap gap-2">
                 <button class="btn btn-primary" type="submit">Afficher</button>

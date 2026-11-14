@@ -220,7 +220,7 @@ Indicateurs issus du rapport d'activité 2025 :
 - Un **nouvel adhérent** n'a été inscrit pour aucune saison antérieure ; les autres sont des réadhésions.
 - Un **participant** a une inscription en cours à une activité, hors liste d'attente et hors annulations ; une **participation** est une place prise.
 - Avec un **secteur**, un **type d'activité** ou une **récurrence**, les chiffres des adhérents sont ceux du public de ces activités.
-- **Comparaison** : la saison précédente, ou la même période un an plus tôt. Un bouton « Afficher l'évolution (N-1 / N) » affiche ou retire ces chiffres (affichés par défaut).
+- **Comparaison** : la saison précédente, ou la même période un an plus tôt. Un interrupteur « Afficher l'évolution (N-1 / N) » affiche ou retire ces chiffres (affichés par défaut).
 - **Tranches d'âge et groupes de lieu de résidence** (Paramètres > Options > Statistiques) : communs à toutes les saisons ; les modifier change aussi les chiffres affichés pour les saisons passées. Les tranches se définissent par leurs âges de début ; un groupe de résidence par des codes postaux complets (75017) ou des débuts de code (75), un code n'appartenant qu'à un seul groupe et le plus précis l'emportant.
 - **Couleurs des graphiques** (même page d'options) : une palette de 8 couleurs, choisie parmi des palettes prédéfinies (par défaut, dégradé de la couleur principale, adaptée aux daltoniens, nuances de gris) ou composée par l'administrateur. La première couleur sert aux histogrammes, les suivantes aux anneaux ; les barres de la saison précédente restent grises.
 - La page s'imprime ; aucun montant n'y figure, elle est ouverte à tous les rôles.
