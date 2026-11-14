@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 // Fiche d'une famille : ses membres, leur inscription pour la saison affichée
 // (inscrire, retirer), les notes de la saison et le rappel des autres saisons.
+// Un membre change de famille par changer_famille.php (lien sur sa ligne).
 // Le « dossier » (lien famille-saison) est créé automatiquement à la première
 // inscription de la saison ; il n'est jamais montré à l'écran.
 // Consultation : tout utilisateur connecté. Modification : rôle standard au minimum.
@@ -227,6 +228,8 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                             <button class="btn btn-sm btn-outline-primary" type="submit" name="action" value="inscrire_membre">Inscrire pour la saison</button>
                                         <?php endif; ?>
                                     </form>
+                                    <?php // Changement de famille : la confirmation et les contrôles sont sur changer_famille.php. ?>
+                                    <a class="small" href="<?= e(chemin_site('changer_famille.php?id=' . entier($membre['id']))) ?>"><?= count($membres) > 1 ? 'Retirer de la famille' : 'Rejoindre une autre famille' ?></a>
                                 </td>
                             <?php endif; ?>
                         </tr>

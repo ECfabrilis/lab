@@ -361,6 +361,243 @@ function retirer_de_la_saison(int $dossier_id, int $adherent_id): bool
     return true;
 }
 
+// ---------------------------------------------------------------------------
+// Changement de famille
+//
+// Règle gardée : tout ce qui concerne une personne pour une saison (adresse,
+// inscriptions, cotisation individuelle, réductions personnelles) est dans le
+// dossier de SA famille. Quand elle change de famille, ses lignes la suivent,
+// pour toutes les saisons.
+// ---------------------------------------------------------------------------
+
+/** Tables dont les lignes sont rattachées à un dossier et à une personne. */
+const TABLES_DOSSIER_PERSONNE = ['dossiers_adherents', 'inscriptions', 'cotisations', 'reductions'];
+
+/** Nombre de membres d'une famille (les fiches anonymisées comptent). */
+function famille_membres_nb(int $famille_id): int
+{
+    return entier(db_valeur('SELECT COUNT(*) FROM adherents WHERE famille_id = ?', [$famille_id]));
+}
+
+/**
+ * Raison pour laquelle une personne ne peut pas changer de famille, ou ''.
+ *
+ * @param array<string, mixed> $adherent ligne de la table adherents
+ */
+function changement_famille_refus(array $adherent): string
+{
+    if (entier($adherent['est_structure'] ?? 0) === 1) {
+        return 'Une structure n\'a pas de famille.';
+    }
+    if (texte($adherent['anonymise_le'] ?? '') !== '') {
+        return 'Cette fiche est anonymisée : elle ne peut plus changer de famille.';
+    }
+    $famille = famille_par_id(entier($adherent['famille_id'] ?? 0));
+    if ($famille === null || texte($famille['anonymise_le']) !== '') {
+        return 'Cette famille est anonymisée : ses membres ne peuvent plus la quitter.';
+    }
+    return '';
+}
+
+/**
+ * Retire une personne de sa famille : une nouvelle famille est créée à son
+ * nom, où elle est seule. La suivent, pour toutes les saisons : son adresse et
+ * sa scolarité, ses inscriptions aux activités, sa cotisation individuelle et
+ * ses réductions personnelles. Restent à la famille d'origine : la cotisation
+ * familiale, les réductions de toute la famille, les notes et les paiements
+ * (un paiement n'est pas rattaché à une personne).
+ *
+ * En simulation, rien n'est enregistré : la fonction sert à montrer, avant
+ * confirmation, les comptes tels qu'ils seraient après le retrait.
+ *
+ * @return array{famille_id: int, saisons: list<array{saison_nom: string, origine: array<string, int|string>|null, personne: array<string, int|string>|null}>}|null
+ *         null si le retrait est impossible (personne seule dans sa famille, structure, fiche anonymisée)
+ */
+function adherent_quitter_famille(int $adherent_id, bool $simulation = false): ?array
+{
+    db()->beginTransaction();
+    try {
+        $adherent = db_ligne('SELECT id, famille_id, nom, prenom, est_structure, anonymise_le FROM adherents WHERE id = ? FOR UPDATE', [$adherent_id]);
+        if ($adherent === null || changement_famille_refus($adherent) !== '') {
+            db()->rollBack();
+            return null;
+        }
+        $origine_id = entier($adherent['famille_id']);
+        $origine = db_ligne('SELECT id, nom FROM familles WHERE id = ? FOR UPDATE', [$origine_id]);
+        if ($origine === null || famille_membres_nb($origine_id) < 2) {
+            db()->rollBack();
+            return null;
+        }
+        $utilisateur_id = entier($_SESSION['utilisateur_id'] ?? 0);
+        $nouvelle_id = creer_famille(texte($adherent['nom']));
+        db_executer('UPDATE adherents SET famille_id = ?, modification_par = ? WHERE id = ?', [$nouvelle_id, $utilisateur_id, $adherent_id]);
+
+        // Saisons où la personne a quelque chose dans la famille d'origine.
+        $existe = [];
+        foreach (TABLES_DOSSIER_PERSONNE as $table) {
+            $existe[] = 'EXISTS (SELECT 1 FROM ' . $table . ' x WHERE x.dossier_id = d.id AND x.adherent_id = ?)';
+        }
+        $dossiers = db_lignes(
+            'SELECT d.id, d.saison_id, d.date_dossier, s.nom AS saison_nom
+               FROM dossiers d
+               JOIN saisons s ON s.id = d.saison_id
+              WHERE d.famille_id = ? AND (' . implode(' OR ', $existe) . ')
+              ORDER BY s.date_debut DESC',
+            [$origine_id, ...array_fill(0, count(TABLES_DOSSIER_PERSONNE), $adherent_id)]
+        );
+        $saisons = [];
+        foreach ($dossiers as $dossier) {
+            $ancien_dossier_id = entier($dossier['id']);
+            db_executer(
+                'INSERT INTO dossiers (famille_id, saison_id, date_dossier, creation_par) VALUES (?, ?, ?, ?)',
+                [$nouvelle_id, entier($dossier['saison_id']), texte($dossier['date_dossier']), $utilisateur_id]
+            );
+            $nouveau_dossier_id = entier(db()->lastInsertId());
+            foreach (TABLES_DOSSIER_PERSONNE as $table) {
+                db_executer(
+                    'UPDATE ' . $table . ' SET dossier_id = ? WHERE dossier_id = ? AND adherent_id = ?',
+                    [$nouveau_dossier_id, $ancien_dossier_id, $adherent_id]
+                );
+            }
+            $saisons[] = [
+                'saison_nom' => texte($dossier['saison_nom']),
+                'origine'    => compte_du_dossier($ancien_dossier_id),
+                'personne'   => compte_du_dossier($nouveau_dossier_id),
+            ];
+        }
+        journaliser(
+            'modification',
+            'adherents',
+            $adherent_id,
+            'Retrait de ' . nom_adherent($adherent) . ' de la famille ' . texte($origine['nom']),
+            ['famille_id' => $origine_id],
+            ['famille_id' => $nouvelle_id]
+        );
+        if ($simulation) {
+            db()->rollBack();
+        } else {
+            db()->commit();
+        }
+    } catch (Throwable $erreur) {
+        if (db()->inTransaction()) {
+            db()->rollBack();
+        }
+        throw $erreur;
+    }
+    return ['famille_id' => $nouvelle_id, 'saisons' => $saisons];
+}
+
+/**
+ * Saisons où réunir deux familles donnerait une cotisation familiale en plus
+ * d'une autre cotisation en cours (il faut d'abord en annuler une).
+ *
+ * @return list<string> noms des saisons
+ */
+function familles_cotisations_incompatibles(int $origine_id, int $cible_id): array
+{
+    $lignes = db_lignes(
+        'SELECT s.nom
+           FROM dossiers o
+           JOIN dossiers c ON c.saison_id = o.saison_id AND c.famille_id = ?
+           JOIN saisons s ON s.id = o.saison_id
+          WHERE o.famille_id = ?
+            AND EXISTS (SELECT 1 FROM cotisations x WHERE x.dossier_id = o.id AND x.est_annulee = 0)
+            AND EXISTS (SELECT 1 FROM cotisations y WHERE y.dossier_id = c.id AND y.est_annulee = 0)
+            AND EXISTS (SELECT 1 FROM cotisations z WHERE z.dossier_id IN (o.id, c.id) AND z.est_annulee = 0 AND z.forme = \'familiale\')
+          ORDER BY s.date_debut DESC',
+        [$cible_id, $origine_id]
+    );
+    return array_map(static fn (array $ligne): string => texte($ligne['nom']), $lignes);
+}
+
+/**
+ * Fait entrer dans une autre famille une personne seule dans la sienne.
+ * Tout ce que contient sa famille (inscriptions, cotisations, réductions,
+ * paiements, notes des saisons) passe dans la famille d'accueil ; l'ancienne
+ * famille, vide, est supprimée.
+ *
+ * @return string message d'erreur, ou '' si la personne a changé de famille
+ */
+function adherent_rejoindre_famille(int $adherent_id, int $cible_id): string
+{
+    db()->beginTransaction();
+    try {
+        $adherent = db_ligne('SELECT id, famille_id, nom, prenom, est_structure, anonymise_le FROM adherents WHERE id = ? FOR UPDATE', [$adherent_id]);
+        $erreur = $adherent === null ? 'Cet adhérent n\'existe pas.' : changement_famille_refus($adherent);
+        $origine_id = entier($adherent['famille_id'] ?? 0);
+        if ($erreur === '' && $cible_id === $origine_id) {
+            $erreur = 'Cette personne fait déjà partie de cette famille.';
+        }
+        // Les deux familles sont verrouillées dans le même ordre, quel que soit le sens du changement.
+        $familles = [];
+        if ($erreur === '') {
+            foreach (db_lignes('SELECT id, nom, anonymise_le FROM familles WHERE id IN (?, ?) ORDER BY id FOR UPDATE', [$origine_id, $cible_id]) as $ligne) {
+                $familles[entier($ligne['id'])] = $ligne;
+            }
+            if (!isset($familles[$cible_id]) || texte($familles[$cible_id]['anonymise_le']) !== '') {
+                $erreur = 'La famille choisie n\'existe pas ou est anonymisée.';
+            } elseif (famille_membres_nb($origine_id) !== 1) {
+                $erreur = 'Cette personne n\'est pas seule dans sa famille : retirez-la d\'abord de sa famille.';
+            } else {
+                $saisons = familles_cotisations_incompatibles($origine_id, $cible_id);
+                if ($saisons !== []) {
+                    $erreur = 'Les deux familles ont des cotisations en cours, dont une familiale, pour la saison ' . implode(', ', $saisons)
+                        . ' : annulez-en une d\'abord, dans les paiements de la famille.';
+                }
+            }
+        }
+        if ($adherent === null || $erreur !== '') {
+            db()->rollBack();
+            return $erreur;
+        }
+
+        $utilisateur_id = entier($_SESSION['utilisateur_id'] ?? 0);
+        $dossiers = db_lignes(
+            'SELECT o.id, o.date_dossier, o.notes, c.id AS cible_dossier_id, c.notes AS cible_notes
+               FROM dossiers o
+               LEFT JOIN dossiers c ON c.saison_id = o.saison_id AND c.famille_id = ?
+              WHERE o.famille_id = ?',
+            [$cible_id, $origine_id]
+        );
+        foreach ($dossiers as $dossier) {
+            $dossier_id = entier($dossier['id']);
+            $cible_dossier_id = entier($dossier['cible_dossier_id']);
+            if ($cible_dossier_id === 0) {
+                // La famille d'accueil n'a rien pour cette saison : elle reprend le dossier tel quel.
+                db_executer('UPDATE dossiers SET famille_id = ?, modification_par = ? WHERE id = ?', [$cible_id, $utilisateur_id, $dossier_id]);
+                continue;
+            }
+            foreach ([...TABLES_DOSSIER_PERSONNE, 'paiements'] as $table) {
+                db_executer('UPDATE ' . $table . ' SET dossier_id = ? WHERE dossier_id = ?', [$cible_dossier_id, $dossier_id]);
+            }
+            $notes = trim(texte($dossier['cible_notes']) . "\n" . texte($dossier['notes']));
+            db_executer(
+                'UPDATE dossiers SET notes = ?, date_dossier = LEAST(date_dossier, ?), modification_par = ? WHERE id = ?',
+                [nul_si_vide($notes), texte($dossier['date_dossier']), $utilisateur_id, $cible_dossier_id]
+            );
+            db_executer('DELETE FROM dossiers WHERE id = ?', [$dossier_id]);
+        }
+        db_executer('UPDATE adherents SET famille_id = ?, modification_par = ? WHERE id = ?', [$cible_id, $utilisateur_id, $adherent_id]);
+        db_executer('DELETE FROM familles WHERE id = ?', [$origine_id]);
+        journaliser(
+            'modification',
+            'adherents',
+            $adherent_id,
+            'Entrée de ' . nom_adherent($adherent) . ' dans la famille ' . texte($familles[$cible_id]['nom']),
+            ['famille_id' => $origine_id],
+            ['famille_id' => $cible_id]
+        );
+        journaliser('suppression', 'familles', $origine_id, 'Suppression de la famille ' . texte($familles[$origine_id]['nom']) . ', restée sans membre', ['nom' => texte($familles[$origine_id]['nom'])]);
+        db()->commit();
+    } catch (Throwable $exception) {
+        if (db()->inTransaction()) {
+            db()->rollBack();
+        }
+        throw $exception;
+    }
+    return '';
+}
+
 /**
  * Adhérents d'un dossier, avec leur adresse et leur scolarité de la saison.
  *

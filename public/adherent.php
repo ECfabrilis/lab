@@ -164,6 +164,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?php if ($peut_modifier) : ?>
                 <button class="btn btn-outline-primary" type="button" data-bs-toggle="modal" data-bs-target="#fenetreFiche">Modifier la fiche</button>
             <?php endif; ?>
+            <?php if ($peut_modifier && !$est_structure) : ?>
+                <?php // Retirer de la famille, ou rejoindre une autre famille : tout se passe sur changer_famille.php. ?>
+                <a class="btn btn-outline-secondary" href="<?= e(chemin_site('changer_famille.php?id=' . $fiche_id)) ?>">Changer de famille</a>
+            <?php endif; ?>
             <?php if ($peut_modifier && $est_structure && $adresse_saison !== null) : ?>
                 <form class="d-grid" method="post" action="<?= e(chemin_site('adherent.php')) ?>">
                     <?= csrf_champ() ?>
