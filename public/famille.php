@@ -91,7 +91,7 @@ if (est_post()) {
     if ($action === 'retirer_membre') {
         $dossier_id = dossier_id_de_famille($famille_id, $saison_affichee_id);
         if ($dossier_id > 0 && inscriptions_actives_nb($dossier_id, entier(post('adherent_id'))) > 0) {
-            flash('erreur', 'Cette personne a des inscriptions en cours à des activités de la saison : annulez-les d\'abord.');
+            flash('erreur', 'Cette personne a des inscriptions en cours ou inactives à des activités de la saison : annulez-les d\'abord.');
         } elseif ($dossier_id > 0 && cotisations_actives_nb($dossier_id, entier(post('adherent_id'))) > 0) {
             flash('erreur', 'Cette personne a une cotisation en cours pour la saison : annulez-la d\'abord, dans les paiements de la famille.');
         } elseif ($dossier_id > 0 && retirer_de_la_saison($dossier_id, entier(post('adherent_id')))) {

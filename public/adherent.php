@@ -105,7 +105,7 @@ if (est_post()) {
             flash('erreur', ($est_structure ? 'Cette structure n\'est pas inscrite' : 'Cette personne n\'est pas inscrite') . ' pour la saison.');
         } elseif ($action === 'retirer_saison') {
             if (inscriptions_actives_nb($dossier_id, $fiche_id) > 0) {
-                flash('erreur', 'Cette structure a des inscriptions en cours à des activités de la saison : annulez-les d\'abord.');
+                flash('erreur', 'Cette structure a des inscriptions en cours ou inactives à des activités de la saison : annulez-les d\'abord.');
             } elseif (cotisations_actives_nb($dossier_id, $fiche_id) > 0) {
                 flash('erreur', 'Cette structure a une cotisation en cours pour la saison : annulez-la d\'abord, dans ses paiements.');
             } elseif (retirer_de_la_saison($dossier_id, $fiche_id)) {

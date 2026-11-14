@@ -130,7 +130,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             </div>
         <?php endif; ?>
         <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
-            <li>Le montant dû additionne les cotisations et les inscriptions en cours aux activités (hors liste d'attente), moins les réductions.</li>
+            <li>Le montant dû additionne les cotisations et les inscriptions en cours aux activités (hors liste d'attente), moins les réductions. Une inscription rendue inactive reste due ; une inscription annulée ne l'est plus.</li>
             <li>Un tarif familial ne compte qu'une fois par activité, quel que soit le nombre de membres inscrits à ce tarif.</li>
         </ul>
     </div>
@@ -256,7 +256,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <div class="border rounded p-3 mb-3">
                 <h2 class="h5">Activités</h2>
                 <?php if ($inscriptions_comptees === []) : ?>
-                    <p class="text-body-secondary mb-0">Aucune inscription en cours à une activité.</p>
+                    <p class="text-body-secondary mb-0">Aucune inscription à une activité.</p>
                 <?php else : ?>
                     <?php if (array_filter(array_column($inscriptions_comptees, 'forfait_nom')) !== []) : ?>
                         <p class="small text-body-secondary">Un forfait ne se paie qu'une fois par personne (ou par famille, au tarif familial), quel que soit le nombre d'activités qui l'utilisent.</p>
@@ -273,7 +273,12 @@ require DOSSIER_PRIVE . '/includes/header.php';
                             <tbody>
                                 <?php foreach ($inscriptions_comptees as $ligne_inscription) : ?>
                                     <tr>
-                                        <td><a href="<?= e(chemin_site('activite.php?id=' . entier($ligne_inscription['activite_id']))) ?>"><?= e($ligne_inscription['activite_nom']) ?></a></td>
+                                        <td>
+                                            <a href="<?= e(chemin_site('activite.php?id=' . entier($ligne_inscription['activite_id']))) ?>"><?= e($ligne_inscription['activite_nom']) ?></a>
+                                            <?php if (texte($ligne_inscription['statut']) === 'inactif') : ?>
+                                                <span class="badge text-bg-secondary">Inactive</span>
+                                            <?php endif; ?>
+                                        </td>
                                         <td>
                                             <?= e(nom_adherent($ligne_inscription)) ?>
                                             <?php if (entier($ligne_inscription['nb_places']) > 1) : ?>

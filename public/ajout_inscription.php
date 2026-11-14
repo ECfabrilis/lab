@@ -267,7 +267,9 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <?php elseif ($activite !== null) : ?>
             <?php // ----- Confirmation : l'activité et l'adhérent sont connus ----- ?>
             <h2 class="h5 mb-3">Inscrire <?= e(nom_adherent($inscrit)) ?> à « <?= e($activite['nom']) ?> »</h2>
-            <?php if (!$est_structure && inscription_existe($activite_id, $adherent_id)) : ?>
+            <?php if (!$est_structure && inscription_inactive_existe($activite_id, $adherent_id)) : ?>
+                <div class="alert alert-info" role="alert"><?= e(nom_adherent($inscrit)) ?> a une inscription inactive à cette activité : réactivez-la sur la <a class="alert-link" href="<?= e(chemin_site('activite.php?id=' . $activite_id)) ?>">fiche de l'activité</a>.</div>
+            <?php elseif (!$est_structure && inscription_existe($activite_id, $adherent_id)) : ?>
                 <div class="alert alert-info" role="alert"><?= e(nom_adherent($inscrit)) ?> a déjà une inscription en cours à cette activité.</div>
             <?php elseif ($restantes === 0 && !$a_liste_attente) : ?>
                 <div class="alert alert-danger" role="alert">Cette activité est complète et n'a pas de liste d'attente.</div>

@@ -93,7 +93,7 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 - **Structure** : le montant de sa cotisation est **saisi** (négocié), comme pour ses inscriptions.
 - Une personne qui a une cotisation individuelle en cours ne peut pas être retirée de la saison.
 - Certaines activités sont **sans adhésion** (simple indicateur sur l'activité).
-- L'application calcule le **montant dû** et signale un **trop-perçu**. Montant dû = cotisations + inscriptions en cours aux activités (hors liste d'attente ; un tarif familial compte une fois par activité ; un **forfait** compte une seule fois, voir section 6.2) − réductions.
+- L'application calcule le **montant dû** et signale un **trop-perçu**. Montant dû = cotisations + inscriptions en cours ou inactives aux activités (hors liste d'attente et hors annulations ; un tarif familial compte une fois par activité ; un **forfait** compte une seule fois, voir section 6.2) − réductions.
 
 ---
 
@@ -142,14 +142,15 @@ Une activité ne se **supprime** que si elle est vide (aucune inscription, même
 ### 6.2 Inscription
 
 - Un adhérent s'inscrit à une activité ; une inscription porte un **nombre de places** (1 pour une personne, plusieurs pour une structure) qui s'impute sur les places de l'activité. Pour une structure, le **montant est négocié** : il est saisi à l'inscription au lieu d'être déduit du tarif ; si les places sont épuisées et que la liste d'attente est activée, il passe en liste d'attente.
-- L'adhérent doit d'abord être **inscrit pour la saison** de l'activité, y compris pour une activité « sans adhésion » (cet indicateur ne sert qu'au calcul de la cotisation). Tant qu'il a une inscription en cours à une activité, il ne peut pas être retiré de la saison.
-- Une personne n'a qu'**une inscription en cours** par activité ; une structure peut en avoir plusieurs.
+- L'adhérent doit d'abord être **inscrit pour la saison** de l'activité, y compris pour une activité « sans adhésion » (cet indicateur ne sert qu'au calcul de la cotisation). Tant qu'il a une inscription en cours ou inactive à une activité, il ne peut pas être retiré de la saison.
+- Une personne n'a qu'**une inscription en cours ou inactive** par activité ; une structure peut en avoir plusieurs.
 - Le **montant est copié** sur l'inscription au moment où elle est faite : modifier un tarif ne change pas les inscriptions déjà enregistrées.
 - **Tarif familial** : quand le tarif de l'activité a un montant familial, l'accueil choisit à l'inscription d'une personne entre le tarif individuel et le tarif familial. Chaque inscription au tarif familial porte le montant familial, qui ne **compte qu'une fois par famille et par activité**, quel que soit le nombre de membres inscrits à ce tarif (calcul du montant dû, étape 3).
 - **Forfait** : un tarif de type « forfait » ne se paie **qu'une seule fois**, comme une cotisation. Il compte **une fois par personne et par forfait**, quel que soit le nombre d'activités qui partagent ce forfait (exemple : trois ateliers au « Forfait ateliers — 120 € » : 120 € et non 360 €) ; au montant familial, il compte **une fois par famille et par forfait** et **couvre toute la famille** : les inscriptions de ses membres au montant individuel du même forfait ne comptent alors plus. Deux forfaits différents se paient chacun une fois. L'inscription garde le tarif appliqué : changer ensuite le tarif d'une activité ne change pas les inscriptions déjà faites. Si les montants copiés diffèrent (tarif modifié entre deux inscriptions), le plus élevé est retenu. Une structure n'est pas concernée : son montant est négocié à chaque inscription.
 - **Places** : si les places demandées ne tiennent pas en entier, l'inscription va **entièrement en liste d'attente** quand l'activité en a une (exemple : une structure demande 5 places, il en reste 3) ; sinon elle est refusée.
 - **Liste d'attente** : on peut y inscrire quelqu'un **directement**, même s'il reste des places. Quand une place se libère, rien n'est automatique : la fiche de l'activité le signale et l'accueil **choisit** qui passe de la liste d'attente aux inscrits. À l'inverse, un inscrit peut être **passé en liste d'attente** (si l'activité en a une) : ses places sont libérées. La liste d'attente s'affiche dans l'**ordre d'entrée** dans cette liste.
-- Annulation par indicateur (pas de suppression), pour garder l'historique.
+- Annulation par indicateur (pas de suppression), pour garder l'historique. Une inscription annulée ne compte plus nulle part : ni places, ni montant dû, ni statistiques.
+- **Inscription inactive** (personne qui arrête en cours de saison, par exemple) : un inscrit peut être **rendu inactif** depuis la fiche de l'activité (rôle `standard`, action journalisée, date et auteur notés). Ses places sont **libérées**, mais l'inscription reste comptée dans les **statistiques** et son **montant reste dû** (forfait et tarif familial compris ; un geste passe par une réduction) ; elle compte aussi pour le signalement « sans cotisation ». Rien n'est automatique pour la liste d'attente : comme après une annulation, la fiche signale les places libres. Une inscription inactive se **réactive** si ses places sont encore libres (refus sinon) et peut être **annulée**. Tant qu'elle existe, la personne ne peut pas être réinscrite à la même activité (on réactive) ni retirée de la saison. Une inscription en liste d'attente ne se rend pas inactive : on l'annule.
 
 ---
 
@@ -218,7 +219,7 @@ Indicateurs issus du rapport d'activité 2025 :
 **Règles de calcul** (étape 6)
 - Un **adhérent** est une personne inscrite pour la saison. Sur une **période libre** : les personnes inscrites pour une saison qui recoupe la période, si leur inscription a été faite avant la fin de la période ; chacune est comptée une fois, avec son adresse la plus récente.
 - Un **nouvel adhérent** n'a été inscrit pour aucune saison antérieure ; les autres sont des réadhésions.
-- Un **participant** a une inscription en cours à une activité, hors liste d'attente et hors annulations ; une **participation** est une place prise.
+- Un **participant** a une inscription en cours ou **inactive** à une activité, hors liste d'attente et hors annulations ; une **participation** est une place prise, ou la place d'une inscription inactive (libérée depuis, mais la personne a participé). Les inscriptions inactives sont comptées avec les autres, sans distinction.
 - Avec un **secteur**, un **type d'activité** ou une **récurrence**, les chiffres des adhérents sont ceux du public de ces activités.
 - **Comparaison** : la saison précédente, ou la même période un an plus tôt. Un interrupteur « Afficher l'évolution (N-1 / N) » affiche ou retire ces chiffres (affichés par défaut).
 - **Tranches d'âge et groupes de lieu de résidence** (Paramètres > Options > Statistiques) : communs à toutes les saisons ; les modifier change aussi les chiffres affichés pour les saisons passées. Les tranches se définissent par leurs âges de début ; un groupe de résidence par des codes postaux complets (75017) ou des débuts de code (75), un code n'appartenant qu'à un seul groupe et le plus précis l'emportant.

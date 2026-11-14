@@ -14,8 +14,9 @@ declare(strict_types=1);
  *     période ; chacune est comptée une fois, avec son adresse la plus récente ;
  *   - l'âge est calculé au 31 décembre de l'année où commence la saison (ou la
  *     période), jamais stocké ;
- *   - un participant a une inscription en cours à une activité, hors liste
- *     d'attente et hors annulations ;
+ *   - un participant a une inscription en cours ou inactive à une activité,
+ *     hors liste d'attente et hors annulations (une inscription inactive a
+ *     libéré sa place, mais la personne a participé : elle reste comptée) ;
  *   - aucun montant n'apparaît : les statistiques sont ouvertes à tous les rôles.
  */
 
@@ -571,7 +572,7 @@ function stats_adherents_lignes(array $perimetre): array
         $condition .= ' AND EXISTS (
                 SELECT 1 FROM inscriptions i
                   JOIN activites ac ON ac.id = i.activite_id
-                 WHERE i.adherent_id = a.id AND i.est_annulee = 0 AND i.statut = \'inscrit\' AND ' . $activites['sql'] . ')';
+                 WHERE i.adherent_id = a.id AND i.est_annulee = 0 AND i.statut IN (\'inscrit\', \'inactif\') AND ' . $activites['sql'] . ')';
         $parametres = [...$parametres, ...$activites['parametres']];
     }
     $lignes = db_lignes(
@@ -732,8 +733,8 @@ const STATS_ACTIVITES_CHIFFRES = ['activites', 'participants', 'participations',
 /**
  * Chiffres des activités du périmètre : total, par secteur, par type et par activité.
  *   activites      : nombre d'activités
- *   participants   : personnes différentes inscrites (hors structures)
- *   participations : places prises par les inscrits (structures comprises)
+ *   participants   : personnes différentes inscrites, inscriptions inactives comprises (hors structures)
+ *   participations : places des inscrits et des inscriptions inactives (structures comprises)
  *   familles       : familles différentes concernées
  *   adultes / enfants : participants de 18 ans et plus / de moins de 18 ans, à la date de calcul de l'âge
  *   structures     : structures différentes inscrites

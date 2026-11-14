@@ -446,8 +446,11 @@ CREATE TABLE IF NOT EXISTS `activites` (
 --     tarif_id : le tarif appliqué. Un tarif « forfait » ne compte qu'une fois
 --     par personne (ou par famille, au montant familial) dans le montant dû,
 --     quel que soit le nombre d'activités qui l'utilisent.
---     statut : 'inscrit' (compte dans les places) ou 'attente' (liste d'attente).
---     Une inscription ne se supprime pas : elle s'annule (est_annulee = 1).
+--     statut : 'inscrit' (compte dans les places), 'attente' (liste d'attente)
+--     ou 'inactif' (places libérées, mais l'inscription reste comptée dans
+--     les statistiques et dans le montant dû ; elle peut être réactivée).
+--     Une inscription ne se supprime pas : elle s'annule (est_annulee = 1) ;
+--     annulée, elle ne compte plus nulle part.
 --     L'activité et le dossier sont de la même saison : vérifié en PHP.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `inscriptions` (
@@ -459,8 +462,10 @@ CREATE TABLE IF NOT EXISTS `inscriptions` (
   `tarif_id`         INT UNSIGNED DEFAULT NULL COMMENT 'Tarif applique a l inscription ; NULL = gratuit ou montant negocie (structure)',
   `montant`          DECIMAL(8,2) NOT NULL DEFAULT 0.00 COMMENT 'Copie du tarif au moment de l inscription, ou montant negocie',
   `est_tarif_familial` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = montant familial : compte une seule fois par famille et par activite (par forfait pour un tarif forfait)',
-  `statut`           ENUM('inscrit','attente') NOT NULL DEFAULT 'inscrit',
+  `statut`           ENUM('inscrit','attente','inactif') NOT NULL DEFAULT 'inscrit',
   `attente_le`       DATETIME DEFAULT NULL COMMENT 'Date d entree en liste d attente ; NULL pour un inscrit',
+  `inactive_le`      DATETIME DEFAULT NULL COMMENT 'Date ou l inscription a ete rendue inactive ; NULL sinon',
+  `inactivation_par` INT UNSIGNED DEFAULT NULL,
   `est_annulee`      TINYINT(1) NOT NULL DEFAULT 0,
   `annulee_le`       DATETIME DEFAULT NULL,
   `annulation_par`   INT UNSIGNED DEFAULT NULL,
@@ -473,6 +478,7 @@ CREATE TABLE IF NOT EXISTS `inscriptions` (
   KEY `idx_inscriptions_dossier` (`dossier_id`),
   KEY `idx_inscriptions_adherent` (`adherent_id`),
   KEY `idx_inscriptions_tarif` (`tarif_id`),
+  KEY `idx_inscriptions_inactivation_par` (`inactivation_par`),
   KEY `idx_inscriptions_annulation_par` (`annulation_par`),
   KEY `idx_inscriptions_creation_par` (`creation_par`),
   KEY `idx_inscriptions_modification_par` (`modification_par`),
@@ -480,6 +486,7 @@ CREATE TABLE IF NOT EXISTS `inscriptions` (
   CONSTRAINT `fk_inscriptions_dossier` FOREIGN KEY (`dossier_id`) REFERENCES `dossiers` (`id`),
   CONSTRAINT `fk_inscriptions_adherent` FOREIGN KEY (`adherent_id`) REFERENCES `adherents` (`id`),
   CONSTRAINT `fk_inscriptions_tarif` FOREIGN KEY (`tarif_id`) REFERENCES `tarifs` (`id`),
+  CONSTRAINT `fk_inscriptions_inactivation_par` FOREIGN KEY (`inactivation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_inscriptions_annulation_par` FOREIGN KEY (`annulation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_inscriptions_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_inscriptions_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`),
@@ -505,7 +512,7 @@ CREATE TABLE IF NOT EXISTS `inscriptions` (
 --     modes_paiement : liste des modes proposés à la saisie d'un paiement,
 --       gérée par un administrateur (un mode utilisé ne se supprime pas : il
 --       se rend inactif).
---     Montant dû = cotisations + inscriptions en cours (hors liste d'attente,
+--     Montant dû = cotisations + inscriptions en cours ou inactives (hors liste d'attente,
 --       tarif familial compté une fois par activité) − réductions.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `cotisations` (

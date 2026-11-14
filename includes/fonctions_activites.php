@@ -735,7 +735,7 @@ function afficher_champs_activite(array $defauts, array $saison): void
 
 /**
  * Inscriptions d'une activité : les inscrits, puis la liste d'attente, puis
- * les annulées. Les inscrits sont dans l'ordre de leur inscription, la liste
+ * les inactives, puis les annulées. Les inscrits sont dans l'ordre de leur inscription, la liste
  * d'attente dans l'ordre d'entrée dans cette liste.
  *
  * @return list<array<string, mixed>>
@@ -743,7 +743,7 @@ function afficher_champs_activite(array $defauts, array $saison): void
 function inscriptions_activite(int $activite_id): array
 {
     return db_lignes(
-        'SELECT i.id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.attente_le, i.est_annulee, i.annulee_le, i.date_crea,
+        'SELECT i.id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.attente_le, i.inactive_le, i.est_annulee, i.annulee_le, i.date_crea,
                 a.nom, a.prenom, a.est_structure, a.date_naissance, a.mail, a.tel,
                 a.responsable_nom, a.responsable_tel
            FROM inscriptions i
@@ -762,7 +762,7 @@ function inscriptions_activite(int $activite_id): array
 function inscriptions_adherent(int $adherent_id, int $saison_id): array
 {
     return db_lignes(
-        'SELECT i.id, i.activite_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.est_annulee, i.annulee_le, i.date_crea,
+        'SELECT i.id, i.activite_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.inactive_le, i.est_annulee, i.annulee_le, i.date_crea,
                 ac.nom AS activite_nom, ac.date_debut, ac.date_fin
            FROM inscriptions i
            JOIN activites ac ON ac.id = i.activite_id
@@ -781,7 +781,7 @@ function inscriptions_adherent(int $adherent_id, int $saison_id): array
 function inscriptions_famille(int $famille_id, int $saison_id): array
 {
     return db_lignes(
-        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.est_annulee, i.annulee_le,
+        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.inactive_le, i.est_annulee, i.annulee_le,
                 ac.nom AS activite_nom, ac.date_debut, ac.date_fin
            FROM inscriptions i
            JOIN activites ac ON ac.id = i.activite_id
@@ -817,6 +817,8 @@ function afficher_inscriptions_activites(array $inscriptions): void
                     <span class="badge text-bg-secondary">Annulée le <?= e(date_fr($ligne_inscription['annulee_le'])) ?></span>
                 <?php elseif (texte($ligne_inscription['statut']) === 'attente') : ?>
                     <span class="badge text-bg-warning">Liste d'attente</span>
+                <?php elseif (texte($ligne_inscription['statut']) === 'inactif') : ?>
+                    <span class="badge text-bg-secondary">Inactive depuis le <?= e(date_fr($ligne_inscription['inactive_le'])) ?></span>
                 <?php endif; ?>
             </li>
         <?php endforeach; ?>
@@ -840,7 +842,7 @@ function inscription_par_id(int $id): ?array
     );
 }
 
-/** Nombre d'inscriptions non annulées d'un adhérent dans un dossier (elles empêchent de le retirer de la saison). */
+/** Nombre d'inscriptions non annulées (inactives comprises) d'un adhérent dans un dossier : elles empêchent de le retirer de la saison. */
 function inscriptions_actives_nb(int $dossier_id, int $adherent_id): int
 {
     return entier(db_valeur(
@@ -860,7 +862,7 @@ function inscription_familiale_existe(int $activite_id, int $dossier_id): bool
 
 /**
  * Ce qu'un forfait couvre déjà : la personne a-t-elle une inscription en cours
- * (hors liste d'attente) à ce forfait au montant individuel, et sa famille une
+ * ou inactive (hors liste d'attente) à ce forfait au montant individuel, et sa famille une
  * inscription au montant familial ? Dans ces cas, une nouvelle inscription au
  * même forfait n'ajoute rien au montant dû.
  *
@@ -872,7 +874,7 @@ function forfait_deja_pris(int $tarif_id, int $dossier_id, int $adherent_id): ar
         'SELECT COALESCE(SUM(est_tarif_familial = 0 AND adherent_id = ?), 0) AS individuel,
                 COALESCE(SUM(est_tarif_familial = 1), 0) AS familial
            FROM inscriptions
-          WHERE tarif_id = ? AND dossier_id = ? AND est_annulee = 0 AND statut = \'inscrit\'',
+          WHERE tarif_id = ? AND dossier_id = ? AND est_annulee = 0 AND statut IN (\'inscrit\', \'inactif\')',
         [$adherent_id, $tarif_id, $dossier_id]
     );
     return [
@@ -882,12 +884,24 @@ function forfait_deja_pris(int $tarif_id, int $dossier_id, int $adherent_id): ar
 }
 
 /**
- * Vrai si l'adhérent a déjà une inscription non annulée (inscrit ou en attente) à cette activité.
+ * Vrai si l'adhérent a déjà une inscription non annulée (inscrit, en attente ou inactive) à cette activité.
  */
 function inscription_existe(int $activite_id, int $adherent_id): bool
 {
     return entier(db_valeur(
         'SELECT COUNT(*) FROM inscriptions WHERE activite_id = ? AND adherent_id = ? AND est_annulee = 0',
+        [$activite_id, $adherent_id]
+    )) > 0;
+}
+
+/**
+ * Vrai si l'adhérent a une inscription inactive à cette activité : on la
+ * réactive au lieu de l'inscrire une seconde fois.
+ */
+function inscription_inactive_existe(int $activite_id, int $adherent_id): bool
+{
+    return entier(db_valeur(
+        'SELECT COUNT(*) FROM inscriptions WHERE activite_id = ? AND adherent_id = ? AND est_annulee = 0 AND statut = \'inactif\'',
         [$activite_id, $adherent_id]
     )) > 0;
 }
@@ -930,8 +944,8 @@ function activite_verrouiller(int $activite_id): ?array
  * Inscrit un adhérent à une activité.
  *
  * Règles : l'adhérent doit être inscrit pour la saison de l'activité ; une
- * personne n'a qu'une inscription en cours par activité (une structure peut en
- * avoir plusieurs) ; si les places demandées ne tiennent pas en entier,
+ * personne n'a qu'une inscription en cours ou inactive par activité (une
+ * structure peut en avoir plusieurs) ; si les places demandées ne tiennent pas en entier,
  * l'inscription passe entièrement en liste d'attente quand l'activité en a
  * une, et elle est refusée sinon ; on peut aussi demander directement la liste
  * d'attente, même s'il reste des places.
@@ -979,7 +993,9 @@ function inscription_creer(int $activite_id, array $adherent, int $nb_places, ?s
         } elseif (!$dans_saison) {
             $erreur = nom_adherent($adherent) . ' n\'est pas inscrit(e) pour la saison de cette activité : faites-le d\'abord sur sa fiche.';
         } elseif (!$est_structure && inscription_existe($activite_id, $adherent_id)) {
-            $erreur = nom_adherent($adherent) . ' a déjà une inscription en cours à cette activité.';
+            $erreur = inscription_inactive_existe($activite_id, $adherent_id)
+                ? nom_adherent($adherent) . ' a une inscription inactive à cette activité : réactivez-la sur la fiche de l\'activité.'
+                : nom_adherent($adherent) . ' a déjà une inscription en cours à cette activité.';
         } elseif ($nb_places < 1 || $nb_places > 9999 || (!$est_structure && $nb_places !== 1)) {
             $erreur = 'Le nombre de places n\'est pas valide.';
         } elseif ($familial && ($est_structure || $activite['tarif_montant_familial'] === null)) {
@@ -1062,6 +1078,99 @@ function inscription_annuler(array $inscription): bool
         ['est_annulee' => 1]
     );
     return true;
+}
+
+/**
+ * Rend une inscription inactive : ses places sont libérées, mais elle reste
+ * comptée dans les statistiques et dans le montant dû (à la différence d'une
+ * annulation). Seule une inscription de la liste des inscrits peut l'être.
+ *
+ * @param array<string, mixed> $inscription ligne lue par inscription_par_id()
+ * @return string message d'erreur, ou '' si l'inscription est inactive
+ */
+function inscription_rendre_inactive(array $inscription): string
+{
+    $inscription_id = entier($inscription['id'] ?? 0);
+    $utilisateur_id = entier($_SESSION['utilisateur_id'] ?? 0);
+    db()->beginTransaction();
+    try {
+        $activite = activite_verrouiller(entier($inscription['activite_id'] ?? 0));
+        // Relue après le verrou : un autre utilisateur a pu la modifier entre-temps.
+        $actuelle = db_ligne('SELECT statut, est_annulee FROM inscriptions WHERE id = ?', [$inscription_id]);
+        if ($activite === null || $actuelle === null || entier($actuelle['est_annulee']) === 1 || texte($actuelle['statut']) !== 'inscrit') {
+            db()->rollBack();
+            return 'Cette inscription n\'est plus dans la liste des inscrits.';
+        }
+        db_executer(
+            'UPDATE inscriptions SET statut = \'inactif\', inactive_le = ?, inactivation_par = ?, modification_par = ? WHERE id = ?',
+            [date('Y-m-d H:i:s'), $utilisateur_id, $utilisateur_id, $inscription_id]
+        );
+        journaliser(
+            'modification',
+            'inscriptions',
+            $inscription_id,
+            'Inscription rendue inactive : ' . nom_adherent($inscription),
+            ['statut' => 'inscrit'],
+            ['statut' => 'inactif']
+        );
+        db()->commit();
+        return '';
+    } catch (Throwable $exception) {
+        if (db()->inTransaction()) {
+            db()->rollBack();
+        }
+        throw $exception;
+    }
+}
+
+/**
+ * Réactive une inscription inactive : elle revient dans les inscrits, si ses
+ * places tiennent dans les places libres.
+ *
+ * @param array<string, mixed> $inscription ligne lue par inscription_par_id()
+ * @return string message d'erreur, ou '' si l'inscription est réactivée
+ */
+function inscription_reactiver(array $inscription): string
+{
+    $inscription_id = entier($inscription['id'] ?? 0);
+    db()->beginTransaction();
+    try {
+        $activite = activite_verrouiller(entier($inscription['activite_id'] ?? 0));
+        // Relue après le verrou : un autre utilisateur a pu la modifier entre-temps.
+        $actuelle = db_ligne('SELECT nb_places, statut, est_annulee FROM inscriptions WHERE id = ?', [$inscription_id]);
+        $erreur = '';
+        if ($activite === null || $actuelle === null || entier($actuelle['est_annulee']) === 1 || texte($actuelle['statut']) !== 'inactif') {
+            $erreur = 'Cette inscription n\'est plus inactive.';
+        } elseif ($activite['nb_places'] !== null && $activite['places_prises'] + entier($actuelle['nb_places']) > $activite['nb_places']) {
+            $restantes = max(0, $activite['nb_places'] - $activite['places_prises']);
+            $erreur = $restantes === 0
+                ? 'Cette activité est complète : l\'inscription ne peut pas être réactivée pour le moment.'
+                : 'Cette inscription demande ' . entier($actuelle['nb_places']) . ' places et il n\'en reste que ' . $restantes . '.';
+        }
+        if ($erreur !== '') {
+            db()->rollBack();
+            return $erreur;
+        }
+        db_executer(
+            'UPDATE inscriptions SET statut = \'inscrit\', inactive_le = NULL, inactivation_par = NULL, modification_par = ? WHERE id = ?',
+            [entier($_SESSION['utilisateur_id'] ?? 0), $inscription_id]
+        );
+        journaliser(
+            'modification',
+            'inscriptions',
+            $inscription_id,
+            'Inscription réactivée : ' . nom_adherent($inscription),
+            ['statut' => 'inactif'],
+            ['statut' => 'inscrit']
+        );
+        db()->commit();
+        return '';
+    } catch (Throwable $exception) {
+        if (db()->inTransaction()) {
+            db()->rollBack();
+        }
+        throw $exception;
+    }
 }
 
 /**

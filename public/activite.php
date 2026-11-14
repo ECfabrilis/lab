@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-// Fiche d'une activité : ses informations, ses inscrits, sa liste d'attente
-// et ses inscriptions annulées. L'activité se modifie dans une fenêtre.
+// Fiche d'une activité : ses informations, ses inscrits, sa liste d'attente,
+// ses inscriptions inactives et annulées. L'activité se modifie dans une fenêtre.
 // Consultation : tout utilisateur connecté (liste d'inscrits, téléphones).
-// Modification, suppression, annulation d'une inscription, passage des inscrits
-// à la liste d'attente et inversement : rôle standard au minimum.
+// Modification, suppression, annulation d'une inscription, inscription rendue
+// inactive ou réactivée, passage des inscrits à la liste d'attente et
+// inversement : rôle standard au minimum.
 
 require __DIR__ . '/_chemins.php';
 require DOSSIER_PRIVE . '/includes/init.php';
@@ -68,8 +69,8 @@ if (est_post()) {
         rediriger($page_fiche);
     }
 
-    // --- Inscriptions : annulation, passage en liste d'attente et inversement ---
-    if (in_array($action, ['annuler_inscription', 'sortir_attente', 'mettre_attente'], true)) {
+    // --- Inscriptions : annulation, inscription inactive ou réactivée, passage en liste d'attente et inversement ---
+    if (in_array($action, ['annuler_inscription', 'sortir_attente', 'mettre_attente', 'rendre_inactive', 'reactiver'], true)) {
         $inscription = inscription_par_id(entier(post('inscription_id')));
         if ($inscription === null || entier($inscription['activite_id']) !== $fiche_id) {
             flash('erreur', 'Cette inscription n\'existe pas.');
@@ -78,6 +79,20 @@ if (est_post()) {
                 flash('succes', 'L\'inscription de ' . nom_adherent($inscription) . ' est annulée.');
             } else {
                 flash('info', 'Cette inscription était déjà annulée.');
+            }
+        } elseif ($action === 'rendre_inactive') {
+            $erreur_inactive = inscription_rendre_inactive($inscription);
+            if ($erreur_inactive === '') {
+                flash('succes', 'L\'inscription de ' . nom_adherent($inscription) . ' est inactive : ses places sont libérées, elle reste comptée dans les statistiques et dans le montant dû.');
+            } else {
+                flash('erreur', $erreur_inactive);
+            }
+        } elseif ($action === 'reactiver') {
+            $erreur_inactive = inscription_reactiver($inscription);
+            if ($erreur_inactive === '') {
+                flash('succes', 'L\'inscription de ' . nom_adherent($inscription) . ' est réactivée.');
+            } else {
+                flash('erreur', $erreur_inactive);
             }
         } elseif ($action === 'mettre_attente') {
             $erreur_attente = inscription_mettre_en_attente($inscription);
@@ -103,12 +118,15 @@ if (est_post()) {
 // --- Données affichées -------------------------------------------------------
 $inscrits = [];
 $en_attente = [];
+$inactives = [];
 $annulees = [];
 foreach (inscriptions_activite($fiche_id) as $ligne_inscription) {
     if (entier($ligne_inscription['est_annulee']) === 1) {
         $annulees[] = $ligne_inscription;
     } elseif (texte($ligne_inscription['statut']) === 'attente') {
         $en_attente[] = $ligne_inscription;
+    } elseif (texte($ligne_inscription['statut']) === 'inactif') {
+        $inactives[] = $ligne_inscription;
     } else {
         $inscrits[] = $ligne_inscription;
     }
@@ -121,10 +139,10 @@ $est_vide = entier($fiche['nb_inscriptions']) === 0;
 $fenetre_a_rouvrir = ancien_existe() ? ancien('action') : '';
 
 /**
- * Affiche le tableau d'une partie des inscriptions (inscrits ou liste d'attente).
+ * Affiche le tableau d'une partie des inscriptions (inscrits, liste d'attente ou inactives).
  *
- * @param list<array<string, mixed>> $lignes
- * @param 'inscrits'|'attente'       $partie
+ * @param list<array<string, mixed>>      $lignes
+ * @param 'inscrits'|'attente'|'inactives' $partie
  */
 $afficher_inscriptions = static function (array $lignes, string $partie) use ($fiche_id, $peut_modifier, $a_liste_attente): void {
     ?>
@@ -154,6 +172,8 @@ $afficher_inscriptions = static function (array $lignes, string $partie) use ($f
                             <?php endif; ?>
                             <?php if ($partie === 'attente') : ?>
                                 <span class="d-block small text-body-secondary">en attente depuis le <?= e(date_fr($ligne['attente_le'] ?? $ligne['date_crea'])) ?></span>
+                            <?php elseif ($partie === 'inactives') : ?>
+                                <span class="d-block small text-body-secondary">inactive depuis le <?= e(date_fr($ligne['inactive_le'])) ?></span>
                             <?php else : ?>
                                 <span class="d-block small text-body-secondary">depuis le <?= e(date_fr($ligne['date_crea'])) ?></span>
                             <?php endif; ?>
@@ -179,8 +199,13 @@ $afficher_inscriptions = static function (array $lignes, string $partie) use ($f
                                     <input type="hidden" name="inscription_id" value="<?= entier($ligne['id']) ?>">
                                     <?php if ($partie === 'attente') : ?>
                                         <button class="btn btn-outline-primary btn-sm" type="submit" name="action" value="sortir_attente">Inscrire</button>
-                                    <?php elseif ($a_liste_attente) : ?>
-                                        <button class="btn btn-outline-secondary btn-sm text-nowrap" type="submit" name="action" value="mettre_attente">Mettre en attente</button>
+                                    <?php elseif ($partie === 'inactives') : ?>
+                                        <button class="btn btn-outline-primary btn-sm" type="submit" name="action" value="reactiver">Réactiver</button>
+                                    <?php else : ?>
+                                        <?php if ($a_liste_attente) : ?>
+                                            <button class="btn btn-outline-secondary btn-sm text-nowrap" type="submit" name="action" value="mettre_attente">Mettre en attente</button>
+                                        <?php endif; ?>
+                                        <button class="btn btn-outline-secondary btn-sm text-nowrap" type="submit" name="action" value="rendre_inactive">Rendre inactive</button>
                                     <?php endif; ?>
                                     <button class="btn btn-outline-danger btn-sm" type="submit" name="action" value="annuler_inscription">Annuler</button>
                                 </form>
@@ -281,6 +306,12 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?php else : ?>
                 <?php $afficher_inscriptions($en_attente, 'attente'); ?>
             <?php endif; ?>
+        <?php endif; ?>
+
+        <?php if ($inactives !== []) : ?>
+            <h2 class="h5 mt-4 mb-3">Inscriptions inactives <span class="badge text-bg-secondary"><?= count($inactives) ?></span></h2>
+            <p class="small text-body-secondary">Leurs places sont libérées, mais elles restent comptées dans les statistiques<?= $peut_modifier ? ' et dans le montant dû' : '' ?>.</p>
+            <?php $afficher_inscriptions($inactives, 'inactives'); ?>
         <?php endif; ?>
 
         <?php if ($annulees !== []) : ?>

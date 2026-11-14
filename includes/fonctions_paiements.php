@@ -11,6 +11,8 @@ declare(strict_types=1);
  *
  * Montant dû = cotisations + inscriptions en cours aux activités (hors liste
  * d'attente ; le tarif familial ne compte qu'une fois par activité) − réductions.
+ * Une inscription rendue inactive reste due, comme une inscription en cours ;
+ * seule l'annulation la retire du montant dû.
  * Un tarif « forfait » ne se paie qu'une fois, comme une cotisation : il compte
  * une fois par personne et par forfait (une fois par famille et par forfait au
  * montant familial), quel que soit le nombre d'activités qui l'utilisent. Pris
@@ -156,14 +158,14 @@ function compte_dossier_id(array $titulaire, int $saison_id): int
 // ---------------------------------------------------------------------------
 
 /**
- * Inscriptions qui comptent dans le montant dû (en cours, hors liste d'attente),
+ * Inscriptions qui comptent dans le montant dû (en cours ou inactives, hors liste d'attente),
  * selon leur tarif : la suite « FROM … WHERE … » d'une requête sur inscriptions (i).
  * Hors forfait : chaque inscription compte (le montant familial, une fois par activité).
  */
 const INSCRIPTIONS_DUES_HORS_FORFAIT = 'FROM inscriptions i
                                 LEFT JOIN tarifs t ON t.id = i.tarif_id
                                 LEFT JOIN types_tarif tyt ON tyt.id = t.type_id
-                               WHERE i.est_annulee = 0 AND i.statut = \'inscrit\' AND COALESCE(tyt.comportement, \'\') <> \'forfait\'';
+                               WHERE i.est_annulee = 0 AND i.statut IN (\'inscrit\', \'inactif\') AND COALESCE(tyt.comportement, \'\') <> \'forfait\'';
 
 /**
  * Au forfait : une fois par personne et par forfait (le montant familial, une fois par famille et par forfait).
@@ -173,7 +175,7 @@ const INSCRIPTIONS_DUES_HORS_FORFAIT = 'FROM inscriptions i
 const INSCRIPTIONS_DUES_FORFAIT = 'FROM inscriptions i
                                 JOIN tarifs t ON t.id = i.tarif_id
                                 JOIN types_tarif tyt ON tyt.id = t.type_id
-                               WHERE i.est_annulee = 0 AND i.statut = \'inscrit\' AND tyt.comportement = \'forfait\'';
+                               WHERE i.est_annulee = 0 AND i.statut IN (\'inscrit\', \'inactif\') AND tyt.comportement = \'forfait\'';
 
 /**
  * Comptes des familles et structures : une ligne par dossier, montants en centimes.
@@ -224,7 +226,7 @@ function comptes_lignes(int $saison_id, int $dossier_id = 0): array
                                 ' . INSCRIPTIONS_DUES_FORFAIT . ' AND i.est_tarif_familial = 0
                                  AND NOT EXISTS (SELECT 1 FROM inscriptions fam
                                                   WHERE fam.dossier_id = i.dossier_id AND fam.tarif_id = i.tarif_id
-                                                    AND fam.est_tarif_familial = 1 AND fam.est_annulee = 0 AND fam.statut = \'inscrit\')
+                                                    AND fam.est_tarif_familial = 1 AND fam.est_annulee = 0 AND fam.statut IN (\'inscrit\', \'inactif\'))
                                GROUP BY i.dossier_id, i.adherent_id, i.tarif_id
                               UNION ALL
                               SELECT i.dossier_id, MAX(i.montant) AS montant
@@ -281,8 +283,8 @@ function compte_du_dossier(int $dossier_id): ?array
 }
 
 /**
- * Inscriptions qui comptent dans le montant dû d'un dossier : en cours, hors
- * liste d'attente. « compte » vaut 0 pour les inscriptions déjà comptées par
+ * Inscriptions qui comptent dans le montant dû d'un dossier : en cours ou
+ * inactives, hors liste d'attente. « compte » vaut 0 pour les inscriptions déjà comptées par
  * une autre : même forfait pour la même personne, forfait que la famille a au
  * montant familial (il couvre tous ses membres), ou même activité au montant familial (hors
  * forfait). « forfait_nom » porte le nom du forfait, ou '' hors forfait.
@@ -295,7 +297,7 @@ function compte_du_dossier(int $dossier_id): ?array
 function compte_inscriptions(int $dossier_id): array
 {
     $lignes = db_lignes(
-        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.tarif_id, i.montant, i.est_tarif_familial,
+        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.tarif_id, i.montant, i.est_tarif_familial, i.statut,
                 ac.nom AS activite_nom, a.nom, a.prenom,
                 CASE WHEN tyt.comportement = \'forfait\' THEN t.nom ELSE \'\' END AS forfait_nom
            FROM inscriptions i
@@ -303,7 +305,7 @@ function compte_inscriptions(int $dossier_id): array
            JOIN adherents a ON a.id = i.adherent_id
            LEFT JOIN tarifs t ON t.id = i.tarif_id
            LEFT JOIN types_tarif tyt ON tyt.id = t.type_id
-          WHERE i.dossier_id = ? AND i.est_annulee = 0 AND i.statut = \'inscrit\'
+          WHERE i.dossier_id = ? AND i.est_annulee = 0 AND i.statut IN (\'inscrit\', \'inactif\')
           ORDER BY ac.date_debut, ac.nom, i.montant DESC, i.id',
         [$dossier_id]
     );
@@ -453,7 +455,7 @@ function cotisations_manquantes(int $dossier_id): array
            FROM inscriptions i
            JOIN activites ac ON ac.id = i.activite_id
            JOIN adherents a ON a.id = i.adherent_id
-          WHERE i.dossier_id = ? AND i.est_annulee = 0 AND i.statut = \'inscrit\' AND ac.est_sans_adhesion = 0
+          WHERE i.dossier_id = ? AND i.est_annulee = 0 AND i.statut IN (\'inscrit\', \'inactif\') AND ac.est_sans_adhesion = 0
             AND NOT EXISTS (SELECT 1 FROM cotisations c
                              WHERE c.dossier_id = i.dossier_id AND c.est_annulee = 0
                                AND (c.forme = \'familiale\' OR c.adherent_id = i.adherent_id))
