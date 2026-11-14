@@ -3,10 +3,12 @@
   "private": true,
   "scripts": {
     "css": "sass --quiet-deps --silence-deprecation=import --no-source-map scss/bddv3.scss:public/css/bddv3.css scss/connexion.scss:public/css/connexion.css",
+    "js": "node -e \"require('fs').copyFileSync('node_modules/chart.js/dist/chart.umd.min.js', 'public/js/chart.umd.min.js')\"",
     "watch": "sass --watch --quiet-deps --silence-deprecation=import --no-source-map scss/bddv3.scss:public/css/bddv3.css scss/connexion.scss:public/css/connexion.css"
   },
   "dependencies": {
-    "bootstrap": "5.3.8"
+    "bootstrap": "5.3.8",
+    "chart.js": "^4.6.1"
   },
   "devDependencies": {
     "sass": "^1.108.1"

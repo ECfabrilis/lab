@@ -237,3 +237,36 @@ $utilities: map-merge(
   max-height: 18rem;
   overflow-y: auto;
 }
+
+// Statistiques : hauteur fixe des graphiques (Chart.js remplit son conteneur).
+.stats-graphique {
+  position: relative;
+  height: 16rem;
+}
+
+// Impression des statistiques : seuls le titre, les graphiques et les tableaux
+// sont imprimés ; les filtres, le menu et les onglets disparaissent.
+@media print {
+  body:has(.page-statistiques) {
+    .navbar,
+    .barre-contexte {
+      display: none !important;
+    }
+  }
+
+  .page-statistiques {
+    #menuLateral,
+    .nav-tabs {
+      display: none !important;
+    }
+
+    .stats-contenu {
+      flex: 0 0 100%;
+      width: 100%;
+    }
+
+    .stats-bloc {
+      break-inside: avoid;
+    }
+  }
+}

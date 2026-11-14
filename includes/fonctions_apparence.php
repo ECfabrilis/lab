@@ -40,6 +40,18 @@ function couleur_assombrir(string $couleur, float $part): string
     return sprintf('#%02x%02x%02x', (int) round($r * (1 - $part)), (int) round($v * (1 - $part)), (int) round($b * (1 - $part)));
 }
 
+/** Éclaircit une couleur : $part de blanc, de 0 (inchangée) à 1 (blanc). */
+function couleur_eclaircir(string $couleur, float $part): string
+{
+    [$r, $v, $b] = couleur_rvb($couleur);
+    return sprintf(
+        '#%02x%02x%02x',
+        (int) round($r + (255 - $r) * $part),
+        (int) round($v + (255 - $v) * $part),
+        (int) round($b + (255 - $b) * $part)
+    );
+}
+
 /** Luminance relative d'une couleur (0 = noir, 1 = blanc), selon les règles d'accessibilité WCAG. */
 function couleur_luminance(string $couleur): float
 {

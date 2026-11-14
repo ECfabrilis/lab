@@ -107,7 +107,7 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 | Type | **un seul** type par activité. Liste créée à l'installation (atelier, sortie loisirs, sortie culturelle, évènement, séjour), modifiable par un admin dans les paramètres (Options des activités) |
 | Secteur | **un seul** secteur par activité (liste modifiable par un admin) ; dans le formulaire, il se choisit juste après le nom |
 | Référent | obligatoire ; texte libre (un référent n'a pas forcément de compte dans l'application) |
-| Récurrence | obligatoire ; **une seule** par activité. Liste créée à l'installation (ponctuel, régulier, vacances), modifiable par un admin dans les paramètres (Options des activités) |
+| Récurrence | obligatoire ; **une seule** par activité ; « Ponctuel » est proposée par défaut à la création. Liste créée à l'installation (ponctuel, régulier, vacances), modifiable par un admin dans les paramètres (Options des activités) |
 | Tarif | **un seul** tarif par activité et par saison, de type « forfait » ou « autre » ; sans tarif, l'activité est gratuite (c'est le cas d'une activité qui ne demande que l'adhésion) |
 | Date de début | obligatoire, dans la saison de l'activité |
 | Date de fin | facultative |
@@ -193,7 +193,7 @@ Tous portent le **logo**, le **nom** et l'**adresse** de l'association ; certain
 
 ## 10. Statistiques et bilans
 
-Filtres : **période** (dates libres), **saison**, **secteur**, **type d'activité**. Graphiques (histogrammes, anneaux) quand c'est utile. Comparaison avec la saison précédente. **Tous les indicateurs sont conservés, sauf « montants encaissés ».**
+Filtres : **période** (dates libres), **saison**, **secteur**, **type d'activité**, **récurrence**. Graphiques (histogrammes, anneaux) quand c'est utile. Comparaison avec la saison précédente. **Tous les indicateurs sont conservés, sauf « montants encaissés ».**
 
 **Calcul de l'âge** : à la **fin de l'exercice, le 31 décembre**, date du bilan. Il est calculé à la demande, jamais stocké. Pour une saison à cheval sur deux années (ex. 2025-2026), la date retenue est le 31 décembre de l'année où elle commence ; pour une période libre, le 31 décembre de l'année de sa date de début. Les chiffres d'une saison passée ne changent donc pas d'une année sur l'autre.
 
@@ -201,9 +201,9 @@ Indicateurs issus du rapport d'activité 2025 :
 
 **Adhérents**
 - Nombre d'adhérents (et évolution N / N-1) ; nouveaux adhérents / réadhésions.
-- Répartition par **sexe** ; **âge moyen** ; tranches **0-6, 7-11, 12-17, 18-25, 26-59, 60 et +** ; part des moins de 24 ans.
+- Répartition par **sexe** ; **âge moyen** ; **tranches d'âge**, réglables par un administrateur (par défaut 0-6, 7-11, 12-17, 18-25, 26-59, 60 et +).
 - **Nationalité** : France, autres pays d'Europe, Afrique, Asie, Amériques.
-- **Lieu de résidence** : Paris 17e ; arrondissements proches (8, 9, 16, 18) ; autres arrondissements ; communes limitrophes (Clichy, Saint-Ouen, Levallois) ; autres.
+- **Lieu de résidence** : par **groupes de codes postaux**, réglables par un administrateur (par défaut : Paris 17e ; arrondissements proches (8, 9, 16, 18) ; autres arrondissements ; communes limitrophes (Clichy, Saint-Ouen, Levallois)) ; ce qui n'est dans aucun groupe est compté dans « Autres ».
 - **Quartier** (zone de compétence : Épinettes-Bessières et La Fourche-Guy Môquet), part en **QPV** / **QP**.
 
 **Activités**
@@ -215,7 +215,17 @@ Indicateurs issus du rapport d'activité 2025 :
 
 **Établissement scolaire** (accompagnement à la scolarité) : nombre d'enfants par établissement, si le champ est utilisé.
 
-**Écartés** : heures de bénévolat, lieu de l'activité, séances et heures d'animation, fréquentation de l'accueil et des permanences, enfants gardés.
+**Règles de calcul** (étape 6)
+- Un **adhérent** est une personne inscrite pour la saison. Sur une **période libre** : les personnes inscrites pour une saison qui recoupe la période, si leur inscription a été faite avant la fin de la période ; chacune est comptée une fois, avec son adresse la plus récente.
+- Un **nouvel adhérent** n'a été inscrit pour aucune saison antérieure ; les autres sont des réadhésions.
+- Un **participant** a une inscription en cours à une activité, hors liste d'attente et hors annulations ; une **participation** est une place prise.
+- Avec un **secteur**, un **type d'activité** ou une **récurrence**, les chiffres des adhérents sont ceux du public de ces activités.
+- **Comparaison** : la saison précédente, ou la même période un an plus tôt.
+- **Tranches d'âge et groupes de lieu de résidence** (Paramètres > Options > Statistiques) : communs à toutes les saisons ; les modifier change aussi les chiffres affichés pour les saisons passées. Les tranches se définissent par leurs âges de début ; un groupe de résidence par des codes postaux complets (75017) ou des débuts de code (75), un code n'appartenant qu'à un seul groupe et le plus précis l'emportant.
+- **Couleurs des graphiques** (même page d'options) : une palette de 8 couleurs, choisie parmi des palettes prédéfinies (par défaut, dégradé de la couleur principale, adaptée aux daltoniens, nuances de gris) ou composée par l'administrateur. La première couleur sert aux histogrammes, les suivantes aux anneaux ; les barres de la saison précédente restent grises.
+- La page s'imprime ; aucun montant n'y figure, elle est ouverte à tous les rôles.
+
+**Écartés** : part des moins de 24 ans, heures de bénévolat, lieu de l'activité, séances et heures d'animation, fréquentation de l'accueil et des permanences, enfants gardés.
 
 ---
 
@@ -323,7 +333,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 | Partie | Choix |
 |---|---|
 | Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
-| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Options des activités (une seule page : types d'activité et récurrences) ; Options des paiements (une seule page : types de tarif et modes de paiement) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul) |
+| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Options des activités (une seule page : types d'activité et récurrences) ; Options des paiements (une seule page : types de tarif et modes de paiement) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul) ; Statistiques (une seule page : tranches d'âge, groupes de lieu de résidence et couleurs des graphiques, voir section 10) |
 | La base de données | Saisons ; Données de référence (pays, quartiers, QP, QPV, codes postaux ; pour les quartiers : « Remplacer la table » ou « Ajouter à la table ») ; Logs ; Sauvegarde ; RGPD (anonymisation) |
 | Configuration | Paramètres des mails (avec l'essai d'envoi) |
 

@@ -2,7 +2,7 @@
 -- bddv3 : structure de la base — schéma de référence
 -- Cible : MariaDB 11.8, InnoDB, utf8mb4 / utf8mb4_unicode_ci
 --
--- État : étape 3 (cotisations et paiements), dons et quartiers pris en compte. Chaque étape ajoute ses tables par un
+-- État : étape 6 (statistiques : groupes de lieu de résidence). Chaque étape ajoute ses tables par un
 -- fichier daté dans sql/migrations/, et ce fichier est mis à jour.
 --
 -- Ce script est exécuté par install.php (étape 3). Il ne supprime rien :
@@ -607,3 +607,43 @@ CREATE TABLE IF NOT EXISTS `paiements` (
   CONSTRAINT `fk_paiements_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `ck_paiements_montant` CHECK (`montant` > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 14. Statistiques (étape 6)
+--     Groupes de lieu de résidence, pour la répartition des adhérents
+--     (Paramètres > Options > Statistiques).
+--     groupes_residence_codes : un code est un code postal complet (75017) ou
+--       un début de code (75 : tout Paris). Un code n'appartient qu'à un
+--       groupe ; le code le plus précis l'emporte. Une adresse qui ne
+--       correspond à aucun code est comptée dans « Autres ».
+--     Les tranches d'âge sont dans le réglage « stats_tranches_age » de la
+--     table parametres (âges de début de tranche, séparés par des virgules).
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `groupes_residence` (
+  `id`        INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nom`       VARCHAR(100) NOT NULL,
+  `ordre`     SMALLINT UNSIGNED NOT NULL DEFAULT 0 COMMENT 'Rang d affichage (du plus petit au plus grand)',
+  `date_crea` DATETIME NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_groupes_residence_nom` (`nom`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `groupes_residence_codes` (
+  `code`      VARCHAR(5) NOT NULL COMMENT 'Code postal complet (75017) ou debut de code (75)',
+  `groupe_id` INT UNSIGNED NOT NULL,
+  PRIMARY KEY (`code`),
+  KEY `idx_grc_groupe` (`groupe_id`),
+  CONSTRAINT `fk_grc_groupe` FOREIGN KEY (`groupe_id`) REFERENCES `groupes_residence` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+INSERT IGNORE INTO `groupes_residence` (`id`, `nom`, `ordre`) VALUES
+  (1, 'Paris 17e', 1),
+  (2, 'Arrondissements proches (8e, 9e, 16e, 18e)', 2),
+  (3, 'Autres arrondissements de Paris', 3),
+  (4, 'Communes limitrophes (Clichy, Saint-Ouen, Levallois)', 4);
+
+INSERT IGNORE INTO `groupes_residence_codes` (`code`, `groupe_id`) VALUES
+  ('75017', 1),
+  ('75008', 2), ('75009', 2), ('75016', 2), ('75018', 2),
+  ('75', 3),
+  ('92110', 4), ('93400', 4), ('92300', 4);

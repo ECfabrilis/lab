@@ -13226,3 +13226,26 @@ textarea.form-control-lg {
   max-height: 18rem;
   overflow-y: auto;
 }
+
+.stats-graphique {
+  position: relative;
+  height: 16rem;
+}
+
+@media print {
+  body:has(.page-statistiques) .navbar,
+  body:has(.page-statistiques) .barre-contexte {
+    display: none !important;
+  }
+  .page-statistiques #menuLateral,
+  .page-statistiques .nav-tabs {
+    display: none !important;
+  }
+  .page-statistiques .stats-contenu {
+    flex: 0 0 100%;
+    width: 100%;
+  }
+  .page-statistiques .stats-bloc {
+    break-inside: avoid;
+  }
+}
