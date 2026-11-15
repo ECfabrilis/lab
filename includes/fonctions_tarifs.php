@@ -9,7 +9,13 @@ declare(strict_types=1);
  * 120,00 € ») ; plusieurs activités peuvent le partager. Il a un type, un
  * montant individuel et, s'il y a lieu, un montant familial, valable pour
  * toute la famille (exemple : centre de loisirs, 5 € par enfant ou 10 € pour
- * tous les enfants).
+ * tous les enfants). Il peut aussi avoir un montant groupe : un montant par
+ * personne, appliqué quand plusieurs membres d'une même famille s'inscrivent
+ * (exemple : 20 € pour une personne seule, 15 € chacun à partir de deux). Le
+ * montant groupe n'existe pas pour un tarif « adhésion » ni pour un « forfait »,
+ * et un tarif n'a jamais à la fois un montant groupe et un montant familial.
+ * Il s'applique de lui-même à l'inscription du deuxième membre de la famille
+ * (tarif_groupe_appliquer(), fonctions_activites.php).
  *
  * Les types de tarif sont une liste de choix (table types_tarif, fonctions
  * choix_* de fonctions_activites.php), gérée par un administrateur dans
@@ -33,7 +39,7 @@ declare(strict_types=1);
 
 /** Morceau de requête commun aux lectures de tarifs (alias t, type tyt). */
 const TARIFS_COLONNES = 't.id, t.saison_id, t.nom, t.type_id, tyt.nom AS type_nom, COALESCE(tyt.comportement, \'\') AS comportement,
-                t.montant_individuel, t.montant_familial, t.description';
+                t.montant_individuel, t.montant_groupe, t.montant_familial, t.description';
 
 /**
  * Comportement d'un type de tarif : 'adhesion', 'forfait', '' pour un type
@@ -86,20 +92,29 @@ function tarif_par_id(int $id): ?array
 }
 
 /**
- * Montants d'un tarif, pour l'affichage : « 5,00 € » ou « 5,00 € (famille : 10,00 €) ».
+ * Montants d'un tarif, pour l'affichage : « 5,00 € », « 5,00 € (famille : 10,00 €) »
+ * ou « 5,00 € (groupe : 4,00 € par personne) ».
  *
  * @param mixed $individuel montant individuel
  * @param mixed $familial   montant familial, ou null
+ * @param mixed $groupe     montant groupe (par personne), ou null
  */
-function tarif_montants(mixed $individuel, mixed $familial): string
+function tarif_montants(mixed $individuel, mixed $familial, mixed $groupe = null): string
 {
-    return montant_fr($individuel) . ($familial === null ? '' : ' (famille : ' . montant_fr($familial) . ')');
+    $autres = [];
+    if ($groupe !== null) {
+        $autres[] = 'groupe : ' . montant_fr($groupe) . ' par personne';
+    }
+    if ($familial !== null) {
+        $autres[] = 'famille : ' . montant_fr($familial);
+    }
+    return montant_fr($individuel) . ($autres === [] ? '' : ' (' . implode(' ; ', $autres) . ')');
 }
 
 /**
  * Champs d'un tarif lus dans le formulaire envoyé (montants tels qu'ils ont été saisis).
  *
- * @return array{nom: string, type_id: string, montant_individuel: string, montant_familial: string, description: string}
+ * @return array{nom: string, type_id: string, montant_individuel: string, montant_groupe: string, montant_familial: string, description: string}
  */
 function tarif_saisie(): array
 {
@@ -107,6 +122,7 @@ function tarif_saisie(): array
         'nom'                => post('nom'),
         'type_id'            => post('type_id'),
         'montant_individuel' => post('montant_individuel'),
+        'montant_groupe'     => post('montant_groupe'),
         'montant_familial'   => post('montant_familial'),
         'description'        => post('description'),
     ];
@@ -115,7 +131,7 @@ function tarif_saisie(): array
 /**
  * Vérifie un tarif avant création ou modification.
  *
- * @param array{nom: string, type_id: string, montant_individuel: string, montant_familial: string, description: string} $saisie
+ * @param array{nom: string, type_id: string, montant_individuel: string, montant_groupe: string, montant_familial: string, description: string} $saisie
  * @param int $sauf_id identifiant du tarif modifié (0 pour une création)
  * @return list<string> messages d'erreur (vide si tout va bien)
  */
@@ -143,6 +159,13 @@ function erreurs_tarif(array $saisie, int $saison_id, int $sauf_id = 0): array
     if (montant_lire($saisie['montant_individuel']) === null) {
         $erreurs[] = 'Le montant individuel est obligatoire : un nombre positif ou nul, par exemple 120 ou 12,50.';
     }
+    if ($saisie['montant_groupe'] !== '' && ($comportement === 'adhesion' || $comportement === 'forfait')) {
+        $erreurs[] = 'Le montant groupe n\'existe pas pour un tarif « adhésion » ni pour un « forfait » : laissez-le vide.';
+    } elseif ($saisie['montant_groupe'] !== '' && $saisie['montant_familial'] !== '') {
+        $erreurs[] = 'Un tarif a un montant groupe ou un montant familial, pas les deux : laissez l\'un des deux vide.';
+    } elseif ($saisie['montant_groupe'] !== '' && montant_lire($saisie['montant_groupe']) === null) {
+        $erreurs[] = 'Le montant groupe n\'est pas valide : un nombre positif ou nul, ou laissez vide.';
+    }
     if ($saisie['montant_familial'] !== '' && montant_lire($saisie['montant_familial']) === null) {
         $erreurs[] = 'Le montant familial n\'est pas valide : un nombre positif ou nul, ou laissez vide.';
     }
@@ -155,8 +178,8 @@ function erreurs_tarif(array $saisie, int $saison_id, int $sauf_id = 0): array
 /**
  * Valeurs d'un tarif prêtes pour la base, dans l'ordre des colonnes.
  *
- * @param array{nom: string, type_id: string, montant_individuel: string, montant_familial: string, description: string} $saisie tarif déjà vérifié
- * @return array{nom: string, type_id: int, montant_individuel: string, montant_familial: string|null, description: string|null}
+ * @param array{nom: string, type_id: string, montant_individuel: string, montant_groupe: string, montant_familial: string, description: string} $saisie tarif déjà vérifié
+ * @return array{nom: string, type_id: int, montant_individuel: string, montant_groupe: string|null, montant_familial: string|null, description: string|null}
  */
 function tarif_valeurs(array $saisie): array
 {
@@ -164,7 +187,8 @@ function tarif_valeurs(array $saisie): array
         'nom'                => $saisie['nom'],
         'type_id'            => entier($saisie['type_id']),
         'montant_individuel' => montant_lire($saisie['montant_individuel']) ?? '0.00',
-        'montant_familial'   => $saisie['montant_familial'] === '' ? null : montant_lire($saisie['montant_familial']),
+        'montant_groupe'     => $saisie['montant_groupe'] === '' ? null : montant_lire($saisie['montant_groupe']),
+        'montant_familial'   =>$saisie['montant_familial'] === '' ? null : montant_lire($saisie['montant_familial']),
         'description'        => nul_si_vide($saisie['description']),
     ];
 }
@@ -172,13 +196,13 @@ function tarif_valeurs(array $saisie): array
 /**
  * Crée un tarif (déjà vérifié) et renvoie son identifiant.
  *
- * @param array{nom: string, type_id: string, montant_individuel: string, montant_familial: string, description: string} $saisie
+ * @param array{nom: string, type_id: string, montant_individuel: string, montant_groupe: string, montant_familial: string, description: string} $saisie
  */
 function creer_tarif(int $saison_id, array $saisie): int
 {
     $valeurs = tarif_valeurs($saisie);
     db_executer(
-        'INSERT INTO tarifs (nom, type_id, montant_individuel, montant_familial, description, saison_id, creation_par) VALUES (?, ?, ?, ?, ?, ?, ?)',
+        'INSERT INTO tarifs (nom, type_id, montant_individuel, montant_groupe, montant_familial, description, saison_id, creation_par) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         [...array_values($valeurs), $saison_id, entier($_SESSION['utilisateur_id'] ?? 0)]
     );
     $tarif_id = entier(db()->lastInsertId());
@@ -190,7 +214,7 @@ function creer_tarif(int $saison_id, array $saisie): int
  * Modifie un tarif (déjà vérifié).
  *
  * @param array<string, mixed> $actuel tarif en base avant la modification
- * @param array{nom: string, type_id: string, montant_individuel: string, montant_familial: string, description: string} $saisie
+ * @param array{nom: string, type_id: string, montant_individuel: string, montant_groupe: string, montant_familial: string, description: string} $saisie
  * @return bool false s'il n'y avait rien à modifier
  */
 function modifier_tarif(array $actuel, array $saisie): bool
@@ -200,6 +224,7 @@ function modifier_tarif(array $actuel, array $saisie): bool
         'nom'                => texte($actuel['nom'] ?? ''),
         'type_id'            => entier($actuel['type_id'] ?? 0),
         'montant_individuel' => texte($actuel['montant_individuel'] ?? ''),
+        'montant_groupe'     => ($actuel['montant_groupe'] ?? null) === null ? null : texte($actuel['montant_groupe']),
         'montant_familial'   => ($actuel['montant_familial'] ?? null) === null ? null : texte($actuel['montant_familial']),
         'description'        => ($actuel['description'] ?? null) === null ? null : texte($actuel['description']),
     ];
@@ -208,7 +233,7 @@ function modifier_tarif(array $actuel, array $saisie): bool
     }
     $tarif_id = entier($actuel['id'] ?? 0);
     db_executer(
-        'UPDATE tarifs SET nom = ?, type_id = ?, montant_individuel = ?, montant_familial = ?, description = ?, modification_par = ? WHERE id = ?',
+        'UPDATE tarifs SET nom = ?, type_id = ?, montant_individuel = ?, montant_groupe = ?, montant_familial = ?, description = ?, modification_par = ? WHERE id = ?',
         [...array_values($valeurs), entier($_SESSION['utilisateur_id'] ?? 0), $tarif_id]
     );
     journaliser('modification', 'tarifs', $tarif_id, 'Modification du tarif « ' . $saisie['nom'] . ' »', $ancien, $valeurs);
@@ -230,7 +255,7 @@ function supprimer_tarif(array $tarif): bool
         return false;
     }
     $ancien = [];
-    foreach (['saison_id', 'nom', 'type_id', 'montant_individuel', 'montant_familial', 'description'] as $champ) {
+    foreach (['saison_id', 'nom', 'type_id', 'montant_individuel', 'montant_groupe', 'montant_familial', 'description'] as $champ) {
         $ancien[$champ] = $tarif[$champ] ?? null;
     }
     db_executer('DELETE FROM tarifs WHERE id = ?', [$tarif_id]);
@@ -267,14 +292,19 @@ function afficher_champs_tarif(array $defauts): void
                 <?php endforeach; ?>
             </select>
         </div>
-        <div class="col-sm-6">
+        <div class="col-sm-4">
             <label class="form-label" for="montant_individuel">Montant individuel (€)</label>
             <input class="form-control" type="text" inputmode="decimal" id="montant_individuel" name="montant_individuel" maxlength="10" placeholder="120,00" value="<?= e($montant('montant_individuel')) ?>" required>
         </div>
-        <div class="col-sm-6">
+        <div class="col-sm-4">
+            <label class="form-label" for="montant_groupe">Montant groupe (€) <span class="text-body-secondary">(facultatif)</span></label>
+            <input class="form-control" type="text" inputmode="decimal" id="montant_groupe" name="montant_groupe" maxlength="10" value="<?= e($montant('montant_groupe')) ?>" aria-describedby="aide_groupe">
+            <div class="form-text" id="aide_groupe">Par personne, appliqué dès que deux membres d'une même famille sont inscrits à l'activité. Pas pour une adhésion ni un forfait.</div>
+        </div>
+        <div class="col-sm-4">
             <label class="form-label" for="montant_familial">Montant familial (€) <span class="text-body-secondary">(facultatif)</span></label>
             <input class="form-control" type="text" inputmode="decimal" id="montant_familial" name="montant_familial" maxlength="10" value="<?= e($montant('montant_familial')) ?>" aria-describedby="aide_familial">
-            <div class="form-text" id="aide_familial">Pour toute la famille, quel que soit le nombre d'inscrits. Vide : pas de tarif familial.</div>
+            <div class="form-text" id="aide_familial">Pour toute la famille, quel que soit le nombre d'inscrits. Pas avec un montant groupe.</div>
         </div>
         <div class="col-sm-12">
             <label class="form-label" for="description">Description <span class="text-body-secondary">(facultatif)</span></label>

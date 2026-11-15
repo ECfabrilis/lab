@@ -27,6 +27,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <li>Un tarif appartient à une saison ; plusieurs activités peuvent le partager.</li>
             <li>Les tarifs « Adhésion » sont réservés aux cotisations : une activité choisit un tarif de n'importe quel autre type.</li>
             <li>Un « Forfait » ne se paie qu'une fois, comme une cotisation : il compte une fois par personne (une fois par famille au montant familial, qui couvre alors tous ses membres), quel que soit le nombre d'activités qui l'utilisent. Les tarifs des autres types sont dus à chaque inscription.</li>
+            <li>Le montant groupe, facultatif, est un montant par personne : il s'applique de lui-même dès que deux membres d'une même famille sont inscrits à la même activité (exemple : 20 € pour une personne seule, 15 € chacun à partir de deux). Il n'existe pas pour une adhésion ni pour un forfait, et un tarif n'a pas à la fois un montant groupe et un montant familial.</li>
             <li>Le montant familial, facultatif, vaut pour toute la famille (exemple : 5 € par enfant, ou 10 € pour tous les enfants).</li>
             <li>Le montant est copié sur chaque inscription au moment où elle est faite : modifier un tarif ne change pas les inscriptions déjà enregistrées.</li>
             <li>La modification et la suppression sont réservées aux administrateurs.</li>
@@ -43,6 +44,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                             <th scope="col">Nom</th>
                             <th scope="col">Type</th>
                             <th scope="col" class="text-end">Individuel</th>
+                            <th scope="col" class="text-end">Groupe</th>
                             <th scope="col" class="text-end">Familial</th>
                             <th scope="col" class="text-end d-none d-lg-table-cell">Activités</th>
                         </tr>
@@ -62,6 +64,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                 </td>
                                 <td><?= e($ligne_tarif['type_nom']) ?></td>
                                 <td class="text-end"><?= e(montant_fr($ligne_tarif['montant_individuel'])) ?></td>
+                                <td class="text-end"><?= $ligne_tarif['montant_groupe'] === null ? '—' : e(montant_fr($ligne_tarif['montant_groupe'])) ?></td>
                                 <td class="text-end"><?= $ligne_tarif['montant_familial'] === null ? '—' : e(montant_fr($ligne_tarif['montant_familial'])) ?></td>
                                 <td class="text-end d-none d-lg-table-cell"><?= entier($ligne_tarif['nb_activites']) ?></td>
                             </tr>

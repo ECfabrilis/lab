@@ -103,6 +103,9 @@ if (est_post()) {
             } else {
                 flash('succes', nom_adherent($inscrit) . ' est inscrit(e) à « ' . texte($activite['nom']) . ' ».');
             }
+            if ($resultat['groupe'] !== []) {
+                flash('info', tarif_groupe_message($resultat['groupe']));
+            }
         }
         if ($erreurs !== []) {
             foreach ($erreurs as $erreur) {
@@ -141,6 +144,10 @@ $restantes = $activite !== null ? places_restantes($activite) : null;
 $montant_familial = $activite !== null && !$est_structure ? ($activite['tarif_montant_familial'] ?? null) : null;
 $famille_deja_au_familial = $montant_familial !== null && $inscrit !== null
     && inscription_familiale_existe($activite_id, dossier_id_de_adherent($inscrit, $saison_id));
+// Tarif groupe : il s'applique de lui-même dès qu'un deuxième membre de la famille est inscrit.
+$montant_groupe = $activite !== null && !$est_structure ? ($activite['tarif_montant_groupe'] ?? null) : null;
+$famille_deja_inscrite = $montant_groupe !== null && $inscrit !== null
+    && inscrits_famille_nb($activite_id, dossier_id_de_adherent($inscrit, $saison_id)) > 0;
 // Forfait : il ne se paie qu'une fois par personne (ou par famille, au montant familial).
 $forfait_nom = $activite !== null && !$est_structure && texte($activite['tarif_comportement'] ?? '') === 'forfait' ? texte($activite['tarif_nom']) : '';
 $forfait_pris = $forfait_nom !== '' && $inscrit !== null
@@ -314,6 +321,12 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                 Le montant familial ne compte qu'une fois, quel que soit le nombre de membres de la famille inscrits à ce tarif.
                             </div>
                         </fieldset>
+                    <?php elseif ($montant_groupe !== null && $famille_deja_inscrite) : ?>
+                        <p>Une place, au tarif groupe : <strong><?= e(montant_fr($montant_groupe)) ?></strong>.</p>
+                        <div class="alert alert-info" role="note">Un autre membre de la famille est déjà inscrit à cette activité : le tarif groupe s'applique à cette inscription, et à celle du membre déjà inscrit s'il était au tarif individuel. Il ne s'applique pas à une inscription en liste d'attente.</div>
+                    <?php elseif ($montant_groupe !== null) : ?>
+                        <p>Une place, au tarif individuel : <strong><?= e(montant_fr($activite['tarif_montant'])) ?></strong>.</p>
+                        <p class="form-text">Tarif groupe : <?= e(montant_fr($montant_groupe)) ?> par personne. Il s'appliquera de lui-même, à chacun, dès qu'un deuxième membre de la famille sera inscrit à cette activité.</p>
                     <?php else : ?>
                         <p>Une place, au tarif de l'activité : <strong><?= e(activite_prix($activite)) ?></strong>.</p>
                     <?php endif; ?>

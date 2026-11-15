@@ -102,9 +102,13 @@ if (est_post()) {
                 flash('erreur', $erreur_attente);
             }
         } else {
-            $erreur_attente = inscription_sortir_attente($inscription);
+            $passes_au_groupe = [];
+            $erreur_attente = inscription_sortir_attente($inscription, $passes_au_groupe);
             if ($erreur_attente === '') {
                 flash('succes', nom_adherent($inscription) . ' passe de la liste d\'attente aux inscrits.');
+                if ($passes_au_groupe !== []) {
+                    flash('info', tarif_groupe_message($passes_au_groupe));
+                }
             } else {
                 flash('erreur', $erreur_attente);
             }
@@ -190,6 +194,8 @@ $afficher_inscriptions = static function (array $lignes, string $partie) use ($f
                                 <?= e(montant_fr($ligne['montant'])) ?>
                                 <?php if (entier($ligne['est_tarif_familial']) === 1) : ?>
                                     <span class="d-block small text-body-secondary">tarif familial</span>
+                                <?php elseif (entier($ligne['est_tarif_groupe']) === 1) : ?>
+                                    <span class="d-block small text-body-secondary">tarif groupe</span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-end">
@@ -287,6 +293,9 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <?php endif; ?>
 
         <h2 class="h5 mb-3">Inscrits <span class="badge text-bg-secondary"><?= count($inscrits) ?></span></h2>
+        <?php if ($peut_modifier && $fiche['tarif_montant_groupe'] !== null) : ?>
+            <p class="small text-body-secondary">Le montant « tarif groupe » (<?= e(montant_fr($fiche['tarif_montant_groupe'])) ?> par personne) s'applique de lui-même dès que deux membres d'une même famille sont inscrits ; celui qui était déjà inscrit passe lui aussi à ce montant.</p>
+        <?php endif; ?>
         <?php if ($peut_modifier && $fiche['tarif_montant_familial'] !== null) : ?>
             <p class="small text-body-secondary">Le montant « tarif familial » (<?= e(montant_fr($fiche['tarif_montant_familial'])) ?>) ne compte qu'une fois par famille, quel que soit le nombre d'inscrits de la famille à ce tarif.</p>
         <?php endif; ?>

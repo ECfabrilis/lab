@@ -297,7 +297,7 @@ function compte_du_dossier(int $dossier_id): ?array
 function compte_inscriptions(int $dossier_id): array
 {
     $lignes = db_lignes(
-        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.tarif_id, i.montant, i.est_tarif_familial, i.statut,
+        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.tarif_id, i.montant, i.est_tarif_familial, i.est_tarif_groupe, i.statut,
                 ac.nom AS activite_nom, a.nom, a.prenom,
                 CASE WHEN tyt.comportement = \'forfait\' THEN t.nom ELSE \'\' END AS forfait_nom
            FROM inscriptions i

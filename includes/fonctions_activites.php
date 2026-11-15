@@ -302,7 +302,7 @@ function choix_supprimer(string $liste, array $choix): bool
 
 /** Début commun des requêtes qui lisent une activité avec ses libellés et ses places. */
 const ACTIVITE_SELECT = 'SELECT ac.*, t.nom AS type_nom, se.nom AS secteur_nom, r.nom AS recurrence_nom,
-            ta.nom AS tarif_nom, COALESCE(tyt.comportement, \'\') AS tarif_comportement, ta.montant_individuel AS tarif_montant, ta.montant_familial AS tarif_montant_familial,
+            ta.nom AS tarif_nom, COALESCE(tyt.comportement, \'\') AS tarif_comportement, ta.montant_individuel AS tarif_montant, ta.montant_groupe AS tarif_montant_groupe, ta.montant_familial AS tarif_montant_familial,
             s.nom AS saison_nom, s.date_debut AS saison_debut, s.date_fin AS saison_fin,
             (SELECT COALESCE(SUM(i.nb_places), 0) FROM inscriptions i
               WHERE i.activite_id = ac.id AND i.est_annulee = 0 AND i.statut = \'inscrit\') AS places_prises,
@@ -471,7 +471,7 @@ function activite_dates(array $activite): string
 }
 
 /**
- * Prix d'une activité : les montants de son tarif (individuel, et familial s'il y en a un), ou « Gratuit ».
+ * Prix d'une activité : les montants de son tarif (individuel, puis groupe et familial s'il y en a), ou « Gratuit ».
  *
  * @param array<string, mixed> $activite
  */
@@ -479,7 +479,7 @@ function activite_prix(array $activite): string
 {
     return ($activite['tarif_id'] ?? null) === null
         ? 'Gratuit'
-        : tarif_montants($activite['tarif_montant'] ?? 0, $activite['tarif_montant_familial'] ?? null);
+        : tarif_montants($activite['tarif_montant'] ?? 0, $activite['tarif_montant_familial'] ?? null, $activite['tarif_montant_groupe'] ?? null);
 }
 
 /** Écart maximal, en jours, entre deux dates de début pour dire que deux activités ont des dates similaires. */
@@ -783,7 +783,7 @@ function afficher_champs_activite(array $defauts, array $saison): void
             <select class="form-select" id="tarif_id" name="tarif_id" aria-describedby="aide_tarif">
                 <option value="">Gratuit</option>
                 <?php foreach (tarifs_liste(entier($saison['id'] ?? 0), true) as $tarif) : ?>
-                    <option value="<?= entier($tarif['id']) ?>" <?= $tarif_choisi === entier($tarif['id']) ? 'selected' : '' ?>><?= e(texte($tarif['nom']) . ' — ' . tarif_montants($tarif['montant_individuel'], $tarif['montant_familial'])) ?></option>
+                    <option value="<?= entier($tarif['id']) ?>" <?= $tarif_choisi === entier($tarif['id']) ? 'selected' : '' ?>><?= e(texte($tarif['nom']) . ' — ' . tarif_montants($tarif['montant_individuel'], $tarif['montant_familial'], $tarif['montant_groupe'])) ?></option>
                 <?php endforeach; ?>
             </select>
             <div class="form-text" id="aide_tarif">Tarifs de la saison <?= e($saison['nom'] ?? '') ?>. Une activité qui ne demande que l'adhésion est gratuite. Un forfait ne se paie qu'une fois par personne, même s'il est partagé par plusieurs activités. Le montant est copié sur chaque inscription au moment où elle est faite.</div>
@@ -830,7 +830,7 @@ function afficher_champs_activite(array $defauts, array $saison): void
 function inscriptions_activite(int $activite_id): array
 {
     return db_lignes(
-        'SELECT i.id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.attente_le, i.inactive_le, i.est_annulee, i.annulee_le, i.date_crea,
+        'SELECT i.id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.est_tarif_groupe, i.statut, i.attente_le, i.inactive_le, i.est_annulee, i.annulee_le, i.date_crea,
                 a.nom, a.prenom, a.est_structure, a.date_naissance, a.mail, a.tel,
                 a.responsable_nom, a.responsable_tel
            FROM inscriptions i
@@ -849,7 +849,7 @@ function inscriptions_activite(int $activite_id): array
 function inscriptions_adherent(int $adherent_id, int $saison_id): array
 {
     return db_lignes(
-        'SELECT i.id, i.activite_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.inactive_le, i.est_annulee, i.annulee_le, i.date_crea,
+        'SELECT i.id, i.activite_id, i.nb_places, i.montant, i.est_tarif_familial, i.est_tarif_groupe, i.statut, i.inactive_le, i.est_annulee, i.annulee_le, i.date_crea,
                 ac.nom AS activite_nom, ac.date_debut, ac.date_fin
            FROM inscriptions i
            JOIN activites ac ON ac.id = i.activite_id
@@ -868,7 +868,7 @@ function inscriptions_adherent(int $adherent_id, int $saison_id): array
 function inscriptions_famille(int $famille_id, int $saison_id): array
 {
     return db_lignes(
-        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.statut, i.inactive_le, i.est_annulee, i.annulee_le,
+        'SELECT i.id, i.activite_id, i.adherent_id, i.nb_places, i.montant, i.est_tarif_familial, i.est_tarif_groupe, i.statut, i.inactive_le, i.est_annulee, i.annulee_le,
                 ac.nom AS activite_nom, ac.date_debut, ac.date_fin
            FROM inscriptions i
            JOIN activites ac ON ac.id = i.activite_id
@@ -898,7 +898,7 @@ function afficher_inscriptions_activites(array $inscriptions): void
                     <span class="text-body-secondary">— <?= entier($ligne_inscription['nb_places']) ?> places</span>
                 <?php endif; ?>
                 <?php if (role_au_moins('standard')) : ?>
-                    <span class="text-body-secondary">— <?= e(montant_fr($ligne_inscription['montant'])) ?><?= entier($ligne_inscription['est_tarif_familial']) === 1 ? ' (tarif familial)' : '' ?></span>
+                    <span class="text-body-secondary">— <?= e(montant_fr($ligne_inscription['montant'])) ?><?= entier($ligne_inscription['est_tarif_familial']) === 1 ? ' (tarif familial)' : '' ?><?= entier($ligne_inscription['est_tarif_groupe']) === 1 ? ' (tarif groupe)' : '' ?></span>
                 <?php endif; ?>
                 <?php if ($ligne_annulee) : ?>
                     <span class="badge text-bg-secondary">Annulée le <?= e(date_fr($ligne_inscription['annulee_le'])) ?></span>
@@ -945,6 +945,81 @@ function inscription_familiale_existe(int $activite_id, int $dossier_id): bool
         'SELECT COUNT(*) FROM inscriptions WHERE activite_id = ? AND dossier_id = ? AND est_tarif_familial = 1 AND est_annulee = 0',
         [$activite_id, $dossier_id]
     )) > 0;
+}
+
+/**
+ * Nombre de membres d'une famille (son dossier) qui ont une inscription en
+ * cours ou inactive à cette activité (hors liste d'attente et annulations) :
+ * à partir de deux, le tarif groupe s'applique.
+ */
+function inscrits_famille_nb(int $activite_id, int $dossier_id): int
+{
+    return entier(db_valeur(
+        'SELECT COUNT(DISTINCT adherent_id) FROM inscriptions
+          WHERE activite_id = ? AND dossier_id = ? AND est_annulee = 0 AND statut IN (\'inscrit\', \'inactif\')',
+        [$activite_id, $dossier_id]
+    ));
+}
+
+/**
+ * Tarif groupe : quand le tarif de l'activité a un montant groupe et que deux
+ * membres au moins d'une même famille y sont inscrits (inscriptions en cours
+ * ou inactives, hors liste d'attente), chacun passe au montant groupe, y
+ * compris ceux qui étaient déjà inscrits au montant individuel. C'est la seule
+ * exception à la règle « le montant copié ne change plus ». Rien n'est défait
+ * ensuite : si un membre annule, les autres gardent le montant groupe.
+ *
+ * À appeler dans la transaction qui a verrouillé l'activité, après avoir
+ * enregistré l'inscription ou la sortie de liste d'attente. Ne sont concernées
+ * que les inscriptions faites au tarif actuel de l'activité, au montant
+ * individuel ; une structure (montant négocié, sans tarif) ne l'est jamais.
+ *
+ * @param array{tarif_id: int|null, tarif_montant_groupe: string|null} $activite ligne de activite_verrouiller()
+ * @return list<string> noms des personnes dont l'inscription vient de passer au montant groupe
+ */
+function tarif_groupe_appliquer(int $activite_id, int $dossier_id, array $activite): array
+{
+    if ($activite['tarif_id'] === null || $activite['tarif_montant_groupe'] === null || inscrits_famille_nb($activite_id, $dossier_id) < 2) {
+        return [];
+    }
+    $lignes = db_lignes(
+        'SELECT i.id, i.montant, a.nom, a.prenom, a.est_structure
+           FROM inscriptions i
+           JOIN adherents a ON a.id = i.adherent_id
+          WHERE i.activite_id = ? AND i.dossier_id = ? AND i.tarif_id = ?
+            AND i.est_annulee = 0 AND i.statut IN (\'inscrit\', \'inactif\')
+            AND i.est_tarif_groupe = 0 AND i.est_tarif_familial = 0
+          ORDER BY i.id',
+        [$activite_id, $dossier_id, $activite['tarif_id']]
+    );
+    $noms = [];
+    foreach ($lignes as $ligne) {
+        $inscription_id = entier($ligne['id']);
+        db_executer(
+            'UPDATE inscriptions SET montant = ?, est_tarif_groupe = 1, modification_par = ? WHERE id = ?',
+            [$activite['tarif_montant_groupe'], entier($_SESSION['utilisateur_id'] ?? 0), $inscription_id]
+        );
+        journaliser(
+            'modification',
+            'inscriptions',
+            $inscription_id,
+            'Tarif groupe appliqué : ' . nom_adherent($ligne),
+            ['montant' => texte($ligne['montant']), 'est_tarif_groupe' => 0],
+            ['montant' => $activite['tarif_montant_groupe'], 'est_tarif_groupe' => 1]
+        );
+        $noms[] = nom_adherent($ligne);
+    }
+    return $noms;
+}
+
+/**
+ * Message qui prévient que des inscriptions viennent de passer au tarif groupe.
+ *
+ * @param list<string> $noms noms renvoyés par tarif_groupe_appliquer()
+ */
+function tarif_groupe_message(array $noms): string
+{
+    return 'Tarif groupe appliqué à ' . implode(', ', $noms) . ' : plusieurs membres de la famille sont inscrits à cette activité.';
 }
 
 /**
@@ -997,7 +1072,7 @@ function inscription_inactive_existe(int $activite_id, int $adherent_id): bool
  * Verrouille une activité le temps d'une transaction et renvoie ses places :
  * deux inscriptions simultanées ne peuvent pas prendre la même dernière place.
  *
- * @return array{nom: string, saison_id: int, nb_places: int|null, a_liste_attente: bool, tarif_id: int|null, tarif_montant: string, tarif_montant_familial: string|null, places_prises: int}|null
+ * @return array{nom: string, saison_id: int, nb_places: int|null, a_liste_attente: bool, tarif_id: int|null, tarif_montant: string, tarif_montant_groupe: string|null, tarif_montant_familial: string|null, places_prises: int}|null
  */
 function activite_verrouiller(int $activite_id): ?array
 {
@@ -1010,7 +1085,7 @@ function activite_verrouiller(int $activite_id): ?array
     }
     $tarif = $activite['tarif_id'] === null
         ? null
-        : db_ligne('SELECT montant_individuel, montant_familial FROM tarifs WHERE id = ?', [entier($activite['tarif_id'])]);
+        : db_ligne('SELECT montant_individuel, montant_groupe, montant_familial FROM tarifs WHERE id = ?', [entier($activite['tarif_id'])]);
     $montant = texte($tarif['montant_individuel'] ?? '');
     return [
         'nom'             => texte($activite['nom']),
@@ -1019,6 +1094,7 @@ function activite_verrouiller(int $activite_id): ?array
         'a_liste_attente' => entier($activite['a_liste_attente']) === 1,
         'tarif_id'        => $activite['tarif_id'] === null ? null : entier($activite['tarif_id']),
         'tarif_montant'   => $montant !== '' ? $montant : '0.00',
+        'tarif_montant_groupe' => ($tarif['montant_groupe'] ?? null) === null ? null : texte($tarif['montant_groupe']),
         'tarif_montant_familial' => ($tarif['montant_familial'] ?? null) === null ? null : texte($tarif['montant_familial']),
         'places_prises'   => entier(db_valeur(
             'SELECT COALESCE(SUM(nb_places), 0) FROM inscriptions WHERE activite_id = ? AND est_annulee = 0 AND statut = \'inscrit\'',
@@ -1042,6 +1118,10 @@ function activite_verrouiller(int $activite_id): ?array
  * genre porte le montant familial, qui ne compte qu'une seule fois par famille
  * et par activité (calcul du montant dû, étape 3).
  *
+ * Tarif groupe : quand le tarif de l'activité a un montant groupe, il
+ * s'applique de lui-même dès que deux membres de la famille sont inscrits
+ * (voir tarif_groupe_appliquer()).
+ *
  * Forfait : le tarif appliqué est gardé sur l'inscription (tarif_id). Un tarif
  * « forfait » ne compte qu'une fois par personne (ou par famille, au montant
  * familial), quel que soit le nombre d'activités qui l'utilisent. Une structure
@@ -1052,13 +1132,13 @@ function activite_verrouiller(int $activite_id): ?array
  * @param string|null          $montant        montant négocié (structure), au format de la base ; null : tarif de l'activité
  * @param bool                 $en_attente     true : directement en liste d'attente
  * @param bool                 $familial       true : au tarif familial de l'activité
- * @return array{erreur: string, statut: string, id: int} erreur vide si l'inscription est faite
+ * @return array{erreur: string, statut: string, id: int, groupe: list<string>} erreur vide si l'inscription est faite ; groupe : personnes passées au tarif groupe
  */
 function inscription_creer(int $activite_id, array $adherent, int $nb_places, ?string $montant, bool $en_attente, bool $familial = false): array
 {
     $adherent_id = entier($adherent['id'] ?? 0);
     $est_structure = entier($adherent['est_structure'] ?? 0) === 1;
-    $echec = static fn (string $message): array => ['erreur' => $message, 'statut' => '', 'id' => 0];
+    $echec = static fn (string $message): array => ['erreur' => $message, 'statut' => '', 'id' => 0, 'groupe' => []];
 
     db()->beginTransaction();
     try {
@@ -1129,8 +1209,10 @@ function inscription_creer(int $activite_id, array $adherent, int $nb_places, ?s
             null,
             ['activite_id' => $activite_id, 'adherent_id' => $adherent_id, 'nb_places' => $nb_places, 'tarif_id' => $tarif_retenu, 'montant' => $montant_retenu, 'est_tarif_familial' => $familial ? 1 : 0, 'statut' => $statut]
         );
+        // Tarif groupe : dès le deuxième membre de la famille inscrit, tous passent au montant groupe.
+        $passes_au_groupe = $statut === 'inscrit' && !$est_structure ? tarif_groupe_appliquer($activite_id, $dossier_id, $activite) : [];
         db()->commit();
-        return ['erreur' => '', 'statut' => $statut, 'id' => $inscription_id];
+        return ['erreur' => '', 'statut' => $statut, 'id' => $inscription_id, 'groupe' => $passes_au_groupe];
     } catch (Throwable $exception) {
         if (db()->inTransaction()) {
             db()->rollBack();
@@ -1262,13 +1344,16 @@ function inscription_reactiver(array $inscription): string
 
 /**
  * Fait passer une inscription de la liste d'attente aux inscrits, si ses
- * places tiennent dans les places libres.
+ * places tiennent dans les places libres. Le tarif groupe s'applique alors si
+ * un autre membre de la famille est déjà inscrit (tarif_groupe_appliquer()).
  *
- * @param array<string, mixed> $inscription ligne lue par inscription_par_id()
+ * @param array<string, mixed> $inscription      ligne lue par inscription_par_id()
+ * @param list<string>         $passes_au_groupe en sortie : personnes passées au tarif groupe
  * @return string message d'erreur, ou '' si l'inscription est faite
  */
-function inscription_sortir_attente(array $inscription): string
+function inscription_sortir_attente(array $inscription, array &$passes_au_groupe = []): string
 {
+    $passes_au_groupe = [];
     $inscription_id = entier($inscription['id'] ?? 0);
     db()->beginTransaction();
     try {
@@ -1300,6 +1385,9 @@ function inscription_sortir_attente(array $inscription): string
             ['statut' => 'attente'],
             ['statut' => 'inscrit']
         );
+        if (entier($inscription['est_structure'] ?? 0) === 0) {
+            $passes_au_groupe = tarif_groupe_appliquer(entier($inscription['activite_id'] ?? 0), entier($inscription['dossier_id'] ?? 0), $activite);
+        }
         db()->commit();
         return '';
     } catch (Throwable $exception) {

@@ -353,6 +353,11 @@ INSERT IGNORE INTO `recurrences` (`id`, `nom`) VALUES
 --     sont libres : leur tarif est dû à chaque inscription.
 --     montant_familial : facultatif ; montant pour toute la famille (exemple :
 --     centre de loisirs, 5 € par enfant ou 10 € pour tous les enfants).
+--     montant_groupe : facultatif ; montant par personne, appliqué dès que
+--     deux membres d'une même famille sont inscrits à la même activité. Un
+--     tarif n'a jamais à la fois un montant groupe et un montant familial. Il
+--     n'existe pas pour un tarif « adhésion » ni pour un « forfait » (contrôle
+--     de l'application).
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `types_tarif` (
   `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -376,6 +381,7 @@ CREATE TABLE IF NOT EXISTS `tarifs` (
   `nom`                VARCHAR(100) NOT NULL,
   `type_id`            INT UNSIGNED NOT NULL,
   `montant_individuel` DECIMAL(8,2) NOT NULL,
+  `montant_groupe`     DECIMAL(8,2) DEFAULT NULL COMMENT 'Par personne, des que deux membres d une meme famille sont inscrits a l activite ; NULL = pas de tarif groupe',
   `montant_familial`   DECIMAL(8,2) DEFAULT NULL COMMENT 'Pour toute la famille ; NULL = pas de tarif familial',
   `description`        TEXT DEFAULT NULL,
   `date_crea`        DATETIME NOT NULL DEFAULT current_timestamp(),
@@ -392,7 +398,7 @@ CREATE TABLE IF NOT EXISTS `tarifs` (
   CONSTRAINT `fk_tarifs_type` FOREIGN KEY (`type_id`) REFERENCES `types_tarif` (`id`),
   CONSTRAINT `fk_tarifs_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_tarifs_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`),
-  CONSTRAINT `ck_tarifs_montants` CHECK (`montant_individuel` >= 0 AND (`montant_familial` IS NULL OR `montant_familial` >= 0))
+  CONSTRAINT `ck_tarifs_montants` CHECK (`montant_individuel` >= 0 AND (`montant_groupe` IS NULL OR `montant_groupe` >= 0) AND (`montant_familial` IS NULL OR `montant_familial` >= 0) AND (`montant_groupe` IS NULL OR `montant_familial` IS NULL))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------
@@ -446,6 +452,9 @@ CREATE TABLE IF NOT EXISTS `activites` (
 --     tarif_id : le tarif appliqué. Un tarif « forfait » ne compte qu'une fois
 --     par personne (ou par famille, au montant familial) dans le montant dû,
 --     quel que soit le nombre d'activités qui l'utilisent.
+--     est_tarif_groupe : l'inscription est au montant groupe du tarif, appliqué
+--     par l'application dès que deux membres de la famille sont inscrits à
+--     l'activité (le montant des membres déjà inscrits est alors remplacé).
 --     statut : 'inscrit' (compte dans les places), 'attente' (liste d'attente)
 --     ou 'inactif' (places libérées, mais l'inscription reste comptée dans
 --     les statistiques et dans le montant dû ; elle peut être réactivée).
@@ -462,7 +471,8 @@ CREATE TABLE IF NOT EXISTS `inscriptions` (
   `tarif_id`         INT UNSIGNED DEFAULT NULL COMMENT 'Tarif applique a l inscription ; NULL = gratuit ou montant negocie (structure)',
   `montant`          DECIMAL(8,2) NOT NULL DEFAULT 0.00 COMMENT 'Copie du tarif au moment de l inscription, ou montant negocie',
   `est_tarif_familial` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = montant familial : compte une seule fois par famille et par activite (par forfait pour un tarif forfait)',
-  `statut`           ENUM('inscrit','attente','inactif') NOT NULL DEFAULT 'inscrit',
+  `est_tarif_groupe` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = montant groupe : par personne, applique des que deux membres de la famille sont inscrits a l activite',
+  `statut`          ENUM('inscrit','attente','inactif') NOT NULL DEFAULT 'inscrit',
   `attente_le`       DATETIME DEFAULT NULL COMMENT 'Date d entree en liste d attente ; NULL pour un inscrit',
   `inactive_le`      DATETIME DEFAULT NULL COMMENT 'Date ou l inscription a ete rendue inactive ; NULL sinon',
   `inactivation_par` INT UNSIGNED DEFAULT NULL,
@@ -491,7 +501,8 @@ CREATE TABLE IF NOT EXISTS `inscriptions` (
   CONSTRAINT `fk_inscriptions_creation_par` FOREIGN KEY (`creation_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `fk_inscriptions_modification_par` FOREIGN KEY (`modification_par`) REFERENCES `utilisateurs` (`id`),
   CONSTRAINT `ck_inscriptions_places` CHECK (`nb_places` >= 1),
-  CONSTRAINT `ck_inscriptions_montant` CHECK (`montant` >= 0)
+  CONSTRAINT `ck_inscriptions_montant` CHECK (`montant` >= 0),
+  CONSTRAINT `ck_inscriptions_tarif_applique` CHECK (`est_tarif_familial` = 0 OR `est_tarif_groupe` = 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------------------------

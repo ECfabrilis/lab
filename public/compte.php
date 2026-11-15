@@ -296,6 +296,8 @@ require DOSSIER_PRIVE . '/includes/header.php';
                                             <?php endif; ?>
                                             <?php if (entier($ligne_inscription['est_tarif_familial']) === 1) : ?>
                                                 <span class="d-block small text-body-secondary">tarif familial</span>
+                                            <?php elseif (entier($ligne_inscription['est_tarif_groupe']) === 1) : ?>
+                                                <span class="d-block small text-body-secondary">tarif groupe</span>
                                             <?php endif; ?>
                                         </td>
                                     </tr>
