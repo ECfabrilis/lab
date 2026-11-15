@@ -161,6 +161,8 @@ function choix_liste(string $liste): array
 /**
  * Choix proposés dans le formulaire d'une activité : les choix actifs, plus
  * celui que l'activité utilise déjà (même s'il a été rendu inactif depuis).
+ * Dans une liste qui a des choix figés (types de tarif), ceux-ci viennent
+ * toujours en premiers : « Adhésion », puis « Forfait », puis les autres par nom.
  *
  * @param 'secteurs'|'types_activite'|'recurrences'|'types_tarif'|'modes_paiement' $liste
  * @return array<int, string> identifiant => nom
@@ -169,8 +171,10 @@ function choix_proposes(string $liste, int $courant_id = 0): array
 {
     $definition = choix_definition($liste);
     $proposes = [];
+    // comportement est une liste (ENUM) : son tri suit l'ordre adhesion, forfait.
+    $ordre = $definition['a_comportement'] ? 'comportement IS NULL, comportement, nom' : 'nom';
     $lignes = db_lignes(
-        'SELECT id, nom FROM ' . $definition['table'] . ' WHERE est_actif = 1 OR id = ? ORDER BY nom',
+        'SELECT id, nom FROM ' . $definition['table'] . ' WHERE est_actif = 1 OR id = ? ORDER BY ' . $ordre,
         [$courant_id]
     );
     foreach ($lignes as $ligne) {
