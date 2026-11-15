@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.9.2';
+const APP_VERSION = '0.9.3';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,13 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.9.3',
+            'date'        => '2026-11-15',
+            'changements' => [
+                'Quartiers : une zone (commune ou arrondissement) peut être supprimée de la table des quartiers, après confirmation.',
+            ],
+        ],
         [
             'version'     => '0.9.2',
             'date'        => '2026-11-15',
