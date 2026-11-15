@@ -9,7 +9,7 @@ Réponds toujours **en français** (code commenté en français, messages affich
 
 - **Production** : Hostinger, PHP 8.5.12, MariaDB 11.8.9. Pas de Node ni de Composer dev en production.
 - **Local** : WAMP (mêmes versions de PHP et MariaDB), Mailpit (faux serveur de courriel), base de test locale, `config.php` local.
-- **Outils** : Git + GitHub (dépôt privé), Composer (PHPMailer, Dompdf, PHPStan), Node + Sass (Bootstrap 5.3.8).
+- **Outils** : Git + GitHub (dépôt privé), Composer (PHPMailer, Dompdf, PHPStan), Node + Sass (Bootstrap 5.3.9, numéro exact dans `package.json` : après une montée de version, `npm run css` puis `npm run js`, qui recopie `bootstrap.bundle.min.js` dans `public/js/`).
 - Version minimale du code : **PHP 8.3**. Utilise les fonctionnalités modernes (types, `match`, `str_contains`, `?->`).
 
 ## Commandes à lancer avant de dire qu'une tâche est terminée
@@ -53,7 +53,7 @@ Le projet est séparé en une partie publique et une partie privée.
 - **Exception : les aides à la saisie** (`public/api_*.php`, appelées par le JavaScript des formulaires) répondent en JSON à un POST, sans redirection. Elles commencent par `api_exiger('standard')` (connexion, rôle, jeton CSRF).
 - **Menu, tableau de bord et paramètres** (cahier des charges, section 12.3) : les choix sont des cards décrites dans `includes/fonctions_navigation.php`. Pour ajouter un choix, on y ajoute une ligne ; une card dont la page n'existe pas encore s'affiche « À venir » et s'active quand la page est créée.
 - **Version** (`includes/fonctions_version.php`) : `APP_VERSION` et `notes_version()` ; à chaque livraison, changer le numéro et ajouter une entrée en tête des notes. Le pied de page (`footer.php`) affiche la version avec un lien vers `notes_version.php` ; les pages sans connexion n'affichent que `version_courte()`, sans lien.
-- **Icônes** : Font Awesome Free, copié dans `public/css/fontawesome.min.css` et `public/webfonts/` par `npm run icones` et versionné (pas de kit ni de script extérieur : la CSP les bloque). Usage : `<i class="fa-solid fa-user" aria-hidden="true"></i>`.
+- **Icônes** : chaque card et chaque entrée du menu porte une clé `icone` (nom Font Awesome sans « fa- »), affichée par `icone()`. Font Awesome Free, copié dans `public/css/fontawesome.min.css` et `public/webfonts/` par `npm run icones` et versionné (pas de kit ni de script extérieur : la CSP les bloque). Usage : `<i class="fa-solid fa-user" aria-hidden="true"></i>`.
 - **Le mot « dossier » n'apparaît jamais à l'écran** (cahier des charges, section 3.1) : ni libellé, ni lien, ni page. Le dossier reste dans la base et dans le code ; l'interface dit « inscrit(e) pour la saison », « notes de la saison », « paiements de la famille ».
 - **Formulaire d'inscription** (section 12.2) : `ajout_adherent.php`, 4 étapes gardées en session (`includes/fonctions_inscription.php`) ; rien n'est écrit en base avant la validation finale.
 - Chaque formulaire contient `csrf_champ()` ; les formulaires de création ajoutent `jeton_unique_champ('nom')` (anti-double envoi). Les valeurs saisies sont réaffichées avec `ancien()` (jamais les mots de passe).

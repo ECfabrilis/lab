@@ -7,7 +7,7 @@ declare(strict_types=1);
  * présentés sous forme de cards (cahier des charges, section 12.3).
  *
  * Pour ajouter un choix, il suffit d'ajouter une ligne dans l'une des listes
- * ci-dessous. Une card dont la page n'existe pas encore est affichée en
+ * ci-dessous, avec le nom de son icône Font Awesome (« icone », facultatif pour une card). Une card dont la page n'existe pas encore est affichée en
  * grisé avec la mention « À venir » : elle s'active d'elle-même le jour où
  * la page est créée.
  */
@@ -28,21 +28,21 @@ function page_existe(string $page): bool
 /**
  * Entrées du menu principal.
  *
- * @return list<array{page: string, libelle: string, role: string}>
+ * @return list<array{page: string, libelle: string, role: string, icone: string}>
  */
 function menu_principal(): array
 {
     return [
-        ['page' => 'index.php', 'libelle' => 'Tableau de bord', 'role' => 'lecteur'],
-        ['page' => 'parametres.php', 'libelle' => 'Paramètres', 'role' => 'admin'],
-        ['page' => 'statistiques.php', 'libelle' => 'Statistiques', 'role' => 'lecteur'],
+        ['icone' => 'gauge', 'page' => 'index.php', 'libelle' => 'Tableau de bord', 'role' => 'lecteur'],
+        ['icone' => 'sliders', 'page' => 'parametres.php', 'libelle' => 'Paramètres', 'role' => 'admin'],
+        ['icone' => 'chart-pie', 'page' => 'statistiques.php', 'libelle' => 'Statistiques', 'role' => 'lecteur'],
     ];
 }
 
 /**
  * Parties et cards du tableau de bord.
  *
- * @return list<array{titre: string, role: string, cards: list<array{titre: string, texte: string, page: string, role: string}>}>
+ * @return list<array{titre: string, role: string, cards: list<array{titre: string, texte: string, page: string, role: string, icone?: string}>}>
  */
 function cards_tableau_de_bord(): array
 {
@@ -51,28 +51,28 @@ function cards_tableau_de_bord(): array
             'titre' => 'Les adhérents',
             'role'  => 'lecteur',
             'cards' => [
-                ['titre' => 'Liste des adhérents', 'texte' => 'Rechercher une personne, ouvrir sa fiche.', 'page' => 'adherents.php', 'role' => 'lecteur'],
-                ['titre' => 'Nouvelle inscription', 'texte' => 'Inscrire une personne ou une structure pour la saison.', 'page' => 'ajout_adherent.php', 'role' => 'standard'],
-                ['titre' => 'Les familles', 'texte' => 'Membres de chaque famille, saison par saison.', 'page' => 'familles.php', 'role' => 'lecteur'],
+                ['titre' => 'Liste des adhérents', 'texte' => 'Rechercher une personne, ouvrir sa fiche.', 'icone' => 'users', 'page' => 'adherents.php', 'role' => 'lecteur'],
+                ['titre' => 'Nouvelle inscription', 'texte' => 'Inscrire une personne ou une structure pour la saison.', 'icone' => 'person-circle-plus', 'page' => 'ajout_adherent.php', 'role' => 'standard'],
+                ['titre' => 'Les familles', 'texte' => 'Membres de chaque famille, saison par saison.', 'icone' => 'people-roof', 'page' => 'familles.php', 'role' => 'lecteur'],
             ],
         ],
         [
             'titre' => 'Les activités',
             'role'  => 'lecteur',
             'cards' => [
-                ['titre' => 'Liste des activités', 'texte' => 'Ateliers, sorties, évènements, séjours et leurs inscrits.', 'page' => 'activites.php', 'role' => 'lecteur'],
-                ['titre' => 'Nouvelle activité', 'texte' => 'Créer une activité pour la saison.', 'page' => 'ajout_activite.php', 'role' => 'standard'],
-                ['titre' => 'Secteurs d\'activité', 'texte' => 'Liste des secteurs.', 'page' => 'secteurs.php', 'role' => 'admin'],
+                ['titre' => 'Liste des activités', 'texte' => 'Ateliers, sorties, évènements, séjours et leurs inscrits.', 'icone' => 'table-tennis-paddle-ball', 'page' => 'activites.php', 'role' => 'lecteur'],
+                ['titre' => 'Nouvelle activité', 'texte' => 'Créer une activité pour la saison.', 'icone' => 'heart-circle-plus', 'page' => 'ajout_activite.php', 'role' => 'standard'],
+                ['titre' => 'Secteurs d\'activité', 'texte' => 'Liste des secteurs.', 'icone' => 'border-all', 'page' => 'secteurs.php', 'role' => 'admin'],
             ],
         ],
         [
             'titre' => 'Les paiements',
             'role'  => 'standard',
             'cards' => [
-                ['titre' => 'Liste des paiements', 'texte' => 'Paiements enregistrés sur une période.', 'page' => 'paiements.php', 'role' => 'standard'],
-                ['titre' => 'Nouveau paiement', 'texte' => 'Encaisser un paiement pour une famille ou une structure.', 'page' => 'ajout_paiement.php', 'role' => 'standard'],
-                ['titre' => 'Les tarifs', 'texte' => 'Cotisations et tarifs des activités.', 'page' => 'tarifs.php', 'role' => 'standard'],
-                ['titre' => 'État des paiements', 'texte' => 'Reste à payer et trop-perçu des familles pour la saison.', 'page' => 'etat_paiements.php', 'role' => 'standard'],
+                ['titre' => 'Liste des paiements', 'texte' => 'Paiements enregistrés sur une période.', 'icone' => 'money-bill-transfer', 'page' => 'paiements.php', 'role' => 'standard'],
+                ['titre' => 'Nouveau paiement', 'texte' => 'Encaisser un paiement pour une famille ou une structure.', 'icone' => 'hand-holding-dollar', 'page' => 'ajout_paiement.php', 'role' => 'standard'],
+                ['titre' => 'Les tarifs', 'texte' => 'Cotisations et tarifs des activités.', 'icone' => 'euro-sign', 'page' => 'tarifs.php', 'role' => 'standard'],
+                ['titre' => 'État des paiements', 'texte' => 'Reste à payer et trop-perçu des familles pour la saison.', 'icone' => 'money-check-dollar', 'page' => 'etat_paiements.php', 'role' => 'standard'],
             ],
         ],
     ];
@@ -81,7 +81,7 @@ function cards_tableau_de_bord(): array
 /**
  * Parties et cards de la page des paramètres (administrateurs).
  *
- * @return list<array{titre: string, role: string, cards: list<array{titre: string, texte: string, page: string, role: string}>}>
+ * @return list<array{titre: string, role: string, cards: list<array{titre: string, texte: string, page: string, role: string, icone?: string}>}>
  */
 function cards_parametres(): array
 {
@@ -90,40 +90,52 @@ function cards_parametres(): array
             'titre' => 'Les utilisateurs',
             'role'  => 'admin',
             'cards' => [
-                ['titre' => 'Liste des utilisateurs', 'texte' => 'Comptes, rôles, activation.', 'page' => 'utilisateurs.php', 'role' => 'admin'],
-                ['titre' => 'Nouvel utilisateur', 'texte' => 'Créer un compte et envoyer l\'invitation.', 'page' => 'ajout_utilisateur.php', 'role' => 'admin'],
+                ['titre' => 'Liste des utilisateurs', 'texte' => 'Comptes, rôles, activation.', 'icone' => 'clipboard-user', 'page' => 'utilisateurs.php', 'role' => 'admin'],
+                ['titre' => 'Nouvel utilisateur', 'texte' => 'Créer un compte et envoyer l\'invitation.', 'icone' => 'user-plus', 'page' => 'ajout_utilisateur.php', 'role' => 'admin'],
             ],
         ],
         [
             'titre' => 'Options',
             'role'  => 'admin',
             'cards' => [
-                ['titre' => 'Options d\'affichage', 'texte' => 'Nom de la structure, logo et couleur principale.', 'page' => 'options.php', 'role' => 'admin'],
-                ['titre' => 'Options des activités', 'texte' => 'Types d\'activité et récurrences : les listes proposées pour les activités.', 'page' => 'options_activites.php', 'role' => 'admin'],
-                ['titre' => 'Options des paiements', 'texte' => 'Types de tarif et modes de paiement : les listes proposées pour les tarifs et les paiements.', 'page' => 'options_paiements.php', 'role' => 'admin'],
-                ['titre' => 'Option des statistiques', 'texte' => 'Tranches d\'âge, groupes de lieu de résidence et couleurs des graphiques.', 'page' => 'options_statistiques.php', 'role' => 'admin'],
-                ['titre' => 'Quartiers', 'texte' => 'Communes et arrondissements dont les quartiers sont pris en compte pour les adresses.', 'page' => 'quartiers.php', 'role' => 'admin'],
+                ['titre' => 'Options d\'affichage', 'texte' => 'Nom de la structure, logo et couleur principale.', 'icone' => 'display', 'page' => 'options.php', 'role' => 'admin'],
+                ['titre' => 'Options des activités', 'texte' => 'Types d\'activité et récurrences : les listes proposées pour les activités.', 'icone' => 'heart-pulse', 'page' => 'options_activites.php', 'role' => 'admin'],
+                ['titre' => 'Options des paiements', 'texte' => 'Types de tarif et modes de paiement : les listes proposées pour les tarifs et les paiements.', 'icone' => 'file-invoice-dollar', 'page' => 'options_paiements.php', 'role' => 'admin'],
+                ['titre' => 'Option des statistiques', 'texte' => 'Tranches d\'âge, groupes de lieu de résidence et couleurs des graphiques.', 'icone' => 'chart-line', 'page' => 'options_statistiques.php', 'role' => 'admin'],
+                ['titre' => 'Quartiers', 'texte' => 'Communes et arrondissements dont les quartiers sont pris en compte pour les adresses.', 'icone' => 'table-cells', 'page' => 'quartiers.php', 'role' => 'admin'],
             ],
         ],
         [
             'titre' => 'La base de données',
             'role'  => 'admin',
             'cards' => [
-                ['titre' => 'Saisons', 'texte' => 'Créer et modifier les saisons.', 'page' => 'saisons.php', 'role' => 'admin'],
-                ['titre' => 'Données de référence', 'texte' => 'Pays, quartiers, QP, QPV, codes postaux : consulter et mettre à jour.', 'page' => 'donnees_reference.php', 'role' => 'admin'],
-                ['titre' => 'Logs', 'texte' => 'Journal des actions de la saison en cours.', 'page' => 'journal.php', 'role' => 'admin'],
-                ['titre' => 'Sauvegarde', 'texte' => 'Exporter la base et télécharger les sauvegardes.', 'page' => 'sauvegarde.php', 'role' => 'admin'],
-                ['titre' => 'RGPD', 'texte' => 'Anonymisation des familles inactives.', 'page' => 'rgpd.php', 'role' => 'admin'],
+                ['titre' => 'Saisons', 'texte' => 'Créer et modifier les saisons.', 'icone' => 'calendar-days', 'page' => 'saisons.php', 'role' => 'admin'],
+                ['titre' => 'Données de référence', 'texte' => 'Pays, quartiers, QP, QPV, codes postaux : consulter et mettre à jour.', 'icone' => 'bars-progress', 'page' => 'donnees_reference.php', 'role' => 'admin'],
+                ['titre' => 'Logs', 'texte' => 'Journal des actions de la saison en cours.', 'icone' => 'rectangle-list', 'page' => 'journal.php', 'role' => 'admin'],
+                ['titre' => 'Sauvegarde', 'texte' => 'Exporter la base et télécharger les sauvegardes.', 'icone' => 'hard-drive', 'page' => 'sauvegarde.php', 'role' => 'admin'],
+                ['titre' => 'RGPD', 'texte' => 'Anonymisation des familles inactives.', 'icone' => 'user-secret', 'page' => 'rgpd.php', 'role' => 'admin'],
             ],
         ],
         [
             'titre' => 'Configuration',
             'role'  => 'admin',
             'cards' => [
-                ['titre' => 'Paramètres des mails', 'texte' => 'Serveur d\'envoi, expéditeur, essai d\'envoi.', 'page' => 'config_mails.php', 'role' => 'admin'],
+                ['titre' => 'Paramètres des mails', 'texte' => 'Serveur d\'envoi, expéditeur, essai d\'envoi.', 'icone' => 'envelope-circle-check', 'page' => 'config_mails.php', 'role' => 'admin'],
             ],
         ],
     ];
+}
+
+/**
+ * Balise d'une icône Font Awesome (style « solid ») ; '' si aucun nom.
+ * L'icône est décorative : elle est cachée aux lecteurs d'écran.
+ *
+ * @param string $nom     nom de l'icône sans le préfixe « fa- » (exemple : users)
+ * @param string $classes classes de mise en page (par défaut : largeur fixe, à gauche d'un texte)
+ */
+function icone(string $nom, string $classes = 'fa-fw me-1'): string
+{
+    return $nom === '' ? '' : '<i class="fa-solid fa-' . e($nom) . ' ' . e($classes) . '" aria-hidden="true"></i>';
 }
 
 /**
@@ -131,7 +143,7 @@ function cards_parametres(): array
  * d'utiliser n'est pas affichée ; une partie sans card visible disparaît.
  * (Le droit est de toute façon revérifié sur chaque page.)
  *
- * @param list<array{titre: string, role: string, cards: list<array{titre: string, texte: string, page: string, role: string}>}> $parties
+ * @param list<array{titre: string, role: string, cards: list<array{titre: string, texte: string, page: string, role: string, icone?: string}>}> $parties
  */
 function afficher_cards(array $parties): void
 {
@@ -156,7 +168,7 @@ function afficher_cards(array $parties): void
                             <div class="card h-100">
                                 <div class="card-body">
                                     <h3 class="card-title h6">
-                                        <a class="stretched-link text-decoration-none" href="<?= e(chemin_site($card['page'])) ?>"><?= e($card['titre']) ?></a>
+                                        <a class="stretched-link text-decoration-none" href="<?= e(chemin_site($card['page'])) ?>"><?= icone($card['icone'] ?? '') ?><?= e($card['titre']) ?></a>
                                     </h3>
                                     <p class="card-text small text-body-secondary mb-0"><?= e($card['texte']) ?></p>
                                 </div>
@@ -164,7 +176,7 @@ function afficher_cards(array $parties): void
                         <?php else : ?>
                             <div class="card h-100 card-a-venir">
                                 <div class="card-body">
-                                    <h3 class="card-title h6"><?= e($card['titre']) ?> <span class="badge text-bg-secondary">À venir</span></h3>
+                                    <h3 class="card-title h6"><?= icone($card['icone'] ?? '') ?><?= e($card['titre']) ?> <span class="badge text-bg-secondary">À venir</span></h3>
                                     <p class="card-text small text-body-secondary mb-0"><?= e($card['texte']) ?></p>
                                 </div>
                             </div>

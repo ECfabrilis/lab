@@ -19,14 +19,14 @@ $inscrit_id = entier($inscrit['id']);
 $famille_id = entier($inscrit['famille_id']);
 
 $cards = [
-    ['titre' => 'Voir la fiche', 'texte' => 'Fiche de ' . nom_adherent($inscrit) . '.', 'page' => 'adherent.php?id=' . $inscrit_id, 'role' => 'lecteur'],
-    ['titre' => 'Ajouter un paiement', 'texte' => 'Encaisser un paiement pour la saison.', 'page' => 'ajout_paiement.php?adherent=' . $inscrit_id, 'role' => 'standard'],
-    ['titre' => 'Inscrire à une activité', 'texte' => 'Choisir une activité de la saison.', 'page' => 'ajout_inscription.php?adherent=' . $inscrit_id . '&origine=adherent', 'role' => 'standard'],
+    ['icone' => 'address-card', 'titre' => 'Voir la fiche', 'texte' => 'Fiche de ' . nom_adherent($inscrit) . '.', 'page' => 'adherent.php?id=' . $inscrit_id, 'role' => 'lecteur'],
+    ['icone' => 'hand-holding-dollar', 'titre' => 'Ajouter un paiement', 'texte' => 'Encaisser un paiement pour la saison.', 'page' => 'ajout_paiement.php?adherent=' . $inscrit_id, 'role' => 'standard'],
+    ['icone' => 'heart-circle-check', 'titre' => 'Inscrire à une activité', 'texte' => 'Choisir une activité de la saison.', 'page' => 'ajout_inscription.php?adherent=' . $inscrit_id . '&origine=adherent', 'role' => 'standard'],
 ];
 if ($famille_id > 0) {
-    $cards[] = ['titre' => 'Inscrire une autre personne de la famille', 'texte' => 'Formulaire prérempli avec la famille ' . texte($inscrit['famille_nom']) . ', son adresse et son téléphone.', 'page' => 'ajout_adherent.php?famille=' . $famille_id, 'role' => 'standard'];
+    $cards[] = ['icone' => 'people-roof', 'titre' => 'Inscrire une autre personne de la famille', 'texte' => 'Formulaire prérempli avec la famille ' . texte($inscrit['famille_nom']) . ', son adresse et son téléphone.', 'page' => 'ajout_adherent.php?famille=' . $famille_id, 'role' => 'standard'];
 }
-$cards[] = ['titre' => 'Nouvelle inscription', 'texte' => 'Formulaire vide, pour une autre personne ou une structure.', 'page' => 'ajout_adherent.php?nouveau=1', 'role' => 'standard'];
+$cards[] = ['icone' => 'person-circle-plus', 'titre' => 'Nouvelle inscription', 'texte' => 'Formulaire vide, pour une autre personne ou une structure.', 'page' => 'ajout_adherent.php?nouveau=1', 'role' => 'standard'];
 
 $titre_page = 'Inscription enregistrée';
 require DOSSIER_PRIVE . '/includes/header.php';

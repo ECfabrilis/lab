@@ -82,12 +82,13 @@ $css_couleur = couleur_adresse_css();
             <span class="d-none d-md-inline"><?= e($nom_asso) ?></span>
         </a>
         <ul class="navbar-nav flex-wrap">
+            <?php // Chaque entrée : l'icône au-dessus du texte. ?>
             <?php foreach ($menu as $entree_menu) : ?>
                 <li class="nav-item">
                     <?php if (page_existe($entree_menu['page'])) : ?>
-                        <a class="nav-link <?= page_courante() === $entree_menu['page'] ? 'active' : '' ?>" href="<?= e(chemin_site($entree_menu['page'])) ?>"><?= e($entree_menu['libelle']) ?></a>
+                        <a class="nav-link d-flex flex-column align-items-center <?= page_courante() === $entree_menu['page'] ? 'active' : '' ?>" href="<?= e(chemin_site($entree_menu['page'])) ?>"><?= icone($entree_menu['icone'], 'fs-5 mb-1') ?><?= e($entree_menu['libelle']) ?></a>
                     <?php else : ?>
-                        <span class="nav-link disabled" title="À venir"><?= e($entree_menu['libelle']) ?></span>
+                        <span class="nav-link d-flex flex-column align-items-center disabled" title="À venir"><?= icone($entree_menu['icone'], 'fs-5 mb-1') ?><?= e($entree_menu['libelle']) ?></span>
                     <?php endif; ?>
                 </li>
             <?php endforeach; ?>
