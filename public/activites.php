@@ -44,7 +44,7 @@ $peut_creer = role_au_moins('standard');
 $titre_page = 'Activités';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-4">Activités — saison <?= e($saison_affichee['nom'] ?? '') ?></h1>
+<h1 class="h3 mb-4">Activités</h1>
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <?php if ($peut_creer) : ?>

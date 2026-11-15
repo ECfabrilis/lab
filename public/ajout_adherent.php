@@ -278,7 +278,7 @@ $destinataires_confirmation = $etape === 4 ? destinataires_confirmation($fiche) 
 $titre_page = 'Nouvelle inscription';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-3">Nouvelle inscription <span class="fs-6 text-body-secondary">saison <?= e($saison_affichee['nom']) ?></span></h1>
+<h1 class="h3 mb-3">Nouvelle inscription</h1>
 
 <ol class="list-group list-group-horizontal-md mb-4">
     <?php $rang = 0; ?>

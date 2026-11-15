@@ -114,7 +114,7 @@ $champ_titulaire = '<input type="hidden" name="' . e($titulaire['type']) . '" va
 $titre_page = 'Paiements';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-4">Paiements — <?= e($titulaire['titre']) ?> <span class="badge text-bg-secondary">Saison <?= e($saison_affichee_nom) ?></span></h1>
+<h1 class="h3 mb-4">Paiements — <?= e($titulaire['titre']) ?></h1>
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2">

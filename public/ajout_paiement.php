@@ -122,7 +122,7 @@ $reste_a_payer = $compte !== null ? max(0, $compte['solde']) : 0;
 $titre_page = 'Nouveau paiement';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-4">Nouveau paiement <span class="badge text-bg-secondary">Saison <?= e($saison_affichee_nom) ?></span></h1>
+<h1 class="h3 mb-4">Nouveau paiement</h1>
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2">

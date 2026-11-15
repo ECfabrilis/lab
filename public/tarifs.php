@@ -17,7 +17,7 @@ $est_admin = role_au_moins('admin');
 $titre_page = 'Tarifs';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-4">Tarifs — saison <?= e($saison_affichee['nom'] ?? '') ?></h1>
+<h1 class="h3 mb-4">Tarifs</h1>
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2">

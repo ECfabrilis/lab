@@ -82,7 +82,7 @@ unset($_SESSION['activite_similaire']);
 $titre_page = 'Nouvelle activité';
 require DOSSIER_PRIVE . '/includes/header.php';
 ?>
-<h1 class="h3 mb-4">Nouvelle activité — saison <?= e($saison_affichee['nom']) ?></h1>
+<h1 class="h3 mb-4">Nouvelle activité</h1>
 <div class="row g-4">
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2">
