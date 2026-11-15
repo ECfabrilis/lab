@@ -54,6 +54,7 @@ $css_couleur = couleur_adresse_css();
     <title><?= e($titre_page) ?> — <?= e($nom_asso) ?></title>
     <link rel="icon" href="<?= e(chemin_site('img/favicon.png')) ?>">
     <link rel="stylesheet" href="<?= e(chemin_site('css/bddv3.css')) ?>">
+    <link rel="stylesheet" href="<?= e(chemin_site('css/fontawesome.min.css')) ?>">
 <?php if ($css_couleur !== '') : ?>
     <link rel="stylesheet" href="<?= e($css_couleur) ?>">
 <?php endif; ?>
@@ -71,7 +72,8 @@ $css_couleur = couleur_adresse_css();
         <?php endforeach; ?>
     </div>
 <?php else : ?>
-<body>
+<?php // Page en colonne sur toute la hauteur de l'écran : le pied de page (footer.php) reste en bas. ?>
+<body class="d-flex flex-column min-vh-100">
 <?php // En-tête : le logo et le menu principal seulement. ?>
 <nav class="navbar navbar-expand bg-body-tertiary border-bottom">
     <div class="container flex-wrap">

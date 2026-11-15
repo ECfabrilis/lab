@@ -4,9 +4,11 @@
   "scripts": {
     "css": "sass --quiet-deps --silence-deprecation=import --no-source-map scss/bddv3.scss:public/css/bddv3.css scss/connexion.scss:public/css/connexion.css",
     "js": "node -e \"require('fs').copyFileSync('node_modules/chart.js/dist/chart.umd.min.js', 'public/js/chart.umd.min.js')\"",
+    "icones": "node -e \"const fs=require('fs'),fa='node_modules/@fortawesome/fontawesome-free/';fs.copyFileSync(fa+'css/all.min.css','public/css/fontawesome.min.css');fs.cpSync(fa+'webfonts','public/webfonts',{recursive:true})\"",
     "watch": "sass --watch --quiet-deps --silence-deprecation=import --no-source-map scss/bddv3.scss:public/css/bddv3.css scss/connexion.scss:public/css/connexion.css"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-free": "7.3.1",
     "bootstrap": "5.3.8",
     "chart.js": "^4.6.1"
   },
