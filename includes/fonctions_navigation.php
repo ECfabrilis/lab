@@ -110,7 +110,7 @@ function cards_parametres(): array
             'role'  => 'admin',
             'cards' => [
                 ['titre' => 'Saisons', 'texte' => 'Créer et modifier les saisons.', 'icone' => 'calendar-days', 'page' => 'saisons.php', 'role' => 'admin'],
-                ['titre' => 'Données de référence', 'texte' => 'Pays, quartiers, QP, QPV, codes postaux : consulter et mettre à jour.', 'icone' => 'bars-progress', 'page' => 'donnees_reference.php', 'role' => 'admin'],
+                ['titre' => 'Données de référence', 'texte' => 'Pays, quartiers, QP, QPV, codes postaux : consulter et mettre à jour.', 'icone' => 'database', 'page' => 'donnees_reference.php', 'role' => 'admin'],
                 ['titre' => 'Logs', 'texte' => 'Journal des actions de la saison en cours.', 'icone' => 'rectangle-list', 'page' => 'journal.php', 'role' => 'admin'],
                 ['titre' => 'Sauvegarde', 'texte' => 'Exporter la base et télécharger les sauvegardes.', 'icone' => 'hard-drive', 'page' => 'sauvegarde.php', 'role' => 'admin'],
                 ['titre' => 'RGPD', 'texte' => 'Anonymisation des familles inactives.', 'icone' => 'user-secret', 'page' => 'rgpd.php', 'role' => 'admin'],
