@@ -356,6 +356,41 @@ function adresse_enregistrer(int $dossier_id, int $adherent_id, array $saisie): 
 }
 
 /**
+ * Autres membres d'un dossier à qui l'adresse d'un membre peut être appliquée
+ * (les fiches anonymisées sont laissées de côté).
+ *
+ * @return list<array<string, mixed>> identifiant (id) et prénom (prenom)
+ */
+function adresse_autres_membres(int $dossier_id, int $adherent_id): array
+{
+    return db_lignes(
+        'SELECT a.id, a.prenom
+           FROM dossiers_adherents da
+           JOIN adherents a ON a.id = da.adherent_id
+          WHERE da.dossier_id = ? AND da.adherent_id <> ? AND a.anonymise_le IS NULL AND a.est_structure = 0
+          ORDER BY a.date_naissance, a.prenom',
+        [$dossier_id, $adherent_id]
+    );
+}
+
+/**
+ * Applique l'adresse d'un membre aux autres membres de sa famille inscrits pour
+ * la même saison. Chacun garde son établissement scolaire et son niveau.
+ *
+ * @param array<string, string|int|float|null> $valeurs adresse préparée par adresse_preparer()
+ * @return int nombre de membres dont l'adresse a été écrite
+ */
+function adresse_appliquer_aux_membres(int $dossier_id, int $adherent_id, array $valeurs): int
+{
+    unset($valeurs['etablissement'], $valeurs['niveau']);
+    $membres = adresse_autres_membres($dossier_id, $adherent_id);
+    foreach ($membres as $membre) {
+        adresse_ecrire($dossier_id, entier($membre['id']), $valeurs);
+    }
+    return count($membres);
+}
+
+/**
  * Phrase qui résume le quartier, le QP et le QPV d'une adresse préparée ou enregistrée.
  *
  * @param array<string, mixed> $adresse

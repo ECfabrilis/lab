@@ -81,13 +81,23 @@ if (est_post()) {
         db()->beginTransaction();
         try {
             $dossier_id = dossier_obtenir_pour_adherent($fiche, $saison_affichee_id);
-            $adresse_reconnue = adresse_enregistrer($dossier_id, $fiche_id, $saisie_adresse);
+            $valeurs_adresse = adresse_preparer($saisie_adresse);
+            adresse_ecrire($dossier_id, $fiche_id, $valeurs_adresse);
+            $adresse_reconnue = $valeurs_adresse['est_validee'] === 1;
+            // Case cochée : la même adresse pour les autres membres de la famille inscrits pour la saison.
+            $nb_membres_modifies = !$est_structure && post('toute_famille') === '1'
+                ? adresse_appliquer_aux_membres($dossier_id, $fiche_id, $valeurs_adresse)
+                : 0;
             db()->commit();
         } catch (Throwable $erreur) {
             db()->rollBack();
             throw $erreur;
         }
-        flash('succes', 'L\'adresse de la saison ' . texte($saison_affichee['nom'] ?? '') . ' est enregistrée.');
+        flash('succes', 'L\'adresse de la saison ' . texte($saison_affichee['nom'] ?? '') . ' est enregistrée' . match ($nb_membres_modifies) {
+            0       => '.',
+            1       => ', ainsi que pour un autre membre de la famille.',
+            default => ', ainsi que pour ' . $nb_membres_modifies . ' autres membres de la famille.',
+        });
         if (!$adresse_reconnue && adresse_api_indisponible()) {
             flash('avertissement', MESSAGE_API_ADRESSE_INDISPONIBLE . ' Le quartier n\'a pas pu être déterminé.');
         } elseif (!$adresse_reconnue) {
@@ -140,6 +150,11 @@ $autres_membres = $adresse_saison === null ? [] : array_values(array_filter(
 
 // Adresse proposée dans la fenêtre de modification : celle de la saison, sinon la dernière connue.
 $adresse_proposee = $adresse_saison ?? derniere_adresse_adherent($fiche_id) ?? ($est_structure ? null : derniere_adresse_famille($famille_id)) ?? [];
+// Membres de la famille à qui la nouvelle adresse peut aussi être appliquée (case à cocher de la fenêtre).
+$prenoms_meme_adresse = $adresse_saison === null || $est_structure ? [] : array_map(
+    static fn (array $membre): string => texte($membre['prenom']),
+    adresse_autres_membres($dossier_saison_id, $fiche_id)
+);
 $autres_saisons = autres_saisons_adherent($fiche_id, $saison_affichee_id);
 $inscriptions_saison = $adresse_saison !== null ? inscriptions_adherent($fiche_id, $saison_affichee_id) : [];
 // Lien vers les cotisations et paiements de la famille (ou de la structure) : rôle standard au minimum.
@@ -377,6 +392,13 @@ require DOSSIER_PRIVE . '/includes/header.php';
                             <p class="text-body-secondary">Vérifiez l'adresse (la dernière connue est proposée), puis enregistrez.</p>
                         <?php endif; ?>
                         <?php afficher_champs_adresse($adresse_proposee, $mineur); ?>
+                        <?php if ($prenoms_meme_adresse !== []) : ?>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="toute_famille" name="toute_famille" value="1" <?= ancien('toute_famille') === '1' ? 'checked' : '' ?> aria-describedby="aide_toute_famille">
+                                <label class="form-check-label" for="toute_famille">Appliquer aussi cette adresse aux autres membres de la famille</label>
+                                <div class="form-text" id="aide_toute_famille">Inscrits pour la saison : <?= e(implode(', ', $prenoms_meme_adresse)) ?>.<?= $mineur ? ' L\'établissement scolaire et le niveau ne sont pas recopiés.' : '' ?></div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
