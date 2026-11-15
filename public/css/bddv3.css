@@ -13234,7 +13234,8 @@ textarea.form-control-lg {
 
 @media print {
   body:has(.page-statistiques) .navbar,
-  body:has(.page-statistiques) .barre-contexte {
+  body:has(.page-statistiques) .barre-contexte,
+  body:has(.page-statistiques) .pied-page {
     display: none !important;
   }
   .page-statistiques #menuLateral,

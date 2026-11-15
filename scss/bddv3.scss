@@ -249,7 +249,8 @@ $utilities: map-merge(
 @media print {
   body:has(.page-statistiques) {
     .navbar,
-    .barre-contexte {
+    .barre-contexte,
+    .pied-page {
       display: none !important;
     }
   }

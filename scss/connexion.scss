@@ -10,6 +10,14 @@ input:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
   -webkit-text-fill-color: var(--bs-body-color) !important;
 }
+// Version de l'application, tout en bas des pages sans connexion.
+.version-publique {
+  position: fixed;
+  right: 0;
+  bottom: 0.5rem;
+  left: 0;
+  text-align: center;
+}
 // 1. Styles communs aux formulaires d'authentification
 .form-signin,
 .form-mdpoubli,

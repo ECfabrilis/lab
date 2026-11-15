@@ -73,6 +73,8 @@ Modèle conservé : **famille → dossier (par saison) → adhérents → inscri
 
 **Mineur** : un seul **responsable adulte** avec nom, courriel et téléphone.
 
+**Adresse de toute la famille** : quand on modifie l'adresse d'une personne, une case à cocher (décochée par défaut) propose d'appliquer la nouvelle adresse aux **autres membres de la famille inscrits pour la saison**. Seule l'adresse est recopiée (avec ses quartiers) : chacun garde son établissement scolaire et son niveau. Les membres non inscrits pour la saison ne sont pas touchés.
+
 ### 3.3 Structures
 
 Une structure (association, école, etc.) peut être adhérente : nom, adresse, courriel, téléphone, notes. Elle a son propre dossier (pas de famille) et **peut s'inscrire à des activités, plusieurs fois et pour plusieurs places** (exemple : un club réserve 5 places sur 12 pour une activité de yoga). Une structure n'a ni sexe ni âge : elle est exclue des statistiques par personne (voir 10).
@@ -334,6 +336,10 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 
 **Barre sous l'en-tête** : elle contient la **saison** (affichage et changement de saison) et l'**utilisateur** (son nom, accès à son profil, déconnexion). L'en-tête au-dessus ne garde que le logo et le menu. Sur téléphone, la barre reste lisible (éléments empilés ou réduits).
 
+**Pied de page** : en bas de chaque page, le nom de la structure à gauche et, à droite, la **version de l'application** (par exemple « Version 0.9.0 »), qui mène aux **notes de version** (`notes_version.php`, tous les utilisateurs connectés). Les pages sans connexion (connexion, mot de passe oublié, choix du mot de passe) n'ont pas de pied de page : seulement la version courte (« Version 0.9 »), tout en bas, sans lien.
+
+**Icônes** : Font Awesome Free, hébergé dans l'application (aucun appel à un serveur extérieur).
+
 **Tableau de bord** : trois parties, chacune présentée sous forme de **cards Bootstrap** cliquables.
 
 | Partie | Choix | Accès |
@@ -349,7 +355,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 | Partie | Choix |
 |---|---|
 | Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
-| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Options des activités (une seule page : types d'activité et récurrences) ; Options des paiements (une seule page : types de tarif et modes de paiement) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul) ; Statistiques (une seule page : tranches d'âge, groupes de lieu de résidence et couleurs des graphiques, voir section 10) |
+| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Options des activités (une seule page : types d'activité et récurrences) ; Options des paiements (une seule page : types de tarif et modes de paiement) ; Option des statistiques (une seule page : tranches d'âge, groupes de lieu de résidence et couleurs des graphiques, voir section 10) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul) |
 | La base de données | Saisons ; Données de référence (pays, quartiers, QP, QPV, codes postaux ; pour les quartiers : « Remplacer la table » ou « Ajouter à la table ») ; Logs ; Sauvegarde ; RGPD (anonymisation) |
 | Configuration | Paramètres des mails (avec l'essai d'envoi) |
 
