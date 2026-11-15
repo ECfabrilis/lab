@@ -17,10 +17,11 @@ use Dompdf\Options;
  */
 function document_logo(): string
 {
-    $fichier = dossier_public() . '/' . parametre('logo', 'img/logo-cefia75.png');
-    if (!is_file($fichier)) {
+    $logo = logo_association();
+    if ($logo === '') {
         return '';
     }
+    $fichier = dossier_public() . '/' . $logo;
     $infos = getimagesize($fichier);
     $type = $infos === false ? 0 : $infos[2];
     if ($type !== IMAGETYPE_JPEG && !($type === IMAGETYPE_PNG && extension_loaded('gd'))) {

@@ -324,7 +324,7 @@ if (est_post()) {
                 journaliser('creation', 'saisons', entier($pdo_install->lastInsertId()), 'Installation : première saison « ' . $premiere_saison['nom'] . ' »', null, $premiere_saison);
             }
             parametre_enregistrer('nom_association', $nom_association);
-            db_executer("INSERT IGNORE INTO parametres (cle, valeur) VALUES ('adresse_association', ''), ('logo', 'img/logo-cefia75.png')");
+            db_executer("INSERT IGNORE INTO parametres (cle, valeur) VALUES ('adresse_association', ''), ('logo', '')");
             $pdo_install->commit();
         } catch (Throwable $exception) {
             if ($pdo_install->inTransaction()) {
@@ -595,7 +595,7 @@ if ($verrouille) {
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label" for="nom_association">Nom de l'association</label>
-                        <input class="form-control" type="text" id="nom_association" name="nom_association" maxlength="255" value="<?= e(ancien('nom_association', 'CEFIA')) ?>" required>
+                        <input class="form-control" type="text" id="nom_association" name="nom_association" maxlength="255" value="<?= e(ancien('nom_association')) ?>" required>
                     </div>
 
                     <?php if ($faut_admin_affichage) : ?>

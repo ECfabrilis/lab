@@ -21,7 +21,7 @@ $page_publique = isset($page_publique) && $page_publique === true;
 
 $u = $page_publique ? null : utilisateur_courant();
 $nom_asso = parametre('nom_association', 'Association');
-$logo = chemin_site(parametre('logo', 'img/logo-cefia75.png'));
+$logo = logo_association();
 $libelles_roles = libelles_roles();
 $saisons = $u === null ? [] : saisons_liste();
 $saison = $u === null ? null : saison_courante();
@@ -65,7 +65,11 @@ $css_couleur = couleur_adresse_css();
 <?php if ($page_publique) : ?>
 <body class="d-flex align-items-center py-4 bg-body-tertiary">
 <main class="w-100 m-auto text-center">
-    <img class="mb-3" src="<?= e($logo) ?>" alt="<?= e($nom_asso) ?>" height="75">
+    <?php if ($logo !== '') : ?>
+        <img class="mb-3" src="<?= e(chemin_site($logo)) ?>" alt="<?= e($nom_asso) ?>" height="75">
+    <?php else : ?>
+        <p class="h4 mb-3"><?= e($nom_asso) ?></p>
+    <?php endif; ?>
     <div class="mx-auto px-3 messages-publics">
         <?php foreach ($messages as $message_flash) : ?>
             <div class="alert alert-<?= e($message_flash['classe']) ?>" role="alert"><?= e($message_flash['message']) ?></div>
@@ -78,8 +82,11 @@ $css_couleur = couleur_adresse_css();
 <nav class="navbar navbar-expand bg-body-tertiary border-bottom">
     <div class="container flex-wrap">
         <a class="navbar-brand d-flex align-items-center gap-2" href="<?= e(chemin_site('index.php')) ?>">
-            <img src="<?= e($logo) ?>" alt="<?= e($nom_asso) ?>" height="40">
-            <span class="d-none d-md-inline"><?= e($nom_asso) ?></span>
+            <?php if ($logo !== '') : ?>
+                <img src="<?= e(chemin_site($logo)) ?>" alt="<?= e($nom_asso) ?>" height="40">
+            <?php endif; ?>
+            <?php // Sans logo, le nom reste visible sur petit écran : c'est le seul lien vers le tableau de bord. ?>
+            <span class="<?= $logo !== '' ? 'd-none d-md-inline' : '' ?>"><?= e($nom_asso) ?></span>
         </a>
         <ul class="navbar-nav flex-wrap">
             <?php // Chaque entrée : l'icône au-dessus du texte. ?>

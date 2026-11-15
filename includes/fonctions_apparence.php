@@ -13,6 +13,17 @@ declare(strict_types=1);
 /** Couleur principale quand aucune n'a été choisie (le bleu de Bootstrap). */
 const COULEUR_DEFAUT = '#0d6efd';
 
+/**
+ * Logo de l'association (Paramètres > Options), chemin relatif à public/.
+ * '' quand aucun logo n'est choisi ou que le fichier n'existe plus :
+ * l'application n'a pas de logo par défaut.
+ */
+function logo_association(): string
+{
+    $logo = parametre('logo');
+    return $logo !== '' && is_file(dossier_public() . '/' . $logo) ? $logo : '';
+}
+
 /** Vrai si le texte est une couleur au format #rrggbb. */
 function couleur_valide(string $couleur): bool
 {

@@ -89,7 +89,7 @@ if (est_post()) {
     rediriger('options.php');
 }
 
-$logo_actuel = chemin_site(parametre('logo', 'img/logo-cefia75.png'));
+$logo_actuel = logo_association();
 
 $couleur_actuelle = parametre('couleur', COULEUR_DEFAUT);
 
@@ -101,7 +101,11 @@ require DOSSIER_PRIVE . '/includes/header.php';
     <div class="col-md-4 order-md-2" id="menuLateral">
         <p class="mb-2">Logo actuel</p>
         <div class="border rounded p-3 text-center bg-body-tertiary">
-            <img class="img-fluid" src="<?= e($logo_actuel) ?>" alt="Logo de l'association">
+            <?php if ($logo_actuel !== '') : ?>
+                <img class="img-fluid" src="<?= e(chemin_site($logo_actuel)) ?>" alt="Logo de l'association">
+            <?php else : ?>
+                <span class="text-body-secondary">Aucun logo</span>
+            <?php endif; ?>
         </div>
         <p class="d-none d-lg-block text-body-secondary small mt-3">Le nom, l'adresse et le logo figurent sur les documents (reçus, attestations, listes).</p>
         <div class="d-grid">
