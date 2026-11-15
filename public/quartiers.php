@@ -17,6 +17,26 @@ exiger_role('admin');
 
 if (est_post()) {
     csrf_verifier();
+
+    // Suppression d'une zone entière (tous ses quartiers), après confirmation.
+    if (post('action') === 'supprimer') {
+        if (post('confirmer') !== '1') {
+            flash('erreur', 'Cochez la case de confirmation pour supprimer les quartiers de la zone choisie.');
+            rediriger('quartiers.php');
+        }
+        $suppression = quartiers_supprimer_zone(post('zone'));
+        if ($suppression === null) {
+            flash('erreur', 'Cette zone n\'existe plus dans la table des quartiers.');
+        } else {
+            $zone_supprimee = 'la zone « ' . $suppression['libelle'] . ' »';
+            flash('succes', ($suppression['nb_quartiers'] > 1
+                    ? 'Les ' . $suppression['nb_quartiers'] . ' quartiers de ' . $zone_supprimee . ' sont supprimés.'
+                    : 'Le quartier de ' . $zone_supprimee . ' est supprimé.')
+                . ' Les adresses déjà saisies gardent leur quartier.');
+        }
+        rediriger('quartiers.php');
+    }
+
     $cles_cochees = [];
     $envoyees = $_POST['zones'] ?? [];
     foreach (is_array($envoyees) ? $envoyees : [] as $valeur) {
@@ -53,6 +73,27 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <li>Les adresses déjà saisies gardent le quartier calculé le jour de leur saisie.</li>
             <li>Pour ajouter les quartiers d'une autre commune ou d'un autre arrondissement : « Données de référence », bouton « Ajouter à la table ».</li>
         </ul>
+        <?php if ($zones !== []) : ?>
+            <form class="border rounded p-3 mt-4" method="post" action="<?= e(chemin_site('quartiers.php')) ?>">
+                <?= csrf_champ() ?>
+                <input type="hidden" name="action" value="supprimer">
+                <h2 class="h6">Supprimer une zone</h2>
+                <label class="form-label small" for="zone_supprimer">Zone dont tous les quartiers seront retirés de la table</label>
+                <select class="form-select mb-2" id="zone_supprimer" name="zone" required>
+                    <option value="">Choisir…</option>
+                    <?php foreach ($zones as $zone) : ?>
+                        <option value="<?= e($zone['cle']) ?>"><?= e($zone['libelle']) ?> (<?= $zone['nb_quartiers'] ?> quartier<?= $zone['nb_quartiers'] > 1 ? 's' : '' ?>)</option>
+                    <?php endforeach; ?>
+                </select>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="confirmer_suppression" name="confirmer" value="1" required>
+                    <label class="form-check-label small" for="confirmer_suppression">Je confirme la suppression. Pour retrouver cette zone, il faudra la réimporter dans « Données de référence ».</label>
+                </div>
+                <div class="d-grid">
+                    <button class="btn btn-outline-danger" type="submit">Supprimer la zone</button>
+                </div>
+            </form>
+        <?php endif; ?>
     </div>
     <div class="col-md-8 order-md-1">
         <?php if ($zones === []) : ?>

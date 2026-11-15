@@ -267,6 +267,35 @@ function quartiers_choisir(array $cles): array
 }
 
 /**
+ * Supprime de la table des quartiers tous les quartiers d'une zone (voir
+ * quartiers_zones()). Les adresses déjà saisies gardent leur quartier
+ * (instantané) ; pour retrouver la zone, on la réimporte dans « Données de
+ * référence ».
+ *
+ * @param string $cle clé de la zone (« 17|Paris »)
+ * @return array{libelle: string, nb_quartiers: int}|null null si la zone n'existe pas
+ */
+function quartiers_supprimer_zone(string $cle): ?array
+{
+    foreach (quartiers_zones() as $zone) {
+        if ($zone['cle'] !== $cle) {
+            continue;
+        }
+        db()->beginTransaction();
+        try {
+            $nb = db_executer('DELETE FROM quartiers WHERE commune = ? AND arrondissement = ?', [$zone['commune'], $zone['arrondissement']])->rowCount();
+            journaliser('suppression', 'quartiers', null, 'Suppression de la zone de quartiers « ' . $zone['libelle'] . ' »', ['zone' => $zone['libelle'], 'quartiers' => $nb], null);
+            db()->commit();
+        } catch (Throwable $erreur) {
+            db()->rollBack();
+            throw $erreur;
+        }
+        return ['libelle' => $zone['libelle'], 'nb_quartiers' => $nb];
+    }
+    return null;
+}
+
+/**
  * Rétablit une table de quartiers à partir du fichier fourni avec l'application
  * (sql/donnees_reference.sql).
  *
