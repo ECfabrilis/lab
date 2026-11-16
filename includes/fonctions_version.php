@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.10.0';
+const APP_VERSION = '0.11.0';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,16 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.11.0',
+            'date'        => '2026-11-17',
+            'changements' => [
+                'Export de la liste des adhérents pour un tableur (Excel, LibreOffice), avec la recherche et les filtres appliqués (bénévoles, quartier, QP, QPV…), sur toutes les pages de la liste.',
+                'Export vers Google Contacts des adhérents de la saison (tableau de bord) : personnes majeures et structures qui ont accepté les communications, avec les libellés « Adhérents [saison] » et « Bénévoles ».',
+                'Export vers Google Contacts des participants d\'une activité, depuis sa fiche (liste d\'attente et inscriptions inactives sur demande).',
+                'Chaque export est noté dans le journal.',
+            ],
+        ],
         [
             'version'     => '0.10.0',
             'date'        => '2026-11-16',

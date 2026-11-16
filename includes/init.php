@@ -29,6 +29,7 @@ require_once DOSSIER_PRIVE . '/includes/fonctions_tarifs.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_activites.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_paiements.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_documents.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_exports.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_statistiques.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_rgpd.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_version.php';

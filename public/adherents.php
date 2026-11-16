@@ -38,28 +38,23 @@ if (est_post()) {
     rediriger('adherents.php');
 }
 
-$criteres = $_SESSION['recherche_adherents'] ?? [];
-$criteres = is_array($criteres) ? $criteres : [];
-$recherche = texte($criteres['texte'] ?? '');
-$perimetre = ($criteres['perimetre'] ?? '') === 'tous' ? 'tous' : 'saison';
-$filtre_lettre = preg_match('/^[A-Z]$/', texte($criteres['lettre'] ?? '')) === 1 ? texte($criteres['lettre']) : '';
-$filtre_benevoles = ($criteres['benevoles'] ?? false) === true;
-$filtre_quartier = texte($criteres['quartier'] ?? '');
-$filtre_qp = ($criteres['qp'] ?? false) === true;
-$filtre_qpv = ($criteres['qpv'] ?? false) === true;
-$par_page = in_array($criteres['par_page'] ?? 0, ADHERENTS_PAR_PAGE_CHOIX, true) ? entier($criteres['par_page']) : ADHERENTS_PAR_PAGE;
-
 $saison_affichee = saison_courante();
 $saison_affichee_id = entier($saison_affichee['id'] ?? 0);
 $numero_page = max(1, entier($_GET['page'] ?? 1));
-
 $quartiers_saison = adherents_quartiers($saison_affichee_id);
-if ($filtre_quartier !== '' && !in_array($filtre_quartier, $quartiers_saison, true)) {
-    // Quartier d'une autre saison (la saison affichée a changé) : le filtre tombe.
-    $filtre_quartier = '';
-}
 
-$filtres_liste = ['lettre' => $filtre_lettre, 'benevoles' => $filtre_benevoles, 'quartier' => $filtre_quartier, 'qp' => $filtre_qp, 'qpv' => $filtre_qpv];
+// Critères gardés en session (les mêmes servent à l'export de la liste).
+$criteres = adherents_criteres($saison_affichee_id);
+$recherche = $criteres['texte'];
+$perimetre = $criteres['saison_seule'] ? 'saison' : 'tous';
+$filtres_liste = $criteres['filtres'];
+$filtre_lettre = $filtres_liste['lettre'];
+$filtre_benevoles = $filtres_liste['benevoles'];
+$filtre_quartier = $filtres_liste['quartier'];
+$filtre_qp = $filtres_liste['qp'];
+$filtre_qpv = $filtres_liste['qpv'];
+$par_page = $criteres['par_page'];
+
 $resultat = adherents_rechercher($recherche, $saison_affichee_id, $perimetre === 'saison', $numero_page, $filtres_liste, $par_page);
 $nb_pages = max(1, (int) ceil($resultat['total'] / $par_page));
 if ($numero_page > $nb_pages) {
@@ -99,6 +94,8 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <?php if (role_au_moins('standard')) : ?>
             <div class="d-grid gap-2 mb-3">
                 <a class="btn btn-primary" href="<?= e(chemin_site('ajout_adherent.php')) ?>">Nouvelle inscription</a>
+                <?php // Export de toute la liste filtrée (pas seulement la page affichée), pour un tableur. ?>
+                <a class="btn btn-outline-secondary" href="<?= e(chemin_site('export_adherents.php')) ?>"><?= icone('file-excel') ?>Exporter la liste (tableur)</a>
             </div>
         <?php endif; ?>
         <form method="post" action="<?= e(chemin_site('adherents.php')) ?>">

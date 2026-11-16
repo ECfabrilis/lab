@@ -269,6 +269,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <?php foreach (activite_documents_modeles() as $modele_document => $titre_document) : ?>
                     <button class="btn btn-outline-secondary btn-sm" type="submit" name="modele" value="<?= e($modele_document) ?>"><?= e($titre_document) ?></button>
                 <?php endforeach; ?>
+                <?php if ($peut_modifier) : ?>
+                    <?php // Même choix (liste d'attente, inactives), mais vers un fichier d'import Google Contacts. ?>
+                    <button class="btn btn-outline-secondary btn-sm" type="submit" formaction="<?= e(chemin_site('export_contacts.php')) ?>" formtarget="_self"><?= icone('address-book') ?>Export Google Contacts</button>
+                <?php endif; ?>
             </div>
         </form>
 

@@ -54,6 +54,7 @@ function cards_tableau_de_bord(): array
                 ['titre' => 'Liste des adhérents', 'texte' => 'Rechercher une personne, ouvrir sa fiche.', 'icone' => 'users', 'page' => 'adherents.php', 'role' => 'lecteur'],
                 ['titre' => 'Nouvelle inscription', 'texte' => 'Inscrire une personne ou une structure pour la saison.', 'icone' => 'person-circle-plus', 'page' => 'ajout_adherent.php', 'role' => 'standard'],
                 ['titre' => 'Les familles', 'texte' => 'Membres de chaque famille, saison par saison.', 'icone' => 'people-roof', 'page' => 'familles.php', 'role' => 'lecteur'],
+                ['titre' => 'Export Google Contacts', 'texte' => 'Adhérents majeurs de la saison qui acceptent les communications, au format d\'import de Google Contacts.', 'icone' => 'address-book', 'page' => 'export_contacts.php', 'role' => 'standard'],
                 ['titre' => 'Émargement de l\'AG', 'texte' => 'Feuille d\'émargement (PDF) de l\'assemblée générale : adhérents majeurs et structures de la saison.', 'icone' => 'file-signature', 'page' => 'emargement_ag.php', 'role' => 'lecteur'],
             ],
         ],

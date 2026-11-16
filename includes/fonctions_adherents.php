@@ -495,6 +495,31 @@ function modifier_adherent(array $actuel, array $saisie): bool
  */
 function adherents_rechercher(string $recherche, int $saison_id, bool $saison_seule, int $page = 1, array $filtres = [], int $par_page = ADHERENTS_PAR_PAGE): array
 {
+    [$base, $parametres] = adherents_requete($recherche, $saison_id, $saison_seule, $filtres);
+
+    $total = entier(db_valeur('SELECT COUNT(*)' . $base, $parametres));
+
+    $par_page = max(1, $par_page);
+    array_push($parametres, $par_page, (max(1, $page) - 1) * $par_page);
+    $lignes = db_lignes(
+        'SELECT a.id, a.est_structure, a.nom, a.prenom, a.date_naissance, a.mail, a.tel, a.est_benevole, a.famille_id, f.nom AS famille_nom,
+                d.id AS dossier_id, da.adresse, da.code_postal, da.ville, (da.adherent_id IS NOT NULL) AS dans_saison'
+        . $base . ' ORDER BY a.nom, a.prenom, a.id LIMIT ? OFFSET ?',
+        $parametres
+    );
+    return ['total' => $total, 'lignes' => $lignes];
+}
+
+/**
+ * Partie commune (FROM … WHERE …) et paramètres de la recherche d'adhérents :
+ * la liste (adherents_rechercher()) et son export (export_adherents_lignes())
+ * appliquent exactement les mêmes critères.
+ *
+ * @param array{lettre?: string, benevoles?: bool, quartier?: string, qp?: bool, qpv?: bool} $filtres
+ * @return array{0: string, 1: list<int|string>}
+ */
+function adherents_requete(string $recherche, int $saison_id, bool $saison_seule, array $filtres = []): array
+{
     $conditions = ['a.anonymise_le IS NULL'];
     $parametres = [];
     if ($saison_seule) {
@@ -533,18 +558,36 @@ function adherents_rechercher(string $recherche, int $saison_id, bool $saison_se
               LEFT JOIN dossiers_adherents da ON da.dossier_id = d.id AND da.adherent_id = a.id
              WHERE ' . implode(' AND ', $conditions);
     array_unshift($parametres, $saison_id);
+    return [$base, $parametres];
+}
 
-    $total = entier(db_valeur('SELECT COUNT(*)' . $base, $parametres));
-
-    $par_page = max(1, $par_page);
-    array_push($parametres, $par_page, (max(1, $page) - 1) * $par_page);
-    $lignes = db_lignes(
-        'SELECT a.id, a.est_structure, a.nom, a.prenom, a.date_naissance, a.mail, a.tel, a.est_benevole, a.famille_id, f.nom AS famille_nom,
-                d.id AS dossier_id, da.adresse, da.code_postal, da.ville, (da.adherent_id IS NOT NULL) AS dans_saison'
-        . $base . ' ORDER BY a.nom, a.prenom, a.id LIMIT ? OFFSET ?',
-        $parametres
-    );
-    return ['total' => $total, 'lignes' => $lignes];
+/**
+ * Critères de la liste des adhérents gardés en session (recherche, périmètre,
+ * filtres, nombre par page), contrôlés. Un quartier qui n'existe pas dans la
+ * saison affichée (la saison a changé) est abandonné.
+ *
+ * @return array{texte: string, saison_seule: bool, filtres: array{lettre: string, benevoles: bool, quartier: string, qp: bool, qpv: bool}, par_page: int}
+ */
+function adherents_criteres(int $saison_id): array
+{
+    $criteres = $_SESSION['recherche_adherents'] ?? [];
+    $criteres = is_array($criteres) ? $criteres : [];
+    $quartier = texte($criteres['quartier'] ?? '');
+    if ($quartier !== '' && !in_array($quartier, adherents_quartiers($saison_id), true)) {
+        $quartier = '';
+    }
+    return [
+        'texte'        => texte($criteres['texte'] ?? ''),
+        'saison_seule' => ($criteres['perimetre'] ?? '') !== 'tous',
+        'filtres'      => [
+            'lettre'    => preg_match('/^[A-Z]$/', texte($criteres['lettre'] ?? '')) === 1 ? texte($criteres['lettre']) : '',
+            'benevoles' => ($criteres['benevoles'] ?? false) === true,
+            'quartier'  => $quartier,
+            'qp'        => ($criteres['qp'] ?? false) === true,
+            'qpv'       => ($criteres['qpv'] ?? false) === true,
+        ],
+        'par_page'     => in_array($criteres['par_page'] ?? 0, ADHERENTS_PAR_PAGE_CHOIX, true) ? entier($criteres['par_page']) : ADHERENTS_PAR_PAGE,
+    ];
 }
 
 /**
