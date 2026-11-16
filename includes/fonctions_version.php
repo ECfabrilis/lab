@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.9.3';
+const APP_VERSION = '0.9.4';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,15 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.9.4',
+            'date'        => '2026-11-16',
+            'changements' => [
+                'RGPD : l\'anonymisation d\'une personne ne provoque plus d\'erreur sur certains serveurs (classement des textes de la base).',
+                'Quartiers : chaque commune ou arrondissement se déplie pour montrer ses quartiers ; une case permet de tout cocher ou tout décocher.',
+                'Quartiers : une zone importée n\'est plus prise en compte d\'office ; la page Paramètres avertit quand aucun quartier ne l\'est.',
+            ],
+        ],
         [
             'version'     => '0.9.3',
             'date'        => '2026-11-15',
