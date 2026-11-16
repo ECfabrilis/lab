@@ -157,6 +157,8 @@ $prenoms_meme_adresse = $adresse_saison === null || $est_structure ? [] : array_
 );
 $autres_saisons = autres_saisons_adherent($fiche_id, $saison_affichee_id);
 $inscriptions_saison = $adresse_saison !== null ? inscriptions_adherent($fiche_id, $saison_affichee_id) : [];
+// Participations qui peuvent figurer sur une attestation (rôle standard, fiche non anonymisée).
+$inscriptions_attestation = $peut_modifier && $adresse_saison !== null ? attestation_inscriptions($fiche_id, $saison_affichee_id) : [];
 // Lien vers les cotisations et paiements de la famille (ou de la structure) : rôle standard au minimum.
 $lien_compte = $adresse_saison !== null && role_au_moins('standard')
     ? 'compte.php?' . ($est_structure ? 'structure=' . $fiche_id : 'famille=' . $famille_id)
@@ -323,6 +325,25 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <p class="text-body-secondary mb-0">Aucune inscription à une activité pour cette saison.</p>
                 <?php else : ?>
                     <?php afficher_inscriptions_activites($inscriptions_saison); ?>
+                <?php endif; ?>
+                <?php if ($inscriptions_attestation !== []) : ?>
+                    <?php // Attestation de participation (PDF, nouvel onglet) : pour une activité ou pour toute la saison. ?>
+                    <form class="row g-2 align-items-end mt-2" method="get" action="<?= e(chemin_site('attestation.php')) ?>" target="_blank">
+                        <input type="hidden" name="adherent" value="<?= $fiche_id ?>">
+                        <input type="hidden" name="saison" value="<?= $saison_affichee_id ?>">
+                        <div class="col-sm">
+                            <label class="form-label small mb-1" for="attestationInscription">Attestation de participation</label>
+                            <select class="form-select form-select-sm" name="inscription" id="attestationInscription">
+                                <option value="0">Toutes les activités de la saison</option>
+                                <?php foreach ($inscriptions_attestation as $inscription_attestation) : ?>
+                                    <option value="<?= entier($inscription_attestation['id']) ?>"><?= e($inscription_attestation['activite_nom']) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="col-sm-auto">
+                            <button class="btn btn-outline-secondary btn-sm" type="submit"><?= icone('file-pdf') ?>Attestation</button>
+                        </div>
+                    </form>
                 <?php endif; ?>
             </div>
 

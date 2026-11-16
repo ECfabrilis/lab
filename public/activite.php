@@ -249,6 +249,29 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <a class="btn btn-outline-secondary" href="<?= e(chemin_site('activites.php')) ?>">Retour à la liste</a>
         </div>
 
+        <?php // Documents PDF (liste, sortie, émargement) : ouverts dans un nouvel onglet, sans montant. ?>
+        <form class="border rounded p-3 mt-4" method="get" action="<?= e(chemin_site('document_activite.php')) ?>" target="_blank">
+            <h2 class="h6"><?= icone('file-pdf') ?> Documents à imprimer</h2>
+            <input type="hidden" name="id" value="<?= $fiche_id ?>">
+            <?php if ($en_attente !== []) : ?>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="attente" value="1" id="docAttente">
+                    <label class="form-check-label" for="docAttente">Ajouter la liste d'attente</label>
+                </div>
+            <?php endif; ?>
+            <?php if ($inactives !== []) : ?>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="inactifs" value="1" id="docInactifs">
+                    <label class="form-check-label" for="docInactifs">Ajouter les inscriptions inactives</label>
+                </div>
+            <?php endif; ?>
+            <div class="d-grid gap-2 mt-2">
+                <?php foreach (activite_documents_modeles() as $modele_document => $titre_document) : ?>
+                    <button class="btn btn-outline-secondary btn-sm" type="submit" name="modele" value="<?= e($modele_document) ?>"><?= e($titre_document) ?></button>
+                <?php endforeach; ?>
+            </div>
+        </form>
+
         <dl class="mt-4 mb-0">
             <dt class="small text-body-secondary fw-normal">Saison</dt>
             <dd><?= e($fiche['saison_nom']) ?></dd>

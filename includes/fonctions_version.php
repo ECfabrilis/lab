@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.9.4';
+const APP_VERSION = '0.10.0';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,16 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.10.0',
+            'date'        => '2026-11-16',
+            'changements' => [
+                'Documents à imprimer (PDF) sur la fiche d\'une activité : liste des participants, liste de sortie (téléphones, responsables des mineurs, case « présent ») et feuille d\'émargement ; la liste d\'attente et les inscriptions inactives s\'ajoutent sur demande.',
+                'Attestation de participation (PDF) sur la fiche d\'une personne : pour une activité ou pour toutes les activités de la saison.',
+                'Feuille d\'émargement de l\'assemblée générale (PDF), depuis le tableau de bord : adhérents majeurs et structures de la saison.',
+                'Les documents PDF portent en bas de page leur titre et le numéro de page.',
+            ],
+        ],
         [
             'version'     => '0.9.4',
             'date'        => '2026-11-16',

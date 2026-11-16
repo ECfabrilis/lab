@@ -26,7 +26,4 @@ if ($pdf === null) {
     rediriger('paiement.php?id=' . $paiement_id);
 }
 
-header('Content-Type: application/pdf');
-header('Content-Disposition: inline; filename="' . recu_nom_fichier($paiement_id) . '"');
-header('Content-Length: ' . strlen($pdf));
-echo $pdf;
+document_envoyer($pdf, recu_nom_fichier($paiement_id));
