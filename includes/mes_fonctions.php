@@ -112,6 +112,11 @@ function db_connecter(string $hote, int $port, string $base, string $utilisateur
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
     ]);
+    // Même classement que les tables (sql/structure.sql), quel que soit le
+    // réglage par défaut du serveur : sinon un paramètre et un texte de la
+    // requête peuvent avoir deux classements différents, et MariaDB refuse de
+    // les comparer (erreur 1267 « Illegal mix of collations », vue sur Hostinger).
+    $pdo->exec('SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci');
     // Même fuseau horaire que PHP, pour que NOW() et date() donnent la même heure.
     $requete = $pdo->prepare('SET time_zone = ?');
     $requete->execute([date('P')]);

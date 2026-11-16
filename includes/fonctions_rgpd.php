@@ -210,14 +210,27 @@ function rgpd_mineurs_a_charge(array $adherent): array
     if ($mail === '' && $tel === '') {
         return [];
     }
+    // Le choix des critères se fait ici, en PHP : comparer un paramètre à un
+    // texte littéral en SQL (« ? <> '' ») échoue sur certains serveurs, quand
+    // la collation de la connexion diffère de celle des paramètres (erreur 1267).
+    $criteres = [];
+    $parametres = [entier($adherent['famille_id'] ?? 0), entier($adherent['id'] ?? 0)];
+    if ($mail !== '') {
+        $criteres[] = 'responsable_mail = ?';
+        $parametres[] = $mail;
+    }
+    if ($tel !== '') {
+        $criteres[] = 'responsable_tel = ?';
+        $parametres[] = $tel;
+    }
     $mineurs = [];
     $lignes = db_lignes(
         'SELECT id, nom, prenom
            FROM adherents
           WHERE famille_id = ? AND id <> ? AND anonymise_le IS NULL
-            AND ((? <> \'\' AND responsable_mail = ?) OR (? <> \'\' AND responsable_tel = ?))
+            AND (' . implode(' OR ', $criteres) . ')
           ORDER BY date_naissance, prenom',
-        [entier($adherent['famille_id'] ?? 0), entier($adherent['id'] ?? 0), $mail, $mail, $tel, $tel]
+        $parametres
     );
     foreach ($lignes as $ligne) {
         $mineurs[] = ['id' => entier($ligne['id']), 'nom' => trim(texte($ligne['prenom']) . ' ' . texte($ligne['nom']))];
