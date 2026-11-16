@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.11.1';
+const APP_VERSION = '0.11.2';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,13 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.11.2',
+            'date'        => '2026-11-17',
+            'changements' => [
+                'Tableau de bord : « Export Google Contacts » et « Émargement de l\'AG » sont regroupés dans une nouvelle partie « Documents », en dernier.',
+            ],
+        ],
         [
             'version'     => '0.11.1',
             'date'        => '2026-11-17',
