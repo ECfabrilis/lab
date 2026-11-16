@@ -684,6 +684,52 @@ function paiements_dossier(int $dossier_id): array
 }
 
 /**
+ * Filtres de la liste des paiements lus dans l'adresse de la page, contrôlés :
+ * période (par défaut, du premier jour du mois à aujourd'hui ; dates remises
+ * dans l'ordre), mode, objet, paiements annulés. Partagés par la liste
+ * (paiements.php) et son export (export_paiements.php).
+ *
+ * @param array<mixed> $get paramètres de l'adresse ($_GET)
+ * @return array{du: string, au: string, mode: int, objet: string, annules: bool}
+ */
+function paiements_filtres(array $get): array
+{
+    $du = texte($get['du'] ?? '');
+    $au = texte($get['au'] ?? '');
+    $du = date_valide($du) ? $du : date('Y-m-01');
+    $au = date_valide($au) ? $au : date('Y-m-d');
+    if ($au < $du) {
+        [$du, $au] = [$au, $du];
+    }
+    $mode = entier($get['mode'] ?? 0);
+    $objet = texte($get['objet'] ?? '');
+    return [
+        'du'      => $du,
+        'au'      => $au,
+        'mode'    => array_key_exists($mode, libelles_modes_paiement()) ? $mode : 0,
+        'objet'   => array_key_exists($objet, libelles_objets_paiement()) ? $objet : '',
+        'annules' => texte($get['annules'] ?? '') === '1',
+    ];
+}
+
+/**
+ * Filtres de la liste des paiements remis sous forme de paramètres d'adresse
+ * (lien d'export). Aucune donnée personnelle n'y figure.
+ *
+ * @param array{du: string, au: string, mode: int, objet: string, annules: bool} $filtres
+ */
+function paiements_filtres_requete(array $filtres): string
+{
+    return http_build_query(array_filter([
+        'du'      => $filtres['du'],
+        'au'      => $filtres['au'],
+        'mode'    => $filtres['mode'] > 0 ? $filtres['mode'] : '',
+        'objet'   => $filtres['objet'],
+        'annules' => $filtres['annules'] ? '1' : '',
+    ], static fn (string|int $valeur): bool => $valeur !== ''));
+}
+
+/**
  * Paiements d'une période (toutes saisons), du plus récent au plus ancien.
  *
  * @param int    $mode_id       0 : tous les modes

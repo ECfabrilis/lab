@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.11.0';
+const APP_VERSION = '0.11.1';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,13 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.11.1',
+            'date'        => '2026-11-17',
+            'changements' => [
+                'Export de la liste des paiements pour un tableur, avec les filtres appliqués (période, mode, objet) ; les paiements annulés y figurent, avec la date et l\'auteur de l\'annulation, quand la case « Montrer aussi les paiements annulés » est cochée.',
+            ],
+        ],
         [
             'version'     => '0.11.0',
             'date'        => '2026-11-17',

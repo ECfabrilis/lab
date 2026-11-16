@@ -12,20 +12,15 @@ require DOSSIER_PRIVE . '/includes/init.php';
 
 exiger_role('standard');
 
-// Période : par défaut, du premier jour du mois à aujourd'hui.
-$date_du = texte($_GET['du'] ?? '');
-$date_au = texte($_GET['au'] ?? '');
-$date_du = date_valide($date_du) ? $date_du : date('Y-m-01');
-$date_au = date_valide($date_au) ? $date_au : date('Y-m-d');
-if ($date_au < $date_du) {
-    [$date_du, $date_au] = [$date_au, $date_du];
-}
-$filtre_mode = entier($_GET['mode'] ?? 0);
+// Période (par défaut, du premier jour du mois à aujourd'hui), mode, objet, annulés :
+// les mêmes filtres servent à l'export (export_paiements.php).
+$filtres_paiements = paiements_filtres($_GET);
+$date_du = $filtres_paiements['du'];
+$date_au = $filtres_paiements['au'];
+$filtre_mode = $filtres_paiements['mode'];
+$filtre_objet = $filtres_paiements['objet'];
+$avec_annules = $filtres_paiements['annules'];
 $modes_paiement = libelles_modes_paiement();
-$filtre_mode = array_key_exists($filtre_mode, $modes_paiement) ? $filtre_mode : 0;
-$filtre_objet = texte($_GET['objet'] ?? '');
-$filtre_objet = array_key_exists($filtre_objet, libelles_objets_paiement()) ? $filtre_objet : '';
-$avec_annules = texte($_GET['annules'] ?? '') === '1';
 
 $liste_paiements = paiements_periode($date_du, $date_au, $filtre_mode, $filtre_objet, $avec_annules);
 
@@ -54,6 +49,8 @@ require DOSSIER_PRIVE . '/includes/header.php';
     <div class="col-md-4 order-md-2" id="menuLateral">
         <div class="d-grid gap-2 mb-3">
             <a class="btn btn-primary" href="<?= e(chemin_site('ajout_paiement.php')) ?>">Nouveau paiement</a>
+            <?php // Export des paiements affichés (mêmes filtres), pour un tableur. ?>
+            <a class="btn btn-outline-secondary" href="<?= e(chemin_site('export_paiements.php?' . paiements_filtres_requete($filtres_paiements))) ?>"><?= icone('file-excel') ?>Exporter la liste (tableur)</a>
         </div>
         <form method="get" action="<?= e(chemin_site('paiements.php')) ?>">
             <div class="row g-2 mb-3">

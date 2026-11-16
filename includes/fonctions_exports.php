@@ -7,6 +7,7 @@ declare(strict_types=1);
  *
  * - liste des adhérents, avec les filtres de la page « Adhérents », pour un
  *   tableur (Excel, LibreOffice) : point-virgule et UTF-8 avec BOM ;
+ * - liste des paiements, avec les filtres de la page « Paiements », même format ;
  * - Google Contacts : adhérents de la saison, ou participants d'une activité,
  *   ayant consenti aux communications, majeurs, avec un courriel ou un
  *   téléphone ; virgule et UTF-8 sans BOM (format d'import de Google).
@@ -136,6 +137,57 @@ function export_adherents_lignes(int $saison_id): array
             texte($a['responsable_tel']),
             entier($a['a_consenti']) === 1 ? date_fr($a['consentement_le']) : '',
         ];
+    }
+    return $lignes;
+}
+
+// ---------------------------------------------------------------------------
+// Liste des paiements (tableur)
+// ---------------------------------------------------------------------------
+
+/**
+ * En-têtes de l'export de la liste des paiements. Les colonnes de l'annulation
+ * n'y sont que si les paiements annulés sont demandés.
+ *
+ * @return list<string>
+ */
+function export_paiements_entetes(bool $avec_annules): array
+{
+    $entetes = ['N° du reçu', 'Date', 'Famille ou structure', 'Structure', 'Saison', 'Mode', 'Objet', 'Montant', 'Précision', 'Saisi par'];
+    return $avec_annules ? [...$entetes, 'Annulé', 'Annulé le', 'Annulé par'] : $entetes;
+}
+
+/**
+ * Lignes de l'export de la liste des paiements, avec les filtres de la page
+ * « Paiements » (période, mode, objet, annulés), par date. Le montant est
+ * écrit avec une virgule (nombre reconnu par un tableur en français).
+ *
+ * @param array{du: string, au: string, mode: int, objet: string, annules: bool} $filtres lus par paiements_filtres()
+ * @return list<list<string>>
+ */
+function export_paiements_lignes(array $filtres): array
+{
+    $paiements = array_reverse(paiements_periode($filtres['du'], $filtres['au'], $filtres['mode'], $filtres['objet'], $filtres['annules']));
+    $objets = libelles_objets_paiement();
+    $lignes = [];
+    foreach ($paiements as $p) {
+        $ligne = [
+            recu_numero(entier($p['id'])),
+            date_fr($p['date_paiement']),
+            texte($p['titulaire_nom']),
+            entier($p['structure_id']) > 0 ? 'oui' : 'non',
+            texte($p['saison_nom']),
+            texte($p['mode_nom']),
+            $objets[texte($p['objet'])] ?? '',
+            number_format((float) texte($p['montant']), 2, ',', ''),
+            texte($p['note']),
+            texte($p['saisi_par']),
+        ];
+        if ($filtres['annules']) {
+            $annule = entier($p['est_annule']) === 1;
+            array_push($ligne, $annule ? 'oui' : 'non', $annule ? date_fr($p['annule_le']) : '', $annule ? texte($p['annule_par']) : '');
+        }
+        $lignes[] = $ligne;
     }
     return $lignes;
 }
