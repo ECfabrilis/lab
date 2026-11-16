@@ -73,7 +73,9 @@ function reference_compter(): array
  * Ajout : un quartier déjà présent (même commune, même arrondissement, même
  * nom) n'est pas créé une deuxième fois ; son contour est mis à jour. Le choix
  * « pris en compte » se fait par zone (commune et arrondissement) : un nouveau
- * quartier suit celui de sa zone ; une nouvelle zone est prise en compte.
+ * quartier suit celui de sa zone ; une nouvelle zone n'est pas prise en
+ * compte. Remplacer la table : aucune zone n'est prise en compte (le choix se
+ * fait ensuite dans Paramètres > Options > Quartiers).
  *
  * @param array<string, string> $proprietes colonne de la table => nom de la propriété GeoJSON ('' = colonne laissée vide)
  * @param bool $ajouter true : ajouter à la table au lieu de la remplacer
@@ -158,17 +160,19 @@ function reference_importer_geojson(string $table, string $chemin, array $propri
                 $ajoutes++;
                 if ($ajouter) {
                     // Le choix « pris en compte » se fait par zone (commune et arrondissement) :
-                    // un quartier ajouté à une zone qui ne l'est pas ne l'est pas non plus.
+                    // un quartier ajouté suit sa zone ; une nouvelle zone n'est pas prise en compte.
                     $nouveau_id = entier(db()->lastInsertId());
                     $etat_zone = db_valeur(
                         'SELECT MAX(est_actif) FROM quartiers WHERE commune = ? AND arrondissement = ? AND id <> ?',
                         [$ligne['commune'] ?? '', $ligne['arrondissement'] ?? 0, $nouveau_id]
                     );
-                    if ($etat_zone !== null && entier($etat_zone) === 0) {
-                        db_executer('UPDATE quartiers SET est_actif = 0 WHERE id = ?', [$nouveau_id]);
-                    }
+                    db_executer('UPDATE quartiers SET est_actif = ? WHERE id = ?', [entier($etat_zone ?? 0) === 1 ? 1 : 0, $nouveau_id]);
                 }
             }
+        }
+        if (!$ajouter && $table === 'quartiers') {
+            // Table remplacée : aucune zone n'est prise en compte tant qu'un administrateur ne l'a pas choisie.
+            db_executer('UPDATE quartiers SET est_actif = 0');
         }
         db()->commit();
     } catch (Throwable $erreur) {
@@ -218,6 +222,27 @@ function quartiers_zones(): array
         ];
     }
     return $zones;
+}
+
+/**
+ * Noms des quartiers de chaque zone, par ordre alphabétique.
+ *
+ * @return array<string, list<string>> clé de la zone (voir quartiers_zones()) => noms des quartiers
+ */
+function quartiers_noms_par_zone(): array
+{
+    $noms = [];
+    $lignes = db_lignes('SELECT commune, arrondissement, nom FROM quartiers ORDER BY commune, arrondissement, nom');
+    foreach ($lignes as $ligne) {
+        $noms[entier($ligne['arrondissement']) . '|' . texte($ligne['commune'])][] = texte($ligne['nom']);
+    }
+    return $noms;
+}
+
+/** Vrai si aucun quartier n'est pris en compte : les adresses sont alors enregistrées sans quartier. */
+function quartiers_aucun_actif(): bool
+{
+    return db_valeur('SELECT 1 FROM quartiers WHERE est_actif = 1 LIMIT 1') === null;
 }
 
 /**

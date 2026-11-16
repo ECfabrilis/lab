@@ -63,10 +63,13 @@ if (est_post()) {
             if ($ajout) {
                 flash('succes', 'Quartiers : ' . $bilan['ajoutes'] . ' ajouté(s), ' . $bilan['mis_a_jour'] . ' déjà présent(s) dont le contour est mis à jour. La table compte ' . $apres . ' lignes.');
                 if ($bilan['ajoutes'] > 0) {
-                    flash('info', 'Une nouvelle commune ou un nouvel arrondissement est pris en compte d\'office ; un quartier ajouté à une commune ou à un arrondissement déjà présent suit son choix. Ce choix se modifie dans Paramètres > Options > Quartiers.');
+                    flash('info', 'Une nouvelle commune ou un nouvel arrondissement n\'est pas pris en compte : cochez-le dans Paramètres > Options > Quartiers. Un quartier ajouté à une commune ou à un arrondissement déjà présent suit son choix.');
                 }
             } else {
                 flash('succes', $tables_quartiers[$table]['libelle'] . ' : ' . $apres . ' lignes enregistrées (' . $avant . ' auparavant). Les adresses déjà saisies gardent leur quartier.');
+                if ($table === 'quartiers') {
+                    flash('avertissement', 'Aucune commune ni aucun arrondissement n\'est pris en compte : cochez-les dans Paramètres > Options > Quartiers.');
+                }
             }
             rediriger('donnees_reference.php');
         }
@@ -164,7 +167,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <button class="btn btn-primary" type="submit" name="action" value="quartiers_fichier">Remplacer la table</button>
                         <button class="btn btn-outline-primary" type="submit" name="action" value="quartiers_ajouter">Ajouter à la table</button>
                         <div class="form-text">« Ajouter » garde les quartiers déjà présents : pour un quartier de même commune, arrondissement et nom, seul le contour est mis à jour.
-                            Le choix des communes et arrondissements pris en compte se fait dans <a href="<?= e(chemin_site('quartiers.php')) ?>">Options &gt; Quartiers</a> ; « Remplacer » les prend tous en compte.</div>
+                            Le choix des communes et arrondissements pris en compte se fait dans <a href="<?= e(chemin_site('quartiers.php')) ?>">Options &gt; Quartiers</a> ; après « Remplacer », aucun n'est pris en compte.</div>
                     <?php else : ?>
                         <button class="btn btn-primary" type="submit" name="action" value="quartiers_fichier">Remplacer cette table</button>
                     <?php endif; ?>

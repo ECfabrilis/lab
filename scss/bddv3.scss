@@ -272,6 +272,31 @@ $utilities: map-merge(
   }
 }
 
+// Quartiers pris en compte : la case de la zone, à gauche du titre du volet,
+// et la liste de ses quartiers sur plusieurs colonnes quand la place le permet.
+.zone-case {
+    margin-left: $accordion-button-padding-x;
+}
+
+// Le volet ouvert garde les couleurs d'un volet fermé : la couleur d'un volet
+// actif ne couvrirait que le titre, pas la case à cocher placée à côté.
+.accordion-zones {
+    --#{$prefix}accordion-active-bg: transparent;
+    --#{$prefix}accordion-active-color: var(--#{$prefix}accordion-color);
+    --#{$prefix}accordion-btn-active-icon: var(--#{$prefix}accordion-btn-icon);
+
+    // Ni trait sous le titre ouvert, ni contour après un clic à la souris ;
+    // le contour reste pour la navigation au clavier (accessibilité).
+    .accordion-button:not(:focus-visible) {
+        box-shadow: none;
+    }
+}
+
+.liste-quartiers {
+    columns: 2 14rem;
+    padding-left: 1.25rem;
+}
+
 // Liste des activités : le bloc replié des activités passées. Le titre du bloc
 // se clique pour l'ouvrir.
 .activites-passees > summary {

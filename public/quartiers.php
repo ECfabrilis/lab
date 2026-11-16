@@ -56,6 +56,7 @@ if (est_post()) {
 }
 
 $zones = quartiers_zones();
+$noms_par_zone = quartiers_noms_par_zone();
 
 $titre_page = 'Quartiers';
 require DOSSIER_PRIVE . '/includes/header.php';
@@ -103,15 +104,35 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <?= csrf_champ() ?>
                 <fieldset class="mb-3">
                     <legend class="form-label fs-6">Prendre en compte les quartiers de</legend>
-                    <?php foreach ($zones as $rang => $zone) : ?>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="zone_<?= $rang ?>" name="zones[]" value="<?= e($zone['cle']) ?>" <?= $zone['est_actif'] ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="zone_<?= $rang ?>">
-                                <?= e($zone['libelle']) ?>
-                                <span class="text-body-secondary small">— <?= $zone['nb_quartiers'] ?> quartier<?= $zone['nb_quartiers'] > 1 ? 's' : '' ?></span>
-                            </label>
-                        </div>
-                    <?php endforeach; ?>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" id="zones_toutes" data-tout-cocher="listeZones">
+                        <label class="form-check-label fw-semibold" for="zones_toutes">Tout cocher / tout décocher</label>
+                    </div>
+                    <?php // Une zone par volet replié : la case coche la zone, le titre déplie la liste de ses quartiers (un seul volet ouvert à la fois). ?>
+                    <div class="accordion accordion-zones" id="listeZones">
+                        <?php foreach ($zones as $rang => $zone) : ?>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header d-flex align-items-center">
+                                    <input class="form-check-input zone-case flex-shrink-0 mt-0" type="checkbox" id="zone_<?= $rang ?>" name="zones[]" value="<?= e($zone['cle']) ?>" aria-label="Prendre en compte les quartiers de <?= e($zone['libelle']) ?>" <?= $zone['est_actif'] ? 'checked' : '' ?>>
+                                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#quartiers_zone_<?= $rang ?>" aria-expanded="false" aria-controls="quartiers_zone_<?= $rang ?>">
+                                        <span>
+                                            <?= e($zone['libelle']) ?>
+                                            <span class="text-body-secondary small">— <?= $zone['nb_quartiers'] ?> quartier<?= $zone['nb_quartiers'] > 1 ? 's' : '' ?></span>
+                                        </span>
+                                    </button>
+                                </h2>
+                                <div class="accordion-collapse collapse" id="quartiers_zone_<?= $rang ?>" data-bs-parent="#listeZones">
+                                    <div class="accordion-body">
+                                        <ul class="liste-quartiers small mb-0">
+                                            <?php foreach ($noms_par_zone[$zone['cle']] ?? [] as $nom_quartier) : ?>
+                                                <li><?= e($nom_quartier) ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
                 </fieldset>
                 <button class="btn btn-primary" type="submit">Enregistrer</button>
             </form>

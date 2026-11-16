@@ -13267,6 +13267,24 @@ textarea.form-control-lg {
     break-inside: avoid;
   }
 }
+.zone-case {
+  margin-left: 1.25rem;
+}
+
+.accordion-zones {
+  --bs-accordion-active-bg: transparent;
+  --bs-accordion-active-color: var(--bs-accordion-color);
+  --bs-accordion-btn-active-icon: var(--bs-accordion-btn-icon);
+}
+.accordion-zones .accordion-button:not(:focus-visible) {
+  box-shadow: none;
+}
+
+.liste-quartiers {
+  columns: 2 14rem;
+  padding-left: 1.25rem;
+}
+
 .activites-passees > summary {
   cursor: pointer;
 }

@@ -127,14 +127,15 @@ CREATE TABLE IF NOT EXISTS `pays` (
 --    Les adresses saisies en gardent un instantané (texte) : ces tables
 --    peuvent être mises à jour sans toucher aux adresses déjà enregistrées.
 --    quartiers.est_actif : seuls les quartiers pris en compte (Paramètres >
---    Options > Quartiers) servent à déterminer le quartier d'une adresse.
+--    Options > Quartiers) servent à déterminer le quartier d'une adresse ;
+--    aucun ne l'est par défaut.
 -- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS `quartiers` (
   `id`             INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `commune`        VARCHAR(100) NOT NULL,
   `arrondissement` TINYINT UNSIGNED NOT NULL,
   `nom`            VARCHAR(150) NOT NULL,
-  `est_actif`      TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1 = pris en compte pour le quartier d une adresse',
+  `est_actif`      TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = pris en compte pour le quartier d une adresse',
   `geom`           GEOMETRY NOT NULL,
   PRIMARY KEY (`id`),
   SPATIAL KEY `idx_spatial_quartiers` (`geom`)
