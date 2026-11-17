@@ -48,6 +48,11 @@ Modèle conservé : **famille → dossier (par saison) → adhérents → inscri
   - une personne **seule dans sa famille** peut **rejoindre une autre famille** : tout ce que contient sa famille (inscriptions, cotisations, réductions, paiements, notes) passe dans la famille d'accueil, et l'ancienne famille, vide, est supprimée. C'est refusé si, pour une même saison, cela donnerait une cotisation familiale en plus d'une autre cotisation en cours : il faut d'abord en annuler une ;
   - pour passer d'une famille de plusieurs personnes à une autre, on fait les deux opérations à la suite. Une fiche ou une famille anonymisée ne change pas de famille.
 - Le **dossier** regroupe, pour une saison, les adhésions, inscriptions, paiements et réductions de la famille.
+- **Liste des familles** :
+  - par défaut, seules les familles **inscrites pour la saison** sont listées ; un interrupteur affiche aussi les familles non inscrites ;
+  - pour chaque famille : ses membres, le **nombre d'enfants** (moins de 18 ans), dont ceux de **6 ans ou moins** et ceux de **7 à 12 ans**. L'âge est celui du jour ; tous les membres de la famille comptent, inscrits pour la saison ou non ;
+  - filtres : **quartier, QP, QPV** (la famille répond si au moins un de ses membres y habite, d'après son adresse de la saison ; une famille non inscrite n'y répond donc pas) ; familles ayant un enfant de **6 ans ou moins**, ou de **12 ans ou moins** ;
+  - recherche par le nom de la famille ou d'un membre. Recherche et filtres sont gardés pendant la session.
 - Les **paiements sont toujours rattachés à un dossier**.
 - Le dossier est une notion **interne** : il sert au fonctionnement de l'application mais **n'apparaît jamais à l'écran** (ni le mot, ni un lien, ni une page). L'interface parle de la famille (ou de la structure) « pour la saison » : inscrit(e) pour la saison, notes de la saison, paiements de la famille. Le dossier est créé automatiquement à la première inscription de la saison. Sur la fiche famille, chaque membre peut être **inscrit pour la saison** ou **retiré de la saison**, et les notes de la saison s'y modifient (pour une structure : sur sa fiche).
 - La **liste des adhérents** affiche par défaut les adhérents inscrits pour la saison affichée (à la connexion : la saison en cours) ; la recherche peut être élargie à toutes les saisons.

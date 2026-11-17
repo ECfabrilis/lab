@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.11.4';
+const APP_VERSION = '0.12.0';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,15 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.12.0',
+            'date'        => '2026-11-17',
+            'changements' => [
+                'Liste des familles : seules les familles inscrites pour la saison sont affichées par défaut ; un interrupteur affiche aussi les familles non inscrites.',
+                'Liste des familles : nombre d\'enfants de chaque famille, dont ceux de 6 ans ou moins et ceux de 7 à 12 ans.',
+                'Liste des familles : filtres par quartier, QP et QPV (au moins un membre de la famille y habite), et familles ayant un enfant de 6 ans ou moins ou de 12 ans ou moins.',
+            ],
+        ],
         [
             'version'     => '0.11.4',
             'date'        => '2026-11-17',

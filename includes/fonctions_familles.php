@@ -23,15 +23,63 @@ function famille_par_id(int $id): ?array
 /** Nombre de familles affichées par page dans la liste. */
 const FAMILLES_PAR_PAGE = 50;
 
+/** Liste des familles : âge le plus élevé de la première tranche d'enfants (« 6 ans ou moins »). */
+const FAMILLES_AGE_PETITS = 6;
+
+/** Liste des familles : âge le plus élevé de la deuxième tranche d'enfants (« 7 à 12 ans »). */
+const FAMILLES_AGE_MOYENS = 12;
+
 /**
  * Recherche de familles par leur nom ou celui d'un de leurs membres.
  *
+ * Chaque ligne donne le nombre d'enfants de la famille (moins de AGE_MAJORITE
+ * ans), dont ceux de FAMILLES_AGE_PETITS ans ou moins et ceux de la tranche
+ * suivante, jusqu'à FAMILLES_AGE_MOYENS ans. L'âge est celui du jour, et tous
+ * les membres de la famille comptent, inscrits pour la saison ou non (sauf
+ * une fiche anonymisée).
+ *
+ * Filtres :
+ *  - non_inscrites : false (par défaut) ne garde que les familles dont un
+ *    membre au moins est inscrit pour la saison ;
+ *  - quartier, qp, qpv : la famille répond si au moins un de ses membres y
+ *    répond par son adresse de la saison (une famille non inscrite ne peut
+ *    donc pas y répondre) ;
+ *  - enfants : âge le plus élevé (FAMILLES_AGE_PETITS ou FAMILLES_AGE_MOYENS)
+ *    d'un enfant que la famille doit compter ; 0 = pas de filtre.
+ *
+ * @param array{non_inscrites?: bool, quartier?: string, qp?: bool, qpv?: bool, enfants?: int} $filtres
  * @return array{total: int, lignes: list<array<string, mixed>>}
  */
-function familles_rechercher(string $recherche, int $saison_id, int $page = 1): array
+function familles_rechercher(string $recherche, int $saison_id, int $page = 1, array $filtres = []): array
 {
     $conditions = ['f.anonymise_le IS NULL'];
     $parametres = [];
+    // Membres de la famille inscrits pour la saison (une ligne par personne, avec son adresse).
+    $inscrits_saison = 'SELECT 1 FROM dossiers ds JOIN dossiers_adherents das ON das.dossier_id = ds.id
+                         WHERE ds.famille_id = f.id AND ds.saison_id = ?';
+    if (!($filtres['non_inscrites'] ?? false)) {
+        $conditions[] = 'EXISTS (' . $inscrits_saison . ')';
+        $parametres[] = $saison_id;
+    }
+    if (($filtres['quartier'] ?? '') !== '') {
+        $conditions[] = 'EXISTS (' . $inscrits_saison . ' AND das.quartier = ?)';
+        array_push($parametres, $saison_id, $filtres['quartier']);
+    }
+    if ($filtres['qp'] ?? false) {
+        $conditions[] = 'EXISTS (' . $inscrits_saison . ' AND das.est_qp = 1)';
+        $parametres[] = $saison_id;
+    }
+    if ($filtres['qpv'] ?? false) {
+        $conditions[] = 'EXISTS (' . $inscrits_saison . ' AND das.est_qpv = 1)';
+        $parametres[] = $saison_id;
+    }
+    // Âge du jour, en années révolues (comme age_ans()).
+    $age_membre = 'TIMESTAMPDIFF(YEAR, e.date_naissance, CURDATE())';
+    $enfants = 'SELECT COUNT(*) FROM adherents e WHERE e.famille_id = f.id AND e.anonymise_le IS NULL AND ' . $age_membre;
+    if (in_array($filtres['enfants'] ?? 0, [FAMILLES_AGE_PETITS, FAMILLES_AGE_MOYENS], true)) {
+        $conditions[] = '(' . $enfants . ' <= ?) > 0';
+        $parametres[] = $filtres['enfants'];
+    }
     $mots = preg_split('/\s+/', $recherche, -1, PREG_SPLIT_NO_EMPTY);
     foreach (array_slice($mots === false ? [] : $mots, 0, 5) as $mot) {
         // % et _ sont des caractères spéciaux de LIKE : on les neutralise.
@@ -46,11 +94,67 @@ function familles_rechercher(string $recherche, int $saison_id, int $page = 1): 
         'SELECT f.id, f.nom,
                 (SELECT GROUP_CONCAT(a.prenom ORDER BY a.date_naissance SEPARATOR \', \') FROM adherents a WHERE a.famille_id = f.id) AS membres,
                 (SELECT COUNT(*) FROM dossiers d JOIN dossiers_adherents da ON da.dossier_id = d.id
-                  WHERE d.famille_id = f.id AND d.saison_id = ?) AS nb_inscrits'
+                  WHERE d.famille_id = f.id AND d.saison_id = ?) AS nb_inscrits,
+                (' . $enfants . ' < ?) AS nb_enfants,
+                (' . $enfants . ' <= ?) AS nb_enfants_petits,
+                (' . $enfants . ' BETWEEN ? AND ?) AS nb_enfants_moyens'
         . $ou . ' ORDER BY f.nom, f.id LIMIT ? OFFSET ?',
-        [$saison_id, ...$parametres, FAMILLES_PAR_PAGE, (max(1, $page) - 1) * FAMILLES_PAR_PAGE]
+        [
+            $saison_id, AGE_MAJORITE, FAMILLES_AGE_PETITS, FAMILLES_AGE_PETITS + 1, FAMILLES_AGE_MOYENS,
+            ...$parametres, FAMILLES_PAR_PAGE, (max(1, $page) - 1) * FAMILLES_PAR_PAGE,
+        ]
     );
     return ['total' => $total, 'lignes' => $lignes];
+}
+
+/**
+ * Critères de la liste des familles gardés en session (recherche et filtres),
+ * contrôlés. Un quartier qui n'existe pas dans la saison affichée (la saison
+ * a changé) est abandonné.
+ *
+ * @return array{texte: string, filtres: array{non_inscrites: bool, quartier: string, qp: bool, qpv: bool, enfants: int}}
+ */
+function familles_criteres(int $saison_id): array
+{
+    $criteres = $_SESSION['recherche_familles'] ?? [];
+    $criteres = is_array($criteres) ? $criteres : [];
+    $quartier = texte($criteres['quartier'] ?? '');
+    if ($quartier !== '' && !in_array($quartier, familles_quartiers($saison_id), true)) {
+        $quartier = '';
+    }
+    $enfants = entier($criteres['enfants'] ?? 0);
+    return [
+        'texte'   => texte($criteres['texte'] ?? ''),
+        'filtres' => [
+            'non_inscrites' => ($criteres['non_inscrites'] ?? false) === true,
+            'quartier'      => $quartier,
+            'qp'            => ($criteres['qp'] ?? false) === true,
+            'qpv'           => ($criteres['qpv'] ?? false) === true,
+            'enfants'       => in_array($enfants, [FAMILLES_AGE_PETITS, FAMILLES_AGE_MOYENS], true) ? $enfants : 0,
+        ],
+    ];
+}
+
+/**
+ * Quartiers des adresses des familles inscrites pour une saison (choix du filtre de la liste).
+ *
+ * @return list<string>
+ */
+function familles_quartiers(int $saison_id): array
+{
+    $quartiers = [];
+    $lignes = db_lignes(
+        'SELECT DISTINCT da.quartier
+           FROM dossiers_adherents da
+           JOIN dossiers d ON d.id = da.dossier_id
+          WHERE d.saison_id = ? AND d.famille_id IS NOT NULL AND da.quartier IS NOT NULL AND da.quartier <> \'\'
+          ORDER BY da.quartier',
+        [$saison_id]
+    );
+    foreach ($lignes as $ligne) {
+        $quartiers[] = texte($ligne['quartier']);
+    }
+    return $quartiers;
 }
 
 /** Crée une famille et renvoie son identifiant. */
