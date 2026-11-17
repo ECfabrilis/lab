@@ -155,6 +155,14 @@ $prenoms_meme_adresse = $adresse_saison === null || $est_structure ? [] : array_
     static fn (array $membre): string => texte($membre['prenom']),
     adresse_autres_membres($dossier_saison_id, $fiche_id)
 );
+// Personne mineure : les adultes de sa famille que l'on peut joindre sont proposés
+// comme responsable dans la fenêtre « Modifier la fiche », comme à l'inscription.
+$adultes_famille = $peut_modifier && !$est_structure && $mineur && $famille_id > 0
+    ? array_values(array_filter(
+        famille_adultes_joignables($famille_id),
+        static fn (array $adulte): bool => $adulte['id'] !== $fiche_id
+    ))
+    : [];
 $autres_saisons = autres_saisons_adherent($fiche_id, $saison_affichee_id);
 $inscriptions_saison = $adresse_saison !== null ? inscriptions_adherent($fiche_id, $saison_affichee_id) : [];
 // Participations qui peuvent figurer sur une attestation (rôle standard, fiche non anonymisée).
@@ -384,7 +392,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <input type="hidden" name="id" value="<?= $fiche_id ?>">
                     <input type="hidden" name="action" value="modifier">
                     <input type="hidden" name="formulaire" value="adherent">
-                    <?php afficher_champs_adherent($fiche); ?>
+                    <?php afficher_champs_adherent($fiche, $adultes_famille); ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>

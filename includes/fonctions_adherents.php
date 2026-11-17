@@ -686,8 +686,10 @@ function autres_saisons_adherent(int $adherent_id, int $sauf_saison_id): array
  * pour que les cases à cocher soient réaffichées correctement après une erreur.
  *
  * @param array<string, mixed> $defauts valeurs affichées quand rien n'a été saisi
+ * @param list<array{id: int, nom: string, tel: string, mail: string}> $adultes adultes de la famille proposés
+ *        comme responsable d'une personne mineure (famille_adultes_joignables())
  */
-function afficher_champs_adherent(array $defauts): void
+function afficher_champs_adherent(array $defauts, array $adultes = []): void
 {
     $est_structure = entier($defauts['est_structure'] ?? 0) === 1;
     $reaffichage = ancien('formulaire') === 'adherent';
@@ -755,7 +757,7 @@ function afficher_champs_adherent(array $defauts): void
         <label class="form-check-label" for="a_consenti">Accepte de recevoir les communications de l'association (programme, informations)</label>
     </div>
     <?php if (!$est_structure) : ?>
-        <?php afficher_champs_responsable($defauts); ?>
+        <?php afficher_champs_responsable($defauts, $adultes); ?>
     <?php endif; ?>
     <?php
 }

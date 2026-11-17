@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.11.2';
+const APP_VERSION = '0.11.3';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,13 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.11.3',
+            'date'        => '2026-11-17',
+            'changements' => [
+                'Fiche d\'une personne mineure : la fenêtre « Modifier la fiche » propose, comme à l\'inscription, de choisir le responsable parmi les adultes de la famille (ou « une autre personne »).',
+            ],
+        ],
         [
             'version'     => '0.11.2',
             'date'        => '2026-11-17',

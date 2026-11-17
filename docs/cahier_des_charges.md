@@ -71,7 +71,7 @@ Modèle conservé : **famille → dossier (par saison) → adhérents → inscri
 | Établissement scolaire / niveau | non | facultatif, utile à l'accompagnement à la scolarité ; pourra être retiré s'il n'est pas utilisé |
 | Notes | non | notes du dossier |
 
-**Mineur** : un seul **responsable adulte** avec nom, courriel et téléphone.
+**Mineur** : un seul **responsable adulte** avec nom, courriel et téléphone. Quand sa famille compte des adultes ayant un téléphone ou un courriel, une liste à cocher permet de **reprendre l'un d'eux** comme responsable ou de choisir « une autre personne » : à l'inscription (section 12.2, étape 3) comme dans la fenêtre « Modifier la fiche ». Les trois champs se remplissent et restent modifiables.
 
 **Adresse de toute la famille** : quand on modifie l'adresse d'une personne, une case à cocher (décochée par défaut) propose d'appliquer la nouvelle adresse aux **autres membres de la famille inscrits pour la saison**. Seule l'adresse est recopiée (avec ses quartiers) : chacun garde son établissement scolaire et son niveau. Les membres non inscrits pour la saison ne sont pas touchés.
 

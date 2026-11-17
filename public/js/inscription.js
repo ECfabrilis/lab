@@ -4,7 +4,8 @@
 // peut être inscrit pour la saison au lieu de créer une deuxième fiche.
 
 //
-// Étape 3, personne mineure : choisir un adulte de la famille dans la liste
+// Étape 3 et fenêtre « Modifier la fiche » (adherent.php), personne mineure :
+// choisir un adulte de la famille dans la liste
 // remplit le nom, le téléphone et l'adresse e-mail du responsable. Choisir
 // « une autre personne » vide ces champs s'ils venaient d'un adulte de la liste.
 
