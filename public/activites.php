@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 // Liste des activités de la saison affichée, avec leurs places : d'abord celles
 // en cours ou à venir, puis les activités passées, repliées et classées par mois.
-// Les filtres (secteur, type, nom d'activité cherché) sont dans l'adresse de
+// Les filtres (secteur, type, nom d'activité cherché, avec partenaire) sont dans l'adresse de
 // la page : aucune donnée personnelle n'y figure.
 // Consultation : tout utilisateur connecté. Création : rôle standard au minimum.
 
@@ -30,8 +30,10 @@ $filtre_type = entier($_GET['type'] ?? 0);
 $filtre_type = array_key_exists($filtre_type, $types_filtre) ? $filtre_type : 0;
 
 $recherche_nom = mb_substr(trim(mb_scrub(texte($_GET['q'] ?? ''), 'UTF-8')), 0, 100);
+// Interrupteur « Avec partenaire » : seulement les activités qui ont un partenaire.
+$filtre_partenaire = texte($_GET['partenaire'] ?? '') === '1';
 
-$liste_activites = activites_liste($saison_affichee_id, $filtre_secteur, $filtre_type, $recherche_nom);
+$liste_activites = activites_liste($saison_affichee_id, $filtre_secteur, $filtre_type, $recherche_nom, $filtre_partenaire);
 $nb_activites = count($liste_activites);
 // Les activités passées sont affichées à part, classées par mois de début.
 $activites_separees = activites_separer_passees($liste_activites);
@@ -75,9 +77,13 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <?php endforeach; ?>
                 </select>
             </div>
+            <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="partenaire" name="partenaire" value="1" <?= $filtre_partenaire ? 'checked' : '' ?> data-envoi-auto>
+                <label class="form-check-label" for="partenaire">Avec partenaire</label>
+            </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-outline-primary" type="submit">Rechercher</button>
-                <?php if ($filtre_secteur > 0 || $filtre_type > 0 || $recherche_nom !== '') : ?>
+                <?php if ($filtre_secteur > 0 || $filtre_type > 0 || $recherche_nom !== '' || $filtre_partenaire) : ?>
                     <a class="btn btn-outline-secondary" href="<?= e(chemin_site('activites.php')) ?>">Effacer</a>
                 <?php endif; ?>
             </div>
@@ -89,6 +95,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?= $recherche_nom !== '' ? '— recherche : « ' . e($recherche_nom) . ' »' : '' ?>
             <?= $filtre_secteur > 0 ? '— secteur ' . e($secteurs_filtre[$filtre_secteur]) : '' ?>
             <?= $filtre_type > 0 ? '— type ' . e($types_filtre[$filtre_type]) : '' ?>
+            <?= $filtre_partenaire ? '— avec partenaire' : '' ?>
         </p>
         <?php if ($saison_affichee === null) : ?>
             <div class="alert alert-info" role="alert">Aucune saison n'existe encore.</div>

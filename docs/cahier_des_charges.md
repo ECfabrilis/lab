@@ -118,6 +118,7 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 | Type | **un seul** type par activité. Liste créée à l'installation (atelier, sortie loisirs, sortie culturelle, évènement, séjour), modifiable par un admin dans les paramètres (Options des activités) |
 | Secteur | **un seul** secteur par activité (liste modifiable par un admin) ; dans le formulaire, il se choisit juste après le nom |
 | Référent | obligatoire ; texte libre (un référent n'a pas forcément de compte dans l'application) |
+| Partenaire | facultatif ; texte libre : nom de la structure partenaire de l'activité (sans lien avec les structures adhérentes) |
 | Récurrence | obligatoire ; **une seule** par activité ; « Ponctuel » est proposée par défaut à la création. Liste créée à l'installation (ponctuel, régulier, vacances), modifiable par un admin dans les paramètres (Options des activités) |
 | Tarif | **un seul** tarif par activité et par saison, de type « forfait » ou « autre » ; sans tarif, l'activité est gratuite (c'est le cas d'une activité qui ne demande que l'adhésion) |
 | Date de début | obligatoire, dans la saison de l'activité |
@@ -151,7 +152,7 @@ Une activité ne se **supprime** que si elle est vide (aucune inscription, même
 
 **Liste des activités** : les activités **en cours ou à venir** sont affichées d'abord, par date de début. Les activités **passées** sont affichées à part, dans un bloc **replié** qui s'ouvre d'un clic (il est ouvert d'office quand il n'y a aucune activité en cours ou à venir, par exemple pour une saison passée) ; elles y sont **classées par mois de début**, du plus récent au plus ancien. Une activité est passée quand sa **date de fin** est avant aujourd'hui ; sans date de fin, c'est sa date de début qui compte : une activité régulière doit donc avoir une date de fin pour rester « en cours ». Les filtres s'appliquent aux deux blocs, et chaque bloc affiche son nombre d'activités.
 
-**Recherche** : la liste des activités se filtre par nom (n'importe où dans le nom), secteur et type ; la même recherche par nom existe au moment de choisir l'activité d'une inscription.
+**Recherche** : la liste des activités se filtre par nom (n'importe où dans le nom), secteur et type ; un interrupteur « Avec partenaire » n'affiche que les activités qui ont un partenaire ; la même recherche par nom existe au moment de choisir l'activité d'une inscription.
 
 ### 6.2 Inscription
 
@@ -209,7 +210,7 @@ Tous portent le **logo**, le **nom** et l'**adresse** de l'association ; certain
 
 ## 10. Statistiques et bilans
 
-Filtres : **période** (dates libres), **saison**, **secteur**, **type d'activité**, **récurrence**. Graphiques (histogrammes, anneaux) quand c'est utile. Comparaison avec la saison précédente. **Tous les indicateurs sont conservés, sauf « montants encaissés ».**
+Filtres : **période** (dates libres), **saison**, **secteur**, **type d'activité**, **récurrence**, **avec partenaire** (interrupteur : seulement les activités qui ont un partenaire). Graphiques (histogrammes, anneaux) quand c'est utile. Comparaison avec la saison précédente. **Tous les indicateurs sont conservés, sauf « montants encaissés ».**
 
 **Calcul de l'âge** : à la **fin de l'exercice, le 31 décembre**, date du bilan. Il est calculé à la demande, jamais stocké. Pour une saison à cheval sur deux années (ex. 2025-2026), la date retenue est le 31 décembre de l'année où elle commence ; pour une période libre, le 31 décembre de l'année de sa date de début. Les chiffres d'une saison passée ne changent donc pas d'une année sur l'autre.
 
@@ -235,7 +236,7 @@ Indicateurs issus du rapport d'activité 2025 :
 - Un **adhérent** est une personne inscrite pour la saison. Sur une **période libre** : les personnes inscrites pour une saison qui recoupe la période, si leur inscription a été faite avant la fin de la période ; chacune est comptée une fois, avec son adresse la plus récente.
 - Un **nouvel adhérent** n'a été inscrit pour aucune saison antérieure ; les autres sont des réadhésions.
 - Un **participant** a une inscription en cours ou **inactive** à une activité, hors liste d'attente et hors annulations ; une **participation** est une place prise, ou la place d'une inscription inactive (libérée depuis, mais la personne a participé). Les inscriptions inactives sont comptées avec les autres, sans distinction.
-- Avec un **secteur**, un **type d'activité** ou une **récurrence**, les chiffres des adhérents sont ceux du public de ces activités.
+- Avec un **secteur**, un **type d'activité**, une **récurrence** ou l'interrupteur **« Avec partenaire »**, les chiffres des adhérents sont ceux du public de ces activités.
 - **Comparaison** : la saison précédente, ou la même période un an plus tôt. Un interrupteur « Afficher l'évolution (N-1 / N) » affiche ou retire ces chiffres (affichés par défaut).
 - **Tranches d'âge et groupes de lieu de résidence** (Paramètres > Options > Statistiques) : communs à toutes les saisons ; les modifier change aussi les chiffres affichés pour les saisons passées. Les tranches se définissent par leurs âges de début ; un groupe de résidence par des codes postaux complets (75017) ou des débuts de code (75), un code n'appartenant qu'à un seul groupe et le plus précis l'emportant.
 - **Couleurs des graphiques** (même page d'options) : une palette de 8 couleurs, choisie parmi des palettes prédéfinies (par défaut, dégradé de la couleur principale, adaptée aux daltoniens, nuances de gris) ou composée par l'administrateur. La première couleur sert aux histogrammes, les suivantes aux anneaux ; les barres de la saison précédente restent grises.

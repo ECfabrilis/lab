@@ -414,6 +414,7 @@ CREATE TABLE IF NOT EXISTS `activites` (
   `type_id`            INT UNSIGNED NOT NULL,
   `secteur_id`         INT UNSIGNED NOT NULL,
   `referent`           VARCHAR(150) NOT NULL COMMENT 'Personne referente (texte libre)',
+  `partenaire`         VARCHAR(150) DEFAULT NULL COMMENT 'Structure partenaire (texte libre) ; NULL = sans partenaire',
   `recurrence_id`      INT UNSIGNED NOT NULL,
   `tarif_id`         INT UNSIGNED DEFAULT NULL COMMENT 'NULL = gratuit',
   `date_debut`         DATE NOT NULL,

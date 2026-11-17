@@ -334,11 +334,12 @@ function activite_par_id(int $id): ?array
 /**
  * Activités d'une saison, par date de début ; filtres facultatifs sur le
  * secteur, le type et le nom (chaque mot cherché doit se trouver dans le nom,
- * à n'importe quel endroit).
+ * à n'importe quel endroit), et sur la présence d'un partenaire.
  *
+ * @param bool $avec_partenaire true : seulement les activités qui ont un partenaire
  * @return list<array<string, mixed>>
  */
-function activites_liste(int $saison_id, int $secteur_id = 0, int $type_id = 0, string $recherche = ''): array
+function activites_liste(int $saison_id, int $secteur_id = 0, int $type_id = 0, string $recherche = '', bool $avec_partenaire = false): array
 {
     $conditions = ['ac.saison_id = ?'];
     $parametres = [$saison_id];
@@ -355,6 +356,9 @@ function activites_liste(int $saison_id, int $secteur_id = 0, int $type_id = 0, 
     if ($type_id > 0) {
         $conditions[] = 'ac.type_id = ?';
         $parametres[] = $type_id;
+    }
+    if ($avec_partenaire) {
+        $conditions[] = 'ac.partenaire IS NOT NULL';
     }
     return db_lignes(
         ACTIVITE_SELECT . ' WHERE ' . implode(' AND ', $conditions) . ' ORDER BY ac.date_debut, ac.nom, ac.id',
@@ -432,7 +436,7 @@ function afficher_tableau_activites(array $activites): void
                     <tr>
                         <td>
                             <a href="<?= e(chemin_site('activite.php?id=' . entier($activite['id']))) ?>"><?= e($activite['nom']) ?></a>
-                            <span class="d-block small text-body-secondary"><?= e($activite['secteur_nom']) ?> — <?= e($activite['type_nom']) ?> — réf. <?= e($activite['referent']) ?></span>
+                            <span class="d-block small text-body-secondary"><?= e($activite['secteur_nom']) ?> — <?= e($activite['type_nom']) ?> — réf. <?= e($activite['referent']) ?><?= texte($activite['partenaire'] ?? '') === '' ? '' : ' — partenaire : ' . e($activite['partenaire']) ?></span>
                         </td>
                         <td class="small"><?= e(activite_dates($activite)) ?></td>
                         <td><?= e(activite_prix($activite)) ?></td>
@@ -544,6 +548,7 @@ function activite_saisie(): array
         'type_id'            => post('type_id'),
         'secteur_id'         => post('secteur_id'),
         'referent'           => post('referent'),
+        'partenaire'         => post('partenaire'),
         'recurrence_id'      => post('recurrence_id'),
         'tarif_id'           => post('tarif_id'),
         'date_debut'         => post('date_debut'),
@@ -580,6 +585,9 @@ function erreurs_activite(array $saisie, array $saison, ?array $actuelle = null)
     }
     if ($saisie['referent'] === '' || mb_strlen($saisie['referent']) > 150) {
         $erreurs[] = 'Le référent est obligatoire (150 caractères au maximum).';
+    }
+    if (mb_strlen($saisie['partenaire']) > 150) {
+        $erreurs[] = 'Le nom du partenaire est trop long (150 caractères au maximum).';
     }
     if (!array_key_exists(entier($saisie['recurrence_id']), choix_proposes('recurrences', entier($actuelle['recurrence_id'] ?? 0)))) {
         $erreurs[] = 'Choisissez une récurrence dans la liste.';
@@ -635,6 +643,7 @@ function activite_valeurs(array $saisie): array
         'type_id'            => entier($saisie['type_id']),
         'secteur_id'         => entier($saisie['secteur_id']),
         'referent'           => $saisie['referent'],
+        'partenaire'         => nul_si_vide($saisie['partenaire']),
         'recurrence_id'      => entier($saisie['recurrence_id']),
         'tarif_id'           => $saisie['tarif_id'] === '' ? null : entier($saisie['tarif_id']),
         'date_debut'         => $saisie['date_debut'],
@@ -656,9 +665,9 @@ function creer_activite(int $saison_id, array $saisie): int
 {
     $valeurs = activite_valeurs($saisie);
     db_executer(
-        'INSERT INTO activites (nom, type_id, secteur_id, referent, recurrence_id, tarif_id, date_debut, date_fin, nb_places,
+        'INSERT INTO activites (nom, type_id, secteur_id, referent, partenaire, recurrence_id, tarif_id, date_debut, date_fin, nb_places,
                                 a_liste_attente, nb_accompagnateurs, description, est_sans_adhesion, saison_id, creation_par)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [...array_values($valeurs), $saison_id, entier($_SESSION['utilisateur_id'] ?? 0)]
     );
     $activite_id = entier(db()->lastInsertId());
@@ -687,7 +696,7 @@ function modifier_activite(array $actuelle, array $saisie): bool
     $activite_id = entier($actuelle['id'] ?? 0);
     db_executer(
         'UPDATE activites
-            SET nom = ?, type_id = ?, secteur_id = ?, referent = ?, recurrence_id = ?, tarif_id = ?, date_debut = ?, date_fin = ?,
+            SET nom = ?, type_id = ?, secteur_id = ?, referent = ?, partenaire = ?, recurrence_id = ?, tarif_id = ?, date_debut = ?, date_fin = ?,
                 nb_places = ?, a_liste_attente = ?, nb_accompagnateurs = ?, description = ?, est_sans_adhesion = ?, modification_par = ?
           WHERE id = ?',
         [...array_values($valeurs), entier($_SESSION['utilisateur_id'] ?? 0), $activite_id]
@@ -709,7 +718,7 @@ function supprimer_activite(array $activite): bool
         return false;
     }
     $ancien = [];
-    foreach (['saison_id', 'nom', 'type_id', 'secteur_id', 'referent', 'recurrence_id', 'tarif_id', 'date_debut', 'date_fin', 'nb_places', 'a_liste_attente', 'nb_accompagnateurs', 'description', 'est_sans_adhesion'] as $champ) {
+    foreach (['saison_id', 'nom', 'type_id', 'secteur_id', 'referent', 'partenaire', 'recurrence_id', 'tarif_id', 'date_debut', 'date_fin', 'nb_places', 'a_liste_attente', 'nb_accompagnateurs', 'description', 'est_sans_adhesion'] as $champ) {
         $ancien[$champ] = $activite[$champ] ?? null;
     }
     db_executer('DELETE FROM activites WHERE id = ?', [$activite_id]);
@@ -772,6 +781,11 @@ function afficher_champs_activite(array $defauts, array $saison): void
                     <option value="<?= $choix_id ?>" <?= $recurrence_choisie === $choix_id ? 'selected' : '' ?>><?= e($choix_nom) ?></option>
                 <?php endforeach; ?>
             </select>
+        </div>
+        <div class="col-sm-12">
+            <label class="form-label" for="partenaire">Partenaire <span class="text-body-secondary">(facultatif)</span></label>
+            <input class="form-control" type="text" id="partenaire" name="partenaire" maxlength="150" value="<?= e(ancien('partenaire', $defauts['partenaire'] ?? '')) ?>" aria-describedby="aide_partenaire">
+            <div class="form-text" id="aide_partenaire">Nom de la structure partenaire de l'activité.</div>
         </div>
         <div class="col-sm-6">
             <label class="form-label" for="date_debut">Date de début</label>

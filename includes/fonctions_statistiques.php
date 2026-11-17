@@ -445,9 +445,9 @@ function stats_date_age(string $date_debut): string
  * Périmètre « une saison ».
  *
  * @param array<string, mixed> $saison
- * @return array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, date_age: string, libelle: string}
+ * @return array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, avec_partenaire: bool, date_age: string, libelle: string}
  */
-function stats_perimetre_saison(array $saison, int $secteur_id = 0, int $type_id = 0, int $recurrence_id = 0): array
+function stats_perimetre_saison(array $saison, int $secteur_id = 0, int $type_id = 0, int $recurrence_id = 0, bool $avec_partenaire = false): array
 {
     $debut = texte($saison['date_debut'] ?? '');
     return [
@@ -458,6 +458,7 @@ function stats_perimetre_saison(array $saison, int $secteur_id = 0, int $type_id
         'secteur_id'    => $secteur_id,
         'type_id'       => $type_id,
         'recurrence_id' => $recurrence_id,
+        'avec_partenaire' => $avec_partenaire,
         'date_age'      => stats_date_age($debut),
         'libelle'       => 'saison ' . texte($saison['nom'] ?? ''),
     ];
@@ -466,9 +467,9 @@ function stats_perimetre_saison(array $saison, int $secteur_id = 0, int $type_id
 /**
  * Périmètre « une période libre » (dates AAAA-MM-JJ déjà vérifiées).
  *
- * @return array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, date_age: string, libelle: string}
+ * @return array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, avec_partenaire: bool, date_age: string, libelle: string}
  */
-function stats_perimetre_periode(string $debut, string $fin, int $secteur_id = 0, int $type_id = 0, int $recurrence_id = 0): array
+function stats_perimetre_periode(string $debut, string $fin, int $secteur_id = 0, int $type_id = 0, int $recurrence_id = 0, bool $avec_partenaire = false): array
 {
     return [
         'mode'          => 'periode',
@@ -478,6 +479,7 @@ function stats_perimetre_periode(string $debut, string $fin, int $secteur_id = 0
         'secteur_id'    => $secteur_id,
         'type_id'       => $type_id,
         'recurrence_id' => $recurrence_id,
+        'avec_partenaire' => $avec_partenaire,
         'date_age'      => stats_date_age($debut),
         'libelle'       => 'du ' . date_fr($debut) . ' au ' . date_fr($fin),
     ];
@@ -487,8 +489,8 @@ function stats_perimetre_periode(string $debut, string $fin, int $secteur_id = 0
  * Périmètre de comparaison : la saison précédente, ou la même période un an
  * plus tôt. Null s'il n'existe pas de saison précédente.
  *
- * @param array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, date_age: string, libelle: string} $perimetre
- * @return array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, date_age: string, libelle: string}|null
+ * @param array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, avec_partenaire: bool, date_age: string, libelle: string} $perimetre
+ * @return array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, avec_partenaire: bool, date_age: string, libelle: string}|null
  */
 function stats_perimetre_precedent(array $perimetre): ?array
 {
@@ -499,21 +501,22 @@ function stats_perimetre_precedent(array $perimetre): ?array
         );
         return $precedente === null
             ? null
-            : stats_perimetre_saison($precedente, $perimetre['secteur_id'], $perimetre['type_id'], $perimetre['recurrence_id']);
+            : stats_perimetre_saison($precedente, $perimetre['secteur_id'], $perimetre['type_id'], $perimetre['recurrence_id'], $perimetre['avec_partenaire']);
     }
     return stats_perimetre_periode(
         (new DateTimeImmutable($perimetre['debut']))->modify('-1 year')->format('Y-m-d'),
         (new DateTimeImmutable($perimetre['fin']))->modify('-1 year')->format('Y-m-d'),
         $perimetre['secteur_id'],
         $perimetre['type_id'],
-        $perimetre['recurrence_id']
+        $perimetre['recurrence_id'],
+        $perimetre['avec_partenaire']
     );
 }
 
 /**
  * Condition SQL qui retient les activités du périmètre (alias « ac »).
  *
- * @param array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, date_age: string, libelle: string} $perimetre
+ * @param array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, avec_partenaire: bool, date_age: string, libelle: string} $perimetre
  * @return array{sql: string, parametres: list<string|int>}
  */
 function stats_condition_activites(array $perimetre): array
@@ -538,6 +541,9 @@ function stats_condition_activites(array $perimetre): array
         $sql .= ' AND ac.recurrence_id = ?';
         $parametres[] = $perimetre['recurrence_id'];
     }
+    if ($perimetre['avec_partenaire']) {
+        $sql .= ' AND ac.partenaire IS NOT NULL';
+    }
     return ['sql' => $sql, 'parametres' => $parametres];
 }
 
@@ -548,10 +554,10 @@ function stats_condition_activites(array $perimetre): array
 /**
  * Adhérents (personnes et structures) du périmètre : une ligne par adhérent,
  * avec l'adresse de sa saison la plus récente dans le périmètre.
- * Si un secteur, un type ou une récurrence est choisi, seuls les participants aux activités
- * correspondantes sont retenus (le « public » de ces activités).
+ * Si un secteur, un type ou une récurrence est choisi, ou « avec partenaire » demandé,
+ * seuls les participants aux activités correspondantes sont retenus (le « public » de ces activités).
  *
- * @param array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, date_age: string, libelle: string} $perimetre
+ * @param array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, avec_partenaire: bool, date_age: string, libelle: string} $perimetre
  * @return list<array<string, mixed>>
  */
 function stats_adherents_lignes(array $perimetre): array
@@ -567,7 +573,7 @@ function stats_adherents_lignes(array $perimetre): array
             (new DateTimeImmutable($perimetre['fin']))->modify('+1 day')->format('Y-m-d'),
         ];
     }
-    if ($perimetre['secteur_id'] > 0 || $perimetre['type_id'] > 0 || $perimetre['recurrence_id'] > 0) {
+    if ($perimetre['secteur_id'] > 0 || $perimetre['type_id'] > 0 || $perimetre['recurrence_id'] > 0 || $perimetre['avec_partenaire']) {
         $activites = stats_condition_activites($perimetre);
         $condition .= ' AND EXISTS (
                 SELECT 1 FROM inscriptions i
@@ -740,7 +746,7 @@ const STATS_ACTIVITES_CHIFFRES = ['activites', 'participants', 'participations',
  *   structures     : structures différentes inscrites
  *   attente        : places demandées en liste d'attente
  *
- * @param array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, date_age: string, libelle: string} $perimetre
+ * @param array{mode: 'saison'|'periode', saison_id: int, debut: string, fin: string, secteur_id: int, type_id: int, recurrence_id: int, avec_partenaire: bool, date_age: string, libelle: string} $perimetre
  * @return array{total: array<string, int>, secteurs: array<string, array<string, int>>, types: array<string, array<string, int>>,
  *               activites: list<array{id: int, nom: string, secteur: string, type: string, chiffres: array<string, int>}>}
  */

@@ -285,6 +285,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <dd><?= e($fiche['type_nom']) ?> — <?= e($fiche['recurrence_nom']) ?></dd>
             <dt class="small text-body-secondary fw-normal">Référent</dt>
             <dd><?= e($fiche['referent']) ?></dd>
+            <?php if (texte($fiche['partenaire'] ?? '') !== '') : ?>
+                <dt class="small text-body-secondary fw-normal">Partenaire</dt>
+                <dd><?= e($fiche['partenaire']) ?></dd>
+            <?php endif; ?>
             <dt class="small text-body-secondary fw-normal">Dates</dt>
             <dd><?= e(activite_dates($fiche)) ?></dd>
             <dt class="small text-body-secondary fw-normal">Tarif</dt>

@@ -5,8 +5,8 @@ declare(strict_types=1);
 // Statistiques (cahier des charges, section 10) : adhérents, activités,
 // scolarité, pour une saison ou une période libre, avec la comparaison à la
 // saison précédente (ou à la même période un an plus tôt). Les activités se
-// filtrent par secteur, type et récurrence. Un interrupteur affiche ou retire les
-// chiffres de comparaison (N-1).
+// filtrent par secteur, type et récurrence ; un interrupteur ne garde que les
+// activités avec partenaire. Un autre affiche ou retire les chiffres de comparaison (N-1).
 // Les filtres sont dans l'adresse de la page : aucune donnée personnelle n'y figure.
 // Consultation : tout utilisateur connecté (aucun montant n'est affiché).
 
@@ -47,6 +47,8 @@ foreach (choix_liste('recurrences') as $ligne_choix) {
 }
 $filtre_recurrence = entier($_GET['recurrence'] ?? 0);
 $filtre_recurrence = array_key_exists($filtre_recurrence, $recurrences_filtre) ? $filtre_recurrence : 0;
+// Interrupteur « Avec partenaire » : seulement les activités qui ont un partenaire.
+$filtre_partenaire = texte($_GET['partenaire'] ?? '') === '1';
 
 // Évolution : la comparaison avec la saison précédente (N-1) s'affiche, sauf si elle a été retirée.
 $afficher_evolution = texte($_GET['evolution'] ?? '1') !== '0';
@@ -73,9 +75,9 @@ if ($filtre_debut !== '' || $filtre_fin !== '') {
 // --- Périmètre et calculs --------------------------------------------------------
 $perimetre = null;
 if ($periode_valable) {
-    $perimetre = stats_perimetre_periode($filtre_debut, $filtre_fin, $filtre_secteur, $filtre_type, $filtre_recurrence);
+    $perimetre = stats_perimetre_periode($filtre_debut, $filtre_fin, $filtre_secteur, $filtre_type, $filtre_recurrence, $filtre_partenaire);
 } elseif (isset($saisons_filtre[$filtre_saison])) {
-    $perimetre = stats_perimetre_saison($saisons_filtre[$filtre_saison], $filtre_secteur, $filtre_type, $filtre_recurrence);
+    $perimetre = stats_perimetre_saison($saisons_filtre[$filtre_saison], $filtre_secteur, $filtre_type, $filtre_recurrence, $filtre_partenaire);
 }
 $perimetre_precedent = $perimetre === null || !$afficher_evolution ? null : stats_perimetre_precedent($perimetre);
 $nom_serie = $perimetre === null ? '' : ($perimetre['mode'] === 'saison' ? mb_substr($perimetre['libelle'], 7) : 'Période');
@@ -106,12 +108,13 @@ $filtres_adresse = array_filter([
     'secteur' => $filtre_secteur,
     'type'    => $filtre_type,
     'recurrence' => $filtre_recurrence,
+    'partenaire' => $filtre_partenaire ? '1' : '',
 ], static fn (int|string $valeur): bool => $valeur !== 0 && $valeur !== '');
 // Le choix d'afficher ou non l'évolution suit l'utilisateur d'un onglet à l'autre, et survit à « Effacer ».
 $choix_evolution = $afficher_evolution ? [] : ['evolution' => '0'];
 $adresse_vue = static fn (string $nom_vue): string => chemin_site('statistiques.php?' . http_build_query(['vue' => $nom_vue] + $filtres_adresse + $choix_evolution));
 
-$public_filtre = $filtre_secteur > 0 || $filtre_type > 0 || $filtre_recurrence > 0;
+$public_filtre = $filtre_secteur > 0 || $filtre_type > 0 || $filtre_recurrence > 0 || $filtre_partenaire;
 $mot_adherents = $public_filtre ? 'Participants' : 'Adhérents';
 
 $titre_page = 'Statistiques';
@@ -174,6 +177,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 </select>
             </div>
             <div class="form-check form-switch mb-3">
+                <input class="form-check-input" type="checkbox" role="switch" id="partenaire" name="partenaire" value="1" <?= $filtre_partenaire ? 'checked' : '' ?> data-envoi-auto>
+                <label class="form-check-label" for="partenaire">Avec partenaire</label>
+            </div>
+            <div class="form-check form-switch mb-3">
                 <?php // Case décochée : rien n'est envoyé ; le champ caché dit alors « sans évolution ». ?>
                 <input type="hidden" name="evolution" value="0">
                 <input class="form-check-input" type="checkbox" role="switch" id="evolution" name="evolution" value="1" <?= $afficher_evolution ? 'checked' : '' ?> data-envoi-auto>
@@ -191,7 +198,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
                 <li>L'âge est calculé au <?= e(date_fr($perimetre['date_age'])) ?>.</li>
                 <li>Les structures ne sont pas comptées parmi les personnes.</li>
-                <li>Avec un secteur, un type ou une récurrence, les chiffres des adhérents sont ceux du public de ces activités.</li>
+                <li>Avec un secteur, un type, une récurrence ou « Avec partenaire », les chiffres des adhérents sont ceux du public de ces activités.</li>
                 <?php if (role_au_moins('admin')) : ?>
                     <li><a href="<?= e(chemin_site('options_statistiques.php')) ?>">Tranches d'âge et groupes de lieu de résidence</a></li>
                 <?php endif; ?>
@@ -215,6 +222,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <?= $filtre_secteur > 0 ? 'Secteur : ' . e($secteurs_filtre[$filtre_secteur]) . '. ' : '' ?>
                 <?= $filtre_type > 0 ? 'Type : ' . e($types_filtre[$filtre_type]) . '. ' : '' ?>
                 <?= $filtre_recurrence > 0 ? 'Récurrence : ' . e($recurrences_filtre[$filtre_recurrence]) . '. ' : '' ?>
+                <?= $filtre_partenaire ? 'Activités avec partenaire. ' : '' ?>
             </p>
         <?php endif; ?>
 

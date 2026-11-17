@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.12.0';
+const APP_VERSION = '0.13.0';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,15 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.13.0',
+            'date'        => '2026-11-17',
+            'changements' => [
+                'Activités : nouveau champ facultatif « Partenaire » (nom de la structure partenaire), affiché sur la fiche, dans la liste et dans les documents PDF de l\'activité.',
+                'Liste des activités : un interrupteur « Avec partenaire » n\'affiche que les activités qui ont un partenaire.',
+                'Statistiques : un interrupteur « Avec partenaire » limite les chiffres aux activités qui ont un partenaire, et à leur public.',
+            ],
+        ],
         [
             'version'     => '0.12.0',
             'date'        => '2026-11-17',

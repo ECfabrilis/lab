@@ -284,6 +284,9 @@ function activite_document_html(array $activite, string $modele, array $parties,
         'Saison ' . texte($activite['saison_nom']) . ' — ' . activite_dates($activite),
         'Référent : ' . texte($activite['referent']),
     ];
+    if (texte($activite['partenaire'] ?? '') !== '') {
+        $infos[] = 'Partenaire : ' . texte($activite['partenaire']);
+    }
     if ($modele === 'sortie' && entier($activite['nb_accompagnateurs'] ?? 0) > 0) {
         $infos[] = 'Accompagnateurs prévus : ' . entier($activite['nb_accompagnateurs']);
     }
