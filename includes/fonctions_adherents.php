@@ -133,7 +133,8 @@ function adherent_saisie_vide(bool $est_structure = false): array
 
 /**
  * Champs de la fiche adhérent lus dans le formulaire envoyé.
- * Pour une structure, les champs propres aux personnes restent vides.
+ * Pour une structure, les champs propres aux personnes restent vides ;
+ * pour une personne majeure, le responsable reste vide.
  *
  * @return array<string, string>
  */
@@ -150,9 +151,13 @@ function adherent_saisie(bool $est_structure = false): array
         $saisie['sexe'] = post('sexe');
         $saisie['date_naissance'] = post('date_naissance');
         $saisie['nationalite_iso3'] = post('nationalite_iso3');
-        $saisie['responsable_nom'] = post('responsable_nom');
-        $saisie['responsable_mail'] = post('responsable_mail');
-        $saisie['responsable_tel'] = post('responsable_tel');
+        // Le responsable n'est gardé que pour une personne mineure (comme à l'inscription) :
+        // celui d'une personne majeure est effacé à l'enregistrement de sa fiche.
+        if (est_mineur($saisie['date_naissance'])) {
+            $saisie['responsable_nom'] = post('responsable_nom');
+            $saisie['responsable_mail'] = post('responsable_mail');
+            $saisie['responsable_tel'] = post('responsable_tel');
+        }
         $saisie['est_benevole'] = post('est_benevole') === '1' ? '1' : '0';
     }
     return $saisie;
@@ -757,7 +762,7 @@ function afficher_champs_adherent(array $defauts, array $adultes = []): void
         <label class="form-check-label" for="a_consenti">Accepte de recevoir les communications de l'association (programme, informations)</label>
     </div>
     <?php if (!$est_structure) : ?>
-        <?php afficher_champs_responsable($defauts, $adultes); ?>
+        <?php afficher_champs_responsable($defauts, $adultes, true); ?>
     <?php endif; ?>
     <?php
 }
@@ -770,12 +775,24 @@ function afficher_champs_adherent(array $defauts, array $adultes = []): void
  * son nom, son téléphone et son adresse e-mail remplissent les champs
  * (public/js/inscription.js), qui restent modifiables.
  *
+ * Avec $selon_naissance (fenêtre « Modifier la fiche »), toute cette partie
+ * (liste et champs) suit la date de naissance saisie dans le même formulaire :
+ * elle n'est montrée que si cette date est celle d'une personne mineure, et
+ * apparaît ou disparaît dès que la date change (public/js/inscription.js).
+ * Les champs cachés gardent leur valeur ; c'est adherent_saisie() qui écarte
+ * le responsable d'une personne majeure à l'enregistrement.
+ *
  * @param array<string, mixed> $defauts valeurs affichées quand rien n'a été saisi
  * @param list<array{id: int, nom: string, tel: string, mail: string}> $adultes adultes de la famille (famille_adultes_joignables())
+ * @param bool $selon_naissance la partie dépend de la date de naissance saisie
  */
-function afficher_champs_responsable(array $defauts, array $adultes = []): void
+function afficher_champs_responsable(array $defauts, array $adultes = [], bool $selon_naissance = false): void
 {
+    $partie_cachee = $selon_naissance && !est_mineur(ancien('date_naissance', texte($defauts['date_naissance'] ?? '')));
     ?>
+    <?php if ($selon_naissance) : ?>
+        <div class="<?= $partie_cachee ? 'd-none' : '' ?>" data-responsable-selon-naissance="<?= AGE_MAJORITE ?>">
+    <?php endif; ?>
     <h2 class="h5">Responsable adulte</h2>
     <p class="text-body-secondary small">Obligatoire pour une personne de moins de <?= AGE_MAJORITE ?> ans : le nom, et le téléphone ou l'adresse e-mail.</p>
     <?php if ($adultes !== []) : ?>
@@ -826,5 +843,8 @@ function afficher_champs_responsable(array $defauts, array $adultes = []): void
             <input class="form-control" type="tel" id="responsable_tel" name="responsable_tel" maxlength="20" value="<?= e(ancien('responsable_tel', $defauts['responsable_tel'] ?? '')) ?>">
         </div>
     </div>
+    <?php if ($selon_naissance) : ?>
+        </div>
+    <?php endif; ?>
     <?php
 }

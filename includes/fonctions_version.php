@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.11.3';
+const APP_VERSION = '0.11.4';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,14 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.11.4',
+            'date'        => '2026-11-17',
+            'changements' => [
+                'Fenêtre « Modifier la fiche » : le choix du responsable parmi les adultes de la famille apparaît dès que la date de naissance saisie est celle d\'une personne mineure, sans enregistrer la fiche d\'abord.',
+                'Fenêtre « Modifier la fiche » : la partie « Responsable adulte » n\'est plus affichée pour une personne majeure, et le responsable d\'une personne majeure est effacé à l\'enregistrement de sa fiche.',
+            ],
+        ],
         [
             'version'     => '0.11.3',
             'date'        => '2026-11-17',

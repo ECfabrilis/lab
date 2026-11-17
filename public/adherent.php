@@ -155,9 +155,11 @@ $prenoms_meme_adresse = $adresse_saison === null || $est_structure ? [] : array_
     static fn (array $membre): string => texte($membre['prenom']),
     adresse_autres_membres($dossier_saison_id, $fiche_id)
 );
-// Personne mineure : les adultes de sa famille que l'on peut joindre sont proposés
-// comme responsable dans la fenêtre « Modifier la fiche », comme à l'inscription.
-$adultes_famille = $peut_modifier && !$est_structure && $mineur && $famille_id > 0
+// Les adultes de la famille que l'on peut joindre sont proposés comme responsable
+// dans la fenêtre « Modifier la fiche », comme à l'inscription. La partie
+// « Responsable adulte » n'est montrée que si la date de naissance saisie est
+// celle d'une personne mineure.
+$adultes_famille = $peut_modifier && !$est_structure && $famille_id > 0
     ? array_values(array_filter(
         famille_adultes_joignables($famille_id),
         static fn (array $adulte): bool => $adulte['id'] !== $fiche_id

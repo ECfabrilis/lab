@@ -49,6 +49,37 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
+// Fenêtre « Modifier la fiche » : la partie « Responsable adulte » (liste des
+// adultes de la famille et champs) n'est montrée que si la date de naissance
+// saisie est celle d'une personne mineure. Elle apparaît ou disparaît dès que
+// la date change ; les champs cachés gardent leur valeur (une date corrigée
+// les fait revenir) et le serveur écarte le responsable d'une personne majeure.
+document.addEventListener('DOMContentLoaded', function () {
+    var bloc = document.querySelector('[data-responsable-selon-naissance]');
+    var formulaire = bloc ? bloc.closest('form') : null;
+    var champDate = formulaire ? formulaire.elements.date_naissance : null;
+    if (!bloc || !champDate) {
+        return;
+    }
+    var majorite = parseInt(bloc.dataset.responsableSelonNaissance, 10) || 18;
+
+    function suivreLaDate() {
+        var parties = /^(\d{4})-(\d{2})-(\d{2})$/.exec(champDate.value);
+        if (!parties) {
+            // Date vide ou en cours de saisie : la partie reste comme elle est.
+            return;
+        }
+        var naissance = new Date(Number(parties[1]), Number(parties[2]) - 1, Number(parties[3]));
+        var aujourdHui = new Date();
+        // Dernière date de naissance d'une personne majeure aujourd'hui.
+        var limite = new Date(aujourdHui.getFullYear() - majorite, aujourdHui.getMonth(), aujourdHui.getDate());
+        bloc.classList.toggle('d-none', naissance <= limite);
+    }
+
+    champDate.addEventListener('input', suivreLaDate);
+    champDate.addEventListener('change', suivreLaDate);
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     var formulaire = document.querySelector('form[data-doublons-url]');
     var liste = document.getElementById('doublonsProches');
