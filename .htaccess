@@ -1,8 +1,15 @@
 # En local (WAMP) comme sur Hostinger, tout le projet est sous la racine web :
 # seul le dossier public/ doit être accessible depuis le navigateur. La partie
 # privée (includes, config.php, sql, logs, sauvegardes, .git) est interdite.
-# Ce fichier est la seule protection de la partie privée : ne pas le supprimer.
+# Ne pas supprimer ce fichier.
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteRule ^(?!public/) - [F]
+</IfModule>
+
+# Sans le module de réécriture, la règle ci-dessus ne s'applique pas : tout est
+# alors interdit, et public/.htaccess rouvre le seul dossier public. Les
+# dossiers privés portent en plus leur propre .htaccess « tout interdit ».
+<IfModule !mod_rewrite.c>
+    Require all denied
 </IfModule>

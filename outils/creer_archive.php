@@ -38,7 +38,9 @@ const ARCHIVE_CONTENU = [
     'sql',
     'logs',
     'sauvegardes',
+    'outils/.htaccess',
     'outils/mise_a_jour.php',
+    'docs/.htaccess',
     'docs/installation.md',
     'docs/guide_utilisation.md',
     'LICENCE.txt',
@@ -163,6 +165,10 @@ echo 'Installation de vendor/ (sans les outils de développement)…' . PHP_EOL;
 commande('composer install --no-dev --optimize-autoloader --no-interaction --no-progress', $copie);
 if (!is_file($copie . '/vendor/autoload.php')) {
     arreter('vendor/autoload.php est absent après « composer install ».');
+}
+// vendor/ n'est pas versionné : son .htaccess « tout interdit » est copié de celui de includes/.
+if (!copy($copie . '/includes/.htaccess', $copie . '/vendor/.htaccess')) {
+    arreter('impossible de protéger le dossier vendor/ de l\'archive.');
 }
 
 // --- Écriture de l'archive ----------------------------------------------------

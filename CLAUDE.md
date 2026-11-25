@@ -64,7 +64,7 @@ Le projet est séparé en une partie publique et une partie privée.
 - Messages à l'utilisateur : `flash($type, $message)` avant une redirection ; types `succes`, `avertissement`, `erreur`, `info`.
 - **Tout texte venant d'un utilisateur ou de la base passe par `e()`** avant d'être écrit dans la page.
 - Requêtes SQL : toujours préparées (PDO, `ATTR_EMULATE_PREPARES => false`), jamais de concaténation de valeurs.
-- Mots de passe : `password_hash(PASSWORD_DEFAULT)` ; longueur minimale 8. Jamais de mot de passe en clair dans la base, les journaux ou les messages.
+- Mots de passe : `password_hash(PASSWORD_DEFAULT)` ; longueur minimale 12 pour un nouveau mot de passe (`erreur_mdp()`, qui refuse aussi le prénom et l'adresse e-mail). Jamais de mot de passe en clair dans la base, les journaux ou les messages.
 - Noms de variables de pages : ne jamais réutiliser ceux posés par `header.php` (`$u`, `$menu`, `$logo`, `$nom_asso`, `$saison`, `$saisons`, `$libelles_roles`, `$messages`, `$retour_saison`, `$css_couleur`). Une page ne lit pas non plus ces variables (PHPStan ne suit pas l'inclusion) : elle appelle les fonctions (`utilisateur_courant()`, `saison_courante()`, `saisons_liste()`, `libelles_roles()`).
 - **Rien de propre à une association dans le code** (l'application doit pouvoir servir à d'autres) : ni nom (CEFIA), ni lieu (Paris, 17e, codes postaux), ni logo, ni texte qui les cite, y compris comme valeur par défaut. Le nom, l'adresse et le logo se lisent par `parametre('nom_association')`, `parametre('adresse_association')` et `logo_association()` (qui renvoie '' sans logo : prévoir l'affichage sans image). Ce qui est propre à l'association va dans les réglages (`parametres`) ou les données saisies.
 - Pas de script ni de style écrits dans les pages : la politique de sécurité du contenu (CSP) les bloque. Le JavaScript va dans `public/js/`, les styles dans le SCSS.
@@ -78,6 +78,9 @@ Le projet est séparé en une partie publique et une partie privée.
 - Les actions sensibles (rôle, désactivation, adresse e-mail) sont réservées aux administrateurs et vérifiées **côté serveur**, pas seulement par le masquage d'un bouton.
 - Chaque création, modification, suppression ou action sensible est notée dans `logs_bdd` (sans mot de passe ni jeton). Exception voulue : les réductions ne sont pas journalisées en détail (décision de l'association).
 - Un administrateur ne peut pas se désactiver ni changer son propre rôle, ni retirer le dernier administrateur actif.
+- **Connexion** (`includes/fonctions_auth.php`) : un seul message d'erreur, quel que soit le motif du refus ; blocage par compte (5 échecs) et par adresse IP (table `connexions_echecs`, 10 échecs en 15 minutes, lignes effacées après 24 heures). La session garde l'empreinte du mot de passe (`session_noter_mdp()`) : tout code qui change le mot de passe de l'utilisateur connecté l'appelle ensuite, sinon il est déconnecté.
+- **HTTPS** : `site_en_https()` (d'après `APP_URL`) décide du cookie sécurisé et de l'en-tête HSTS ; `est_https()` (d'après la requête) ne sert qu'à l'information, jamais à une décision de sécurité.
+- **Partie privée** : chaque dossier privé porte un `.htaccess` « tout interdit » (`Require all denied`) ; tout nouveau dossier privé en reçoit un, et entre dans `ARCHIVE_CONTENU`. Les sauvegardes ont un nom aléatoire (`SAUVEGARDE_MOTIF_NOM`).
 
 ## Base de données
 

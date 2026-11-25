@@ -337,7 +337,7 @@ if (est_post()) {
         }
         if ($faut_admin) {
             $erreurs = array_merge($erreurs, erreurs_utilisateur(post('prenom'), post('mail'), 'admin'));
-            $erreur_mdp = erreur_mdp(post_brut('mdp'), post_brut('mdp_confirmation'));
+            $erreur_mdp = erreur_mdp(post_brut('mdp'), post_brut('mdp_confirmation'), post('prenom'), post('mail'));
             if ($erreur_mdp !== null) {
                 $erreurs[] = $erreur_mdp;
             }
@@ -689,12 +689,12 @@ if ($verrouille) {
                             <input class="form-control" type="email" id="mail" name="mail" maxlength="150" value="<?= e(ancien('mail')) ?>" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label" for="mdp">Mot de passe (8 caractères au minimum)</label>
-                            <input class="form-control" type="password" id="mdp" name="mdp" minlength="8" autocomplete="new-password" required>
+                            <label class="form-label" for="mdp">Mot de passe (<?= MDP_LONGUEUR_MIN ?> caractères au minimum)</label>
+                            <input class="form-control" type="password" id="mdp" name="mdp" minlength="<?= MDP_LONGUEUR_MIN ?>" autocomplete="new-password" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label" for="mdp_confirmation">Mot de passe, une seconde fois</label>
-                            <input class="form-control" type="password" id="mdp_confirmation" name="mdp_confirmation" minlength="8" autocomplete="new-password" required>
+                            <input class="form-control" type="password" id="mdp_confirmation" name="mdp_confirmation" minlength="<?= MDP_LONGUEUR_MIN ?>" autocomplete="new-password" required>
                         </div>
                     <?php else : ?>
                         <div class="col-12"><div class="alert alert-info mb-0">Un utilisateur existe déjà : aucun administrateur ne sera créé.</div></div>

@@ -218,7 +218,12 @@ Tout se trouve dans **Paramètres**.
 
 Un utilisateur est identifié par son prénom et son adresse de courriel. À la
 création, il reçoit un lien valable 7 jours pour choisir son mot de passe :
-vous ne lui en donnez jamais.
+vous ne lui en donnez jamais. Un mot de passe compte au moins 12 caractères.
+
+Après plusieurs essais de connexion refusés, la connexion est suspendue
+15 minutes. « Mot de passe oublié » la rétablit tout de suite, par un lien
+envoyé par courriel. Changer de mot de passe ferme les autres sessions
+ouvertes avec le même compte.
 
 Un compte ne se supprime pas, il se désactive. Vous ne pouvez pas vous
 désactiver vous-même, ni changer votre propre rôle, ni retirer le dernier

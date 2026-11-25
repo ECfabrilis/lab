@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.17.1';
+const APP_VERSION = '0.18.0';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,17 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.18.0',
+            'date'        => '2026-11-26',
+            'changements' => [
+                'Sécurité : un nouveau mot de passe doit compter au moins 12 caractères et ne contenir ni le prénom ni l\'adresse e-mail. Les mots de passe actuels restent valables.',
+                'Sécurité : changer ou réinitialiser un mot de passe ferme toutes les autres sessions ouvertes avec ce compte. À cette mise à jour, chacun doit se reconnecter une fois.',
+                'Sécurité : après trop d\'essais de connexion refusés depuis un même poste, les essais sont suspendus 15 minutes ; « Mot de passe oublié » n\'envoie qu\'un courriel toutes les 10 minutes.',
+                'Sauvegardes : celles faites d\'office avant une mise à jour sont limitées aux 5 plus récentes ; la page avertit quand trop de fichiers s\'accumulent.',
+                'Fiche d\'une activité : le tarif n\'est plus affiché aux lecteurs, comme les autres montants.',
+            ],
+        ],
         [
             'version'     => '0.17.1',
             'date'        => '2026-11-25',

@@ -1,0 +1,4 @@
+# Partie privée de l'application : rien dans ce dossier ne s'ouvre depuis un
+# navigateur, même si la règle du .htaccess de la racine ne s'applique pas
+# (module de réécriture absent). Ne pas supprimer ce fichier.
+Require all denied

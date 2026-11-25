@@ -76,9 +76,16 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <li>Faites une sauvegarde au moins une fois par semaine.</li>
             <li>Téléchargez-la et gardez une copie hors de l'hébergeur.</li>
             <li>Le fichier contient des données personnelles : rangez-le en lieu sûr.</li>
+            <li>Les sauvegardes faites d'office avant une mise à jour (« _maj » dans le nom) sont limitées aux <?= SAUVEGARDE_AUTOMATIQUES_GARDEES ?> plus récentes. Celles que vous créez ici ne sont jamais supprimées automatiquement.</li>
         </ul>
     </div>
     <div class="col-md-8 order-md-1">
+        <?php if (count($fichiers_sauvegarde) > SAUVEGARDE_NOMBRE_ALERTE) : ?>
+            <div class="alert alert-warning" role="alert">
+                <?= count($fichiers_sauvegarde) ?> sauvegardes sont présentes sur le serveur. Chacune contient toutes les données personnelles de la base :
+                téléchargez celles que vous voulez garder, puis supprimez les plus anciennes.
+            </div>
+        <?php endif; ?>
         <?php if ($fichiers_sauvegarde === []) : ?>
             <p class="text-body-secondary">Aucune sauvegarde n'est présente sur le serveur.</p>
         <?php else : ?>

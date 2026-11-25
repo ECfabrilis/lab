@@ -13,8 +13,16 @@ const AUTH_ECHECS_MAX = 5;
 const AUTH_BLOCAGE_MINUTES = 15;
 /** Durée d'inactivité avant déconnexion automatique, en secondes (2 heures). */
 const AUTH_INACTIVITE_SECONDES = 7200;
-/** Longueur minimale d'un mot de passe. */
-const MDP_LONGUEUR_MIN = 8;
+/** Longueur minimale d'un nouveau mot de passe (les mots de passe déjà choisis restent valables). */
+const MDP_LONGUEUR_MIN = 12;
+/** Nombre d'échecs venant d'une même adresse IP, sur la durée ci-dessous, avant de refuser ses essais. */
+const AUTH_IP_ECHECS_MAX = 10;
+/** Durée sur laquelle les échecs d'une adresse IP sont comptés, et durée du refus, en minutes. */
+const AUTH_IP_MINUTES = 15;
+/** Durée de conservation des échecs par adresse IP, en heures. */
+const AUTH_IP_CONSERVATION_HEURES = 24;
+/** Délai minimal entre deux courriels « mot de passe oublié » pour un même compte, en minutes. */
+const MDP_OUBLIE_DELAI_MINUTES = 10;
 /** Validité du lien d'invitation : 7 jours. */
 const JETON_DUREE_INVITATION = 604800;
 /** Validité du lien « mot de passe oublié » : 1 heure. */
@@ -22,7 +30,8 @@ const JETON_DUREE_OUBLI = 3600;
 
 /**
  * Utilisateur connecté (ligne de la table utilisateurs, sans mot de passe ni jeton), ou null.
- * Relu dans la base à chaque page : une désactivation ou un changement de rôle s'applique tout de suite.
+ * Relu dans la base à chaque page : une désactivation, un changement de rôle ou un changement de
+ * mot de passe s'applique tout de suite (un nouveau mot de passe ferme les autres sessions).
  *
  * @return array<string, mixed>|null
  */
@@ -37,11 +46,19 @@ function utilisateur_courant(): ?array
     $id = entier($_SESSION['utilisateur_id'] ?? 0);
     if ($id > 0) {
         $cache = db_ligne(
-            'SELECT id, prenom, mail, role, est_actif, derniere_connexion FROM utilisateurs WHERE id = ? AND est_actif = 1',
+            'SELECT id, prenom, mail, role, est_actif, derniere_connexion, SHA2(mdp, 256) AS empreinte_mdp
+               FROM utilisateurs WHERE id = ? AND est_actif = 1',
             [$id]
         );
+        // Le mot de passe a changé depuis l'ouverture de cette session (changement
+        // ou réinitialisation faits ailleurs) : la session n'est plus valable.
+        if ($cache !== null && !hash_equals(texte($cache['empreinte_mdp']), texte($_SESSION['empreinte_mdp'] ?? ''))) {
+            $cache = null;
+        }
         if ($cache === null) {
-            unset($_SESSION['utilisateur_id']);
+            unset($_SESSION['utilisateur_id'], $_SESSION['empreinte_mdp']);
+        } else {
+            unset($cache['empreinte_mdp']);
         }
     }
     return $cache;
@@ -97,11 +114,16 @@ function exiger_role(string $role): void
  */
 function tenter_connexion(string $mail, string $mdp): string
 {
+    // Trop d'échecs depuis cette adresse IP : l'essai est refusé sans être examiné.
+    if (ip_bloquee()) {
+        return 'bloque';
+    }
     $utilisateur = db_ligne('SELECT * FROM utilisateurs WHERE mail = ?', [$mail]);
 
     if ($utilisateur === null) {
         // Même durée de calcul que pour un compte existant (on ne révèle pas quels comptes existent).
         password_verify($mdp, '$2y$12$59gNDzACFhyQOGJr0jzUfuFeK2i.PPS8kr38tFZ.uJXTnZhkwlsn.');
+        ip_noter_echec();
         journaliser('connexion_echec', 'utilisateurs', null, 'Connexion refusée : adresse inconnue');
         return 'echec';
     }
@@ -109,10 +131,12 @@ function tenter_connexion(string $mail, string $mdp): string
     $id = entier($utilisateur['id']);
     $bloque_jusqua = texte($utilisateur['verrouille_jusqua']);
     if ($bloque_jusqua !== '' && strtotime($bloque_jusqua) > time()) {
+        ip_noter_echec();
         return 'bloque';
     }
 
     if (entier($utilisateur['est_actif']) !== 1 || !password_verify($mdp, texte($utilisateur['mdp']))) {
+        ip_noter_echec();
         $echecs = entier($utilisateur['tentatives_echec']) + 1;
         if ($echecs >= AUTH_ECHECS_MAX) {
             db_executer(
@@ -134,6 +158,8 @@ function tenter_connexion(string $mail, string $mdp): string
     if (password_needs_rehash(texte($utilisateur['mdp']), PASSWORD_DEFAULT)) {
         db_executer('UPDATE utilisateurs SET mdp = ? WHERE id = ?', [password_hash($mdp, PASSWORD_DEFAULT), $id]);
     }
+    session_noter_mdp($id);
+    ip_purger_echecs();
     db_executer(
         'UPDATE utilisateurs SET tentatives_echec = 0, verrouille_jusqua = NULL, derniere_connexion = ? WHERE id = ?',
         [date('Y-m-d H:i:s'), $id]
@@ -141,6 +167,67 @@ function tenter_connexion(string $mail, string $mdp): string
     journaliser('connexion', 'utilisateurs', $id, 'Connexion');
     journal_purger_saisons_passees();
     return 'ok';
+}
+
+/**
+ * Note dans la session l'empreinte du mot de passe de l'utilisateur. Elle est
+ * comparée à chaque page (utilisateur_courant()) : si le mot de passe change
+ * ailleurs, les sessions ouvertes avec l'ancien se ferment. À appeler à la
+ * connexion, et quand l'utilisateur change lui-même son mot de passe.
+ */
+function session_noter_mdp(int $utilisateur_id): void
+{
+    $_SESSION['empreinte_mdp'] = texte(db_valeur('SELECT SHA2(mdp, 256) FROM utilisateurs WHERE id = ?', [$utilisateur_id]));
+}
+
+/** Adresse IP du visiteur, telle que le serveur la voit (aucun en-tête fourni par le visiteur n'est cru). */
+function adresse_ip(): string
+{
+    return mb_substr(texte($_SERVER['REMOTE_ADDR'] ?? ''), 0, 45);
+}
+
+/**
+ * Vrai si cette adresse IP a fait trop d'essais refusés (connexion, mot de
+ * passe oublié) dans les dernières minutes : ses essais sont alors ignorés.
+ */
+function ip_bloquee(): bool
+{
+    $ip = adresse_ip();
+    if ($ip === '') {
+        return false;
+    }
+    $depuis = date('Y-m-d H:i:s', time() - AUTH_IP_MINUTES * 60);
+    try {
+        return entier(db_valeur('SELECT COUNT(*) FROM connexions_echecs WHERE adresse_ip = ? AND date_echec > ?', [$ip, $depuis])) >= AUTH_IP_ECHECS_MAX;
+    } catch (PDOException) {
+        // Table absente : la migration qui la crée n'est pas encore passée. Il faut
+        // pouvoir se connecter pour la passer : la limite ne s'applique pas encore.
+        return false;
+    }
+}
+
+/** Note un essai refusé pour l'adresse IP du visiteur. */
+function ip_noter_echec(): void
+{
+    $ip = adresse_ip();
+    if ($ip === '') {
+        return;
+    }
+    try {
+        db_executer('INSERT INTO connexions_echecs (adresse_ip, date_echec) VALUES (?, ?)', [$ip, date('Y-m-d H:i:s')]);
+    } catch (PDOException) {
+        // Table absente avant la migration (voir ip_bloquee()).
+    }
+}
+
+/** Efface les essais refusés trop anciens : une adresse IP n'est gardée que 24 heures. */
+function ip_purger_echecs(): void
+{
+    try {
+        db_executer('DELETE FROM connexions_echecs WHERE date_echec < ?', [date('Y-m-d H:i:s', time() - AUTH_IP_CONSERVATION_HEURES * 3600)]);
+    } catch (PDOException) {
+        // Table absente avant la migration (voir ip_bloquee()).
+    }
 }
 
 /** Déconnecte l'utilisateur et repart d'une session vide. */
@@ -153,15 +240,23 @@ function deconnecter(): void
 /**
  * Vérifie un nouveau mot de passe et sa confirmation.
  *
+ * @param string $prenom prénom de l'utilisateur : le mot de passe ne doit pas le contenir
+ * @param string $mail   son adresse e-mail : le mot de passe ne doit pas en contenir la partie avant « @ »
  * @return string|null message d'erreur, ou null si tout va bien
  */
-function erreur_mdp(string $mdp, string $confirmation): ?string
+function erreur_mdp(string $mdp, string $confirmation, string $prenom = '', string $mail = ''): ?string
 {
     if (mb_strlen($mdp) < MDP_LONGUEUR_MIN) {
         return 'Le mot de passe doit contenir au moins ' . MDP_LONGUEUR_MIN . ' caractères.';
     }
     if (strlen($mdp) > 72) {
         return 'Le mot de passe est trop long (72 caractères au maximum).';
+    }
+    // Un mot de passe bâti sur le prénom ou l'adresse est le premier qu'on essaie.
+    foreach ([$prenom, explode('@', $mail)[0]] as $interdit) {
+        if (mb_strlen($interdit) >= 3 && mb_stripos($mdp, $interdit) !== false) {
+            return 'Le mot de passe ne doit contenir ni votre prénom ni votre adresse e-mail.';
+        }
     }
     if ($mdp !== $confirmation) {
         return 'Les deux mots de passe ne sont pas identiques.';

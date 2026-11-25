@@ -2,7 +2,7 @@
 -- bddv3 : structure de la base — schéma de référence
 -- Cible : MariaDB 11.8, InnoDB, utf8mb4 / utf8mb4_unicode_ci
 --
--- État : version 0.14.0 (suivi des migrations). Chaque évolution ajoute ses tables par un
+-- État : version 0.18.0 (essais refusés par adresse IP). Chaque évolution ajoute ses tables par un
 -- fichier daté dans sql/migrations/, et ce fichier est mis à jour.
 --
 -- Ce script est exécuté par install.php (étape 3). Il ne supprime rien :
@@ -673,4 +673,19 @@ CREATE TABLE IF NOT EXISTS `migrations` (
   PRIMARY KEY (`fichier`),
   KEY `idx_migrations_appliquee_par` (`appliquee_par`),
   CONSTRAINT `fk_migrations_appliquee_par` FOREIGN KEY (`appliquee_par`) REFERENCES `utilisateurs` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------------------------
+-- 16. Essais refusés par adresse IP (version 0.18.0)
+--     Une ligne par essai refusé (connexion, mot de passe oublié). Sert à
+--     ignorer les essais d'une adresse qui en fait trop. Lignes effacées après
+--     24 heures : l'adresse IP n'est gardée que pour la sécurité.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `connexions_echecs` (
+  `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `adresse_ip` VARCHAR(45) NOT NULL COMMENT 'Adresse IP du visiteur (IPv4 ou IPv6)',
+  `date_echec` DATETIME NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_connexions_echecs_ip` (`adresse_ip`, `date_echec`),
+  KEY `idx_connexions_echecs_date` (`date_echec`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

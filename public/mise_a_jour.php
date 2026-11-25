@@ -19,7 +19,8 @@ if (est_post()) {
 
         // Sauvegarde obligatoire : sans elle, la mise à jour ne démarre pas.
         try {
-            $nom_sauvegarde = sauvegarde_creer();
+            $nom_sauvegarde = sauvegarde_creer(true);
+            sauvegardes_purger_automatiques();
             parametre_enregistrer('derniere_sauvegarde', date('Y-m-d H:i:s'), $utilisateur_id);
             journaliser('sauvegarde', 'sauvegardes', null, 'Création de la sauvegarde ' . $nom_sauvegarde . ' (avant mise à jour)');
         } catch (Throwable $exception) {

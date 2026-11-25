@@ -24,7 +24,7 @@ if (est_post()) {
         flash('erreur', 'Le formulaire a expiré. Merci de recommencer.');
         rediriger('choix_mdp.php?jeton=' . $jeton_lien);
     }
-    $erreur = erreur_mdp(post_brut('mdp'), post_brut('mdp_confirmation'));
+    $erreur = erreur_mdp(post_brut('mdp'), post_brut('mdp_confirmation'), texte($compte['prenom']), texte($compte['mail']));
     if ($erreur !== null) {
         flash('erreur', $erreur);
         rediriger('choix_mdp.php?jeton=' . $jeton_lien);

@@ -27,8 +27,11 @@ $lignes_etat = [
         default                       => '',
     }],
     ['Structure de la base', base_en_retard() ? 'mise à jour en attente' : 'à jour', ''],
-    ['Adresse du site', $adresse_site, systeme_adresse_sans_https($adresse_site)
-        ? 'L\'adresse n\'est pas en https : les mots de passe et les données circulent en clair.' : ''],
+    ['Adresse du site', $adresse_site, match (true) {
+        systeme_adresse_sans_https($adresse_site) => 'L\'adresse n\'est pas en https : les mots de passe et les données circulent en clair.',
+        site_en_https() && !est_https()           => 'Cette page ne semble pas servie en https, alors que l\'adresse réglée l\'est. Si l\'adresse de votre navigateur commence bien par https, c\'est sans conséquence : l\'hébergeur ne transmet simplement pas l\'information.',
+        default                                   => '',
+    }],
     ['Dernière sauvegarde', $derniere_sauvegarde !== '' ? date_heure_fr($derniere_sauvegarde) : 'jamais', sauvegarde_en_retard()
         ? 'Faites une sauvegarde au moins une fois par semaine.' : ''],
 ];

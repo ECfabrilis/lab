@@ -203,7 +203,19 @@ function est_https(): bool
     return ($https !== '' && $https !== 'off') || texte($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
 }
 
-/** Démarre une session sécurisée (cookie HttpOnly, SameSite, Secure en HTTPS). */
+/**
+ * Vrai si le site est prévu en HTTPS : c'est l'adresse réglée (APP_URL) qui
+ * le dit, et non la requête en cours, qu'un visiteur ou un serveur
+ * intermédiaire peut présenter autrement. Pendant l'installation, l'adresse
+ * n'est pas encore réglée : on se rabat sur la requête.
+ */
+function site_en_https(): bool
+{
+    $adresse = texte(config('APP_URL'));
+    return $adresse !== '' ? str_starts_with($adresse, 'https://') : est_https();
+}
+
+/** Démarre une session sécurisée (cookie HttpOnly, SameSite, Secure si le site est en HTTPS). */
 function demarrer_session(string $chemin_cookie = '/'): void
 {
     if (session_status() === PHP_SESSION_ACTIVE) {
@@ -215,7 +227,8 @@ function demarrer_session(string $chemin_cookie = '/'): void
     session_set_cookie_params([
         'lifetime' => 0,
         'path'     => $chemin_cookie,
-        'secure'   => est_https(),
+        // Site en HTTPS : le cookie ne part jamais sur une connexion en clair.
+        'secure'   => site_en_https(),
         'httponly' => true,
         'samesite' => 'Lax',
     ]);
@@ -233,7 +246,7 @@ function envoyer_entetes_securite(): void
         . "script-src 'self'; frame-ancestors 'none'; form-action 'self'; base-uri 'self'");
     // Les pages contiennent des données personnelles : pas de copie en cache.
     header('Cache-Control: no-store, private');
-    if (est_https()) {
+    if (site_en_https()) {
         header('Strict-Transport-Security: max-age=31536000');
     }
 }

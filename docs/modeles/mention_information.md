@@ -28,6 +28,8 @@ bénévolat ; établissement scolaire et niveau ; quartier de résidence.]
 la limite de leurs fonctions. Le logiciel est hébergé par [NOM DU PRESTATAIRE],
 en [PAYS]. Vos données ne sont ni vendues ni transmises à des tiers.
 
+**Sécurité des accès.** Pour protéger les comptes des utilisateurs du logiciel, l'adresse IP à l'origine d'un essai de connexion refusé est enregistrée, puis effacée au bout de 24 heures.
+
 **Combien de temps.** Pendant votre adhésion, puis trois ans après votre
 dernière saison d'inscription. Elles sont ensuite anonymisées : seules des
 informations qui ne permettent plus de vous identifier sont gardées, pour les

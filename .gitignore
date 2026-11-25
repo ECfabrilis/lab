@@ -11,8 +11,10 @@ test_mail_local.php
 # Journaux et sauvegardes de la base (données personnelles)
 logs/*
 !logs/.gitkeep
+!logs/.htaccess
 sauvegardes/*
 !sauvegardes/.gitkeep
+!sauvegardes/.htaccess
 *.sql.gz
 
 # Fichiers générés

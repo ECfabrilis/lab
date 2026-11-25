@@ -31,7 +31,7 @@ L'application est destinée à une association qui accueille du public, adhéren
 
 **Décision** : on garde les 3 rôles `lecteur` < `standard` < `admin`. Le détail des droits action par action sera revu plus tard, une fois les fonctions connues.
 
-Règles déjà actées (reprises de l'ancienne application) : un administrateur ne peut pas se désactiver, changer son propre rôle ni retirer le dernier administrateur actif ; un nouvel utilisateur choisit son mot de passe via un lien par courriel valable 7 jours ; mot de passe oublié par courriel.
+Règles déjà actées (reprises de l'ancienne application) : un administrateur ne peut pas se désactiver, changer son propre rôle ni retirer le dernier administrateur actif ; un nouvel utilisateur choisit son mot de passe via un lien par courriel valable 7 jours ; mot de passe oublié par courriel (un courriel au plus toutes les 10 minutes par compte). Un nouveau mot de passe compte **12 caractères au minimum** et ne contient ni le prénom ni l'adresse e-mail. Changer de mot de passe **ferme les autres sessions** du compte. Connexion : un seul message d'erreur quel que soit le motif ; après 5 échecs le compte est bloqué 15 minutes, et après 10 échecs en 15 minutes depuis une même adresse IP ses essais sont ignorés 15 minutes (l'adresse IP est effacée après 24 heures).
 
 ---
 
@@ -260,7 +260,8 @@ Indicateurs (ceux d'un rapport d'activité de centre social) :
   - les **structures** ne sont pas concernées ;
   - les sauvegardes antérieures contiennent encore les données effacées : la page rappelle de supprimer les anciennes.
 - **Journal des actions (logs)** : conservé pour la saison en cours et **remis à zéro à chaque nouvelle saison**. Un mois après le début de la saison, à la première connexion, les actions antérieures à ce début sont effacées (sans export : les sauvegardes de la base en gardent la trace).
-- **Sauvegardes** : export de la base **toutes les semaines** (recommandation : au minimum), en plus des sauvegardes de l'hébergeur ; une copie hors hébergeur.
+- **Sauvegardes** : export de la base **toutes les semaines** (recommandation : au minimum), en plus des sauvegardes de l'hébergeur ; une copie hors hébergeur. Le nom d'un fichier de sauvegarde est impossible à deviner. Celles faites d'office avant une mise à jour sont limitées aux 5 plus récentes ; les autres ne sont jamais supprimées automatiquement, la page avertit au-delà de 10 fichiers.
+- **Partie privée** : chaque dossier privé (fonctions, journaux, sauvegardes, bibliothèques) est interdit au web par son propre fichier de protection, en plus de celui de la racine. Le cookie de session n'est envoyé qu'en HTTPS dès que l'adresse du site est en `https`.
 - Droit d'accès / effacement : fonction « anonymiser cette famille » réservée aux admins, sur la fiche de la famille. Elle est **refusée** tant que la famille est inscrite pour la saison en cours ou à venir (il faut d'abord retirer ses membres de la saison) et demande une **confirmation renforcée** : retaper le nom de la famille.
 - **Une personne seule** peut aussi être anonymisée (`admin`, sur sa fiche), avec les mêmes règles : refus si elle est inscrite pour la saison en cours ou à venir, confirmation en retapant son prénom et son nom. Le nom de la famille, les notes des saisons et les précisions des paiements appartiennent à toute la famille : ils ne sont pas effacés (la page le rappelle). Si la personne est le **dernier membre non anonymisé**, c'est la famille entière qui est anonymisée. Si elle est le responsable enregistré d'un mineur de la famille, la page le signale : ses coordonnées restent sur la fiche du mineur, à corriger à la main.
 

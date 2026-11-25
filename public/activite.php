@@ -291,8 +291,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?php endif; ?>
             <dt class="small text-body-secondary fw-normal">Dates</dt>
             <dd><?= e(activite_dates($fiche)) ?></dd>
-            <dt class="small text-body-secondary fw-normal">Tarif</dt>
-            <dd><?= $fiche['tarif_id'] === null ? 'Gratuit' : e(texte($fiche['tarif_nom']) . ' — ' . activite_prix($fiche)) ?></dd>
+            <?php if ($peut_modifier) : // Les montants sont réservés au rôle standard au minimum. ?>
+                <dt class="small text-body-secondary fw-normal">Tarif</dt>
+                <dd><?= $fiche['tarif_id'] === null ? 'Gratuit' : e(texte($fiche['tarif_nom']) . ' — ' . activite_prix($fiche)) ?></dd>
+            <?php endif; ?>
             <dt class="small text-body-secondary fw-normal">Places</dt>
             <dd>
                 <?php if ($restantes === null) : ?>

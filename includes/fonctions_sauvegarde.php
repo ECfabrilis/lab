@@ -10,6 +10,19 @@ declare(strict_types=1);
 /** Nombre de jours au-delà duquel on rappelle de faire une sauvegarde. */
 const SAUVEGARDE_RAPPEL_JOURS = 7;
 
+/** Nombre de sauvegardes automatiques (faites avant une mise à jour) gardées : les plus récentes. */
+const SAUVEGARDE_AUTOMATIQUES_GARDEES = 5;
+
+/** Au-delà de ce nombre de fichiers, la page des sauvegardes invite à faire le ménage. */
+const SAUVEGARDE_NOMBRE_ALERTE = 10;
+
+/**
+ * Forme du nom d'une sauvegarde : date et heure, « _maj » pour une sauvegarde
+ * automatique, puis une suite aléatoire qui rend le nom impossible à deviner
+ * (les sauvegardes faites avant la version 0.18 n'ont ni l'un ni l'autre).
+ */
+const SAUVEGARDE_MOTIF_NOM = '/^bddv3_\d{4}-\d{2}-\d{2}_\d{6}(_maj)?(_[0-9a-f]{16})?\.sql$/';
+
 /** Dossier privé des sauvegardes. */
 function sauvegarde_dossier(): string
 {
@@ -39,7 +52,7 @@ function sauvegardes_liste(): array
 /** Chemin complet d'une sauvegarde à partir de son nom, ou null si le nom n'est pas celui d'une sauvegarde. */
 function sauvegarde_chemin(string $nom): ?string
 {
-    if (preg_match('/^bddv3_\d{4}-\d{2}-\d{2}_\d{6}\.sql$/', $nom) !== 1) {
+    if (preg_match(SAUVEGARDE_MOTIF_NOM, $nom) !== 1) {
         return null;
     }
     $chemin = sauvegarde_dossier() . '/' . $nom;
@@ -58,14 +71,40 @@ function sauvegarde_en_retard(): bool
 }
 
 /**
+ * Supprime les sauvegardes automatiques les plus anciennes : seules les
+ * SAUVEGARDE_AUTOMATIQUES_GARDEES plus récentes sont gardées. Les sauvegardes
+ * faites à la main ne sont jamais supprimées ici.
+ *
+ * @return int nombre de fichiers supprimés
+ */
+function sauvegardes_purger_automatiques(): int
+{
+    $automatiques = array_values(array_filter(
+        sauvegardes_liste(),
+        static fn (array $fichier): bool => str_contains($fichier['nom'], '_maj_')
+    ));
+    $supprimees = 0;
+    foreach (array_slice($automatiques, SAUVEGARDE_AUTOMATIQUES_GARDEES) as $fichier) {
+        $chemin = sauvegarde_chemin($fichier['nom']);
+        if ($chemin !== null && @unlink($chemin)) {
+            $supprimees++;
+        }
+    }
+    return $supprimees;
+}
+
+/**
  * Crée une sauvegarde complète de la base (structure et données).
  *
+ * @param bool $automatique true : sauvegarde faite d'office avant une mise à jour
+ *                          (marquée « _maj », et purgée par sauvegardes_purger_automatiques())
  * @return string nom du fichier créé
  */
-function sauvegarde_creer(): string
+function sauvegarde_creer(bool $automatique = false): string
 {
     $pdo = db();
-    $nom = 'bddv3_' . date('Y-m-d_His') . '.sql';
+    // La suite aléatoire empêche de deviner le nom du fichier si le dossier était un jour exposé.
+    $nom = 'bddv3_' . date('Y-m-d_His') . ($automatique ? '_maj' : '') . '_' . bin2hex(random_bytes(8)) . '.sql';
     $fichier = fopen(sauvegarde_dossier() . '/' . $nom, 'w');
     if ($fichier === false) {
         throw new RuntimeException('Le dossier sauvegardes/ n\'est pas accessible en écriture.');

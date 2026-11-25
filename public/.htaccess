@@ -1,4 +1,7 @@
 # Dossier public de l'application
+# Seul dossier ouvert au web : cette ligne l'emporte sur l'interdiction générale
+# que pose le .htaccess de la racine quand le module de réécriture est absent.
+Require all granted
 Options -Indexes
 DirectoryIndex index.php
 

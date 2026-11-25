@@ -58,7 +58,8 @@ try {
     sortie_ligne(count($en_attente) . ' migration(s) en attente : ' . implode(', ', $en_attente));
 
     // Sauvegarde obligatoire : sans elle, la mise à jour ne démarre pas.
-    $nom_sauvegarde = sauvegarde_creer();
+    $nom_sauvegarde = sauvegarde_creer(true);
+    sauvegardes_purger_automatiques();
     parametre_enregistrer('derniere_sauvegarde', date('Y-m-d H:i:s'));
     journaliser('sauvegarde', 'sauvegardes', null, 'Création de la sauvegarde ' . $nom_sauvegarde . ' (avant mise à jour, ligne de commande)');
     sortie_ligne('Sauvegarde : sauvegardes/' . $nom_sauvegarde);

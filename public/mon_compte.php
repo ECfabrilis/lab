@@ -18,13 +18,15 @@ if (est_post()) {
         flash('erreur', 'Le mot de passe actuel est incorrect.');
         rediriger('mon_compte.php');
     }
-    $erreur = erreur_mdp(post_brut('mdp'), post_brut('mdp_confirmation'));
+    $erreur = erreur_mdp(post_brut('mdp'), post_brut('mdp_confirmation'), texte($moi['prenom'] ?? ''), texte($moi['mail'] ?? ''));
     if ($erreur !== null) {
         flash('erreur', $erreur);
         rediriger('mon_compte.php');
     }
     definir_mdp($moi_id, post_brut('mdp'));
     session_regenerate_id(true);
+    // Cette session continue avec le nouveau mot de passe ; les autres sessions de ce compte se ferment.
+    session_noter_mdp($moi_id);
     journaliser('modification', 'utilisateurs', $moi_id, 'Changement de son propre mot de passe');
     flash('succes', 'Votre mot de passe est modifié.');
     rediriger('mon_compte.php');

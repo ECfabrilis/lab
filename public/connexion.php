@@ -17,9 +17,10 @@ if (est_post()) {
     if ($resultat === 'ok') {
         rediriger('index.php');
     }
-    flash('erreur', $resultat === 'bloque'
-        ? 'Trop d\'essais : ce compte est bloqué pendant ' . AUTH_BLOCAGE_MINUTES . ' minutes.'
-        : 'Adresse e-mail ou mot de passe incorrect.');
+    // Un seul message, que l'adresse soit inconnue, le mot de passe faux ou le
+    // compte bloqué : on ne révèle pas quelles adresses correspondent à un compte.
+    flash('erreur', 'Adresse e-mail ou mot de passe incorrect. Après plusieurs essais, la connexion est suspendue '
+        . AUTH_BLOCAGE_MINUTES . ' minutes : « Mot de passe oublié » permet de la rétablir tout de suite.');
     ancien_memoriser();
     rediriger('connexion.php');
 }

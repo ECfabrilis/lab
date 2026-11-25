@@ -10,12 +10,31 @@ require DOSSIER_PRIVE . '/includes/init.php';
 if (est_post()) {
     csrf_verifier();
     $mail_saisi = post('mail');
-    $compte = db_ligne('SELECT id, prenom, mail FROM utilisateurs WHERE mail = ? AND est_actif = 1', [$mail_saisi]);
-    if ($compte !== null) {
-        envoyer_lien_mdp_oublie(entier($compte['id']), texte($compte['prenom']), texte($compte['mail']));
-        journaliser('mdp_oublie', 'utilisateurs', entier($compte['id']), 'Demande de nouveau mot de passe');
-    } else {
-        journaliser('mdp_oublie', 'utilisateurs', null, 'Demande de nouveau mot de passe pour une adresse inconnue ou désactivée');
+    // Trop de demandes depuis cette adresse IP : elles sont ignorées, sans le dire.
+    if (!ip_bloquee()) {
+        ip_noter_echec();
+        $compte = db_ligne(
+            'SELECT id, prenom, mail, derniere_connexion, date_expiration_token FROM utilisateurs WHERE mail = ? AND est_actif = 1',
+            [$mail_saisi]
+        );
+        if ($compte === null) {
+            journaliser('mdp_oublie', 'utilisateurs', null, 'Demande de nouveau mot de passe pour une adresse inconnue ou désactivée');
+        } else {
+            // Un compte invité qui n'a jamais choisi son mot de passe garde un lien de 7 jours.
+            $jamais_connecte = texte($compte['derniere_connexion']) === '';
+            $duree_lien = $jamais_connecte ? JETON_DUREE_INVITATION : JETON_DUREE_OUBLI;
+            // Un lien vient d'être envoyé à ce compte : pas de second courriel avant quelques minutes.
+            $expiration = strtotime(texte($compte['date_expiration_token']));
+            $lien_recent = $expiration !== false && $expiration - $duree_lien > time() - MDP_OUBLIE_DELAI_MINUTES * 60;
+            if (!$lien_recent) {
+                if ($jamais_connecte) {
+                    envoyer_invitation(entier($compte['id']), texte($compte['prenom']), texte($compte['mail']));
+                } else {
+                    envoyer_lien_mdp_oublie(entier($compte['id']), texte($compte['prenom']), texte($compte['mail']));
+                }
+                journaliser('mdp_oublie', 'utilisateurs', entier($compte['id']), 'Demande de nouveau mot de passe');
+            }
+        }
     }
     // Même message dans tous les cas : on ne révèle pas quels comptes existent.
     flash('info', 'Si un compte actif correspond à cette adresse, un courriel vient de lui être envoyé.');
