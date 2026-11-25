@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.13.0';
+const APP_VERSION = '0.13.1';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,15 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.13.1',
+            'date'        => '2026-11-25',
+            'changements' => [
+                'L\'icône de l\'onglet du navigateur est désormais le logo choisi dans Paramètres > Options ; sans logo, il n\'y a pas d\'icône.',
+                'Nouvelle installation : les quartiers et les quartiers prioritaires ne sont plus remplis d\'office, ils s\'importent dans « Données de référence » ; aucun groupe de lieu de résidence n\'est créé. Les installations existantes ne changent pas.',
+                'Données de référence : « Rétablir les données fournies avec l\'application » n\'est proposé que pour les QPV.',
+            ],
+        ],
         [
             'version'     => '0.13.0',
             'date'        => '2026-11-17',

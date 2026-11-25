@@ -8,7 +8,7 @@ declare(strict_types=1);
  * 1. Connexion à la base            (gardée en session)
  * 2. Courriel et adresse du site    → écriture de config.php (installation « en cours »)
  * 3. Création de la structure       (sql/structure.sql)
- * 4. Tables de référence            (pays, quartiers, QP, QPV, codes postaux)
+ * 4. Tables de référence            (pays, QPV, codes postaux)
  * 5. Premier administrateur et première saison → installation « terminée »
  *
  * Verrouillage : dès que config.php indique une installation terminée (ou s'il
@@ -257,7 +257,7 @@ if (est_post()) {
         set_time_limit(300);
         $remplacer = post('remplacer') === '1';
         try {
-            // Pays, quartiers, QP, QPV : un seul fichier, donc tout ou rien.
+            // Pays et QPV : un seul fichier, donc tout ou rien.
             $deja = 0;
             foreach (TABLES_REFERENCE_SQL as $table_reference) {
                 $deja += installation_compter($pdo_install, $table_reference);
@@ -267,9 +267,9 @@ if (est_post()) {
                     $pdo_install->exec('DELETE FROM `' . $table_reference . '`');
                 }
                 installation_importer_reference($pdo_install);
-                flash('succes', 'Pays, quartiers, quartiers prioritaires et QPV sont remplis.');
+                flash('succes', 'Pays et QPV sont remplis.');
             } else {
-                flash('info', 'Pays et quartiers déjà remplis : ils n\'ont pas été modifiés.');
+                flash('info', 'Pays et QPV déjà remplis : ils n\'ont pas été modifiés.');
             }
 
             if (installation_compter($pdo_install, 'codes_postaux') === 0 || $remplacer) {
@@ -381,7 +381,6 @@ if ($verrouille) {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title>Installation</title>
-    <link rel="icon" href="img/favicon.png">
     <link rel="stylesheet" href="css/bddv3.css">
 </head>
 <body class="bg-body-tertiary">
@@ -558,7 +557,8 @@ if ($verrouille) {
 
 <?php elseif ($etape === 4) : ?>
             <h2 class="h5 card-title">4. Tables de référence</h2>
-            <p class="text-body-secondary">Pays, quartiers, quartiers prioritaires (QP) et QPV viennent de <code>sql/donnees_reference.sql</code> ; les codes postaux, du fichier de La Poste <code>sql/019HexaSmal.csv</code>. Le remplissage peut prendre une minute.</p>
+            <p class="text-body-secondary">Les pays et les quartiers de la politique de la ville (QPV) viennent de <code>sql/donnees_reference.sql</code> ; les codes postaux, du fichier de La Poste <code>sql/019HexaSmal.csv</code>. Le remplissage peut prendre une minute.</p>
+            <p class="text-body-secondary">Les quartiers de votre commune ne sont pas fournis : ils s'ajoutent après l'installation, dans Paramètres &gt; Données de référence.</p>
             <ul class="list-group mb-3">
                 <?php foreach ([...TABLES_REFERENCE_SQL, 'codes_postaux'] as $table_reference) : ?>
                     <li class="list-group-item d-flex justify-content-between">

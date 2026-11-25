@@ -52,7 +52,9 @@ $css_couleur = couleur_adresse_css();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title><?= e($titre_page) ?> — <?= e($nom_asso) ?></title>
-    <link rel="icon" href="<?= e(chemin_site('img/favicon.png')) ?>">
+<?php if ($logo !== '') : // L'icône de l'onglet est le logo de l'association ; sans logo, pas d'icône. ?>
+    <link rel="icon" href="<?= e(chemin_site($logo)) ?>">
+<?php endif; ?>
     <link rel="stylesheet" href="<?= e(chemin_site('css/bddv3.css')) ?>">
     <link rel="stylesheet" href="<?= e(chemin_site('css/fontawesome.min.css')) ?>">
 <?php if ($css_couleur !== '') : ?>

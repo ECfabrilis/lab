@@ -105,6 +105,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <li>Les adresses déjà saisies gardent le quartier calculé le jour de leur saisie.</li>
             <li>Faites une sauvegarde avant une mise à jour.</li>
             <li>Les pays ne se modifient pas ici : ils sont liés à la nationalité des adhérents.</li>
+            <li>Les quartiers et les quartiers prioritaires ne sont pas fournis avec l'application : ils viennent des données ouvertes de votre commune.</li>
         </ul>
     </div>
     <div class="col-md-8 order-md-1">
@@ -172,11 +173,13 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <button class="btn btn-primary" type="submit" name="action" value="quartiers_fichier">Remplacer cette table</button>
                     <?php endif; ?>
                 </form>
-                <form class="mt-2" method="post" action="<?= e(chemin_site('donnees_reference.php')) ?>">
-                    <?= csrf_champ() ?>
-                    <input type="hidden" name="table" value="<?= e($nom_table) ?>">
-                    <button class="btn btn-link px-0" type="submit" name="action" value="quartiers_origine">Rétablir les données fournies avec l'application</button>
-                </form>
+                <?php if (reference_table_fournie($nom_table)) : ?>
+                    <form class="mt-2" method="post" action="<?= e(chemin_site('donnees_reference.php')) ?>">
+                        <?= csrf_champ() ?>
+                        <input type="hidden" name="table" value="<?= e($nom_table) ?>">
+                        <button class="btn btn-link px-0" type="submit" name="action" value="quartiers_origine">Rétablir les données fournies avec l'application</button>
+                    </form>
+                <?php endif; ?>
             </div>
         <?php endforeach; ?>
     </div>

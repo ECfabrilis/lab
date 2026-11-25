@@ -93,6 +93,7 @@ Le projet est séparé en une partie publique et une partie privée.
 - Documents PDF : `document_pdf()` (`includes/fonctions_documents.php`, Dompdf), avec l'en-tête de l'association.
 - Adresse appliquée à toute la famille (case à cocher de `adherent.php`) : uniquement par `adresse_appliquer_aux_membres()`, pour les autres membres du même dossier ; l'établissement scolaire et le niveau ne sont jamais recopiés.
 - Quartier, quartier prioritaire (QP) et quartier de la politique de la ville (QPV) de l'adresse sont conservés en **instantané** (texte) au moment de la saisie.
+- Données fournies à l'installation : pays, QPV (France entière), codes postaux. Les quartiers et les QP dépendent de la commune : ils ne sont jamais installés d'office, ils s'importent en GeoJSON dans `donnees_reference.php` (exemples dans `sql/quartiers/`). Aucun groupe de lieu de résidence n'est créé par défaut.
 
 ## Règles métier
 

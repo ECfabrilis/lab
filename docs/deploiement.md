@@ -39,7 +39,8 @@ d'hébergement ou de réglage du domaine.
    - Le dépôt étant privé, générer la clé SSH proposée sur cette page et la
      copier dans GitHub : dépôt → Settings → Deploy keys → Add deploy key,
      **sans** cocher « Allow write access ».
-   - Dépôt : `git@github.com:ECfabrilis/lab.git` ; branche : `main` ;
+   - Dépôt : `git@github.com:mon_compte/mon_depot.git` (l'adresse SSH du
+     dépôt, donnée par GitHub) ; branche : `main` ;
      dossier : `mon_application` (il doit être absent ou vide).
 
 3. **Vérifier `vendor/`** dans le gestionnaire de fichiers : le dossier
@@ -65,7 +66,9 @@ d'hébergement ou de réglage du domaine.
    lui-même `install.php` du serveur (un message le signale s'il n'y arrive
    pas : le supprimer alors à la main). Chaque déploiement recopie ce fichier
    depuis le dépôt : il reste verrouillé (403) tant que `config.php` indique
-   une installation terminée.
+   une installation terminée. Les quartiers de la commune ne sont pas remplis
+   par l'assistant : ils s'importent ensuite dans Paramètres > Données de
+   référence (voir `sql/quartiers/LISEZMOI.md`).
 
 7. **Contrôler la protection** de la partie privée. Ces deux adresses doivent
    répondre « 403 Forbidden » :

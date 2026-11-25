@@ -220,7 +220,7 @@ Indicateurs issus du rapport d'activité 2025 :
 - Nombre d'adhérents (et évolution N / N-1) ; nouveaux adhérents / réadhésions.
 - Répartition par **sexe** ; **âge moyen** ; **tranches d'âge**, réglables par un administrateur (par défaut 0-6, 7-11, 12-17, 18-25, 26-59, 60 et +).
 - **Nationalité** : France, autres pays d'Europe, Afrique, Asie, Amériques.
-- **Lieu de résidence** : par **groupes de codes postaux**, réglables par un administrateur (par défaut : Paris 17e ; arrondissements proches (8, 9, 16, 18) ; autres arrondissements ; communes limitrophes (Clichy, Saint-Ouen, Levallois)) ; ce qui n'est dans aucun groupe est compté dans « Autres ».
+- **Lieu de résidence** : par **groupes de codes postaux**, réglables par un administrateur (aucun groupe à l'installation : chaque association crée les siens ; pour CEFIA : Paris 17e ; arrondissements proches (8, 9, 16, 18) ; autres arrondissements ; communes limitrophes (Clichy, Saint-Ouen, Levallois)) ; ce qui n'est dans aucun groupe est compté dans « Autres ».
 - **Quartier** (zone de compétence : Épinettes-Bessières et La Fourche-Guy Môquet), part en **QPV** / **QP**.
 
 **Activités**
@@ -281,7 +281,7 @@ Un assistant d'installation, à lancer une seule fois sur chaque environnement (
 1. **Connexion à la base** : serveur, nom de la base, utilisateur, mot de passe. La connexion est testée avant de continuer.
 2. **Courriel (PHPMailer)** : serveur SMTP, port, chiffrement, identifiant, mot de passe, adresse et nom d'expéditeur ; adresse publique du site (`APP_URL`). Un envoi d'essai est proposé.
 3. **Création de la structure** : toutes les tables, à partir de `sql/structure.sql`.
-4. **Remplissage des tables de référence** : pays, quartiers, quartiers prioritaires (QP), QPV, codes postaux, à partir de fichiers fournis dans `sql/` (les sources officielles sont à rassembler avant l'étape de développement correspondante).
+4. **Remplissage des tables de référence** : pays, QPV, codes postaux, à partir de fichiers fournis dans `sql/`. Les **quartiers** et les **quartiers prioritaires (QP)** dépendent de la commune de l'association : l'installation ne les remplit pas, un administrateur les importe ensuite dans « Données de référence » (fichiers GeoJSON ; ceux de Paris sont fournis comme exemples dans `sql/quartiers/`).
 5. **Premier administrateur** (prénom, courriel, mot de passe) et **première saison**, créée automatiquement (voir section 4).
 
 Règles :

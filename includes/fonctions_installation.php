@@ -7,8 +7,13 @@ declare(strict_types=1);
  * écriture de config.php, création de la structure, tables de référence.
  */
 
-/** Tables de référence remplies à partir de sql/donnees_reference.sql. */
-const TABLES_REFERENCE_SQL = ['pays', 'quartiers', 'quartiers_prioritaires', 'quartiers_qpv'];
+/**
+ * Tables de référence remplies à partir de sql/donnees_reference.sql.
+ * Les quartiers et les quartiers prioritaires dépendent de la commune de
+ * l'association : ils ne sont pas fournis, ils s'importent ensuite dans
+ * Paramètres > Données de référence.
+ */
+const TABLES_REFERENCE_SQL = ['pays', 'quartiers_qpv'];
 
 /**
  * Écrit config.php dans la partie privée, avec des droits restreints.
@@ -180,7 +185,7 @@ function installation_supprimer_tables(PDO $pdo, array $tables): void
 }
 
 /**
- * Remplit pays, quartiers, QP et QPV à partir de sql/donnees_reference.sql.
+ * Remplit pays et QPV à partir de sql/donnees_reference.sql.
  * Le fichier ouvre et valide lui-même une transaction.
  */
 function installation_importer_reference(PDO $pdo): void

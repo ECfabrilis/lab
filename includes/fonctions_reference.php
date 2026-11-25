@@ -321,6 +321,16 @@ function quartiers_supprimer_zone(string $cle): ?array
 }
 
 /**
+ * Vrai si l'application fournit les données de cette table de quartiers
+ * (sql/donnees_reference.sql) : seulement les QPV, qui couvrent toute la
+ * France. Les quartiers et les quartiers prioritaires dépendent de la commune.
+ */
+function reference_table_fournie(string $table): bool
+{
+    return $table === 'quartiers_qpv';
+}
+
+/**
  * Rétablit une table de quartiers à partir du fichier fourni avec l'application
  * (sql/donnees_reference.sql).
  *
@@ -328,7 +338,7 @@ function quartiers_supprimer_zone(string $cle): ?array
  */
 function reference_retablir(string $table): int
 {
-    if (!array_key_exists($table, reference_tables_quartiers())) {
+    if (!reference_table_fournie($table)) {
         throw new RuntimeException('Table inconnue.');
     }
     $sql = file_get_contents(DOSSIER_PRIVE . '/sql/donnees_reference.sql');

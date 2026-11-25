@@ -632,10 +632,10 @@ CREATE TABLE IF NOT EXISTS `paiements` (
 -- 14. Statistiques (étape 6)
 --     Groupes de lieu de résidence, pour la répartition des adhérents
 --     (Paramètres > Options > Statistiques).
---     groupes_residence_codes : un code est un code postal complet (75017) ou
---       un début de code (75 : tout Paris). Un code n'appartient qu'à un
---       groupe ; le code le plus précis l'emporte. Une adresse qui ne
---       correspond à aucun code est comptée dans « Autres ».
+--     groupes_residence_codes : un code est un code postal complet (5 chiffres)
+--       ou un début de code (2 chiffres : tout un département). Un code
+--       n'appartient qu'à un groupe ; le code le plus précis l'emporte. Une
+--       adresse qui ne correspond à aucun code est comptée dans « Autres ».
 --     Les tranches d'âge sont dans le réglage « stats_tranches_age » de la
 --     table parametres (âges de début de tranche, séparés par des virgules).
 -- ----------------------------------------------------------------------------
@@ -656,14 +656,5 @@ CREATE TABLE IF NOT EXISTS `groupes_residence_codes` (
   CONSTRAINT `fk_grc_groupe` FOREIGN KEY (`groupe_id`) REFERENCES `groupes_residence` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT IGNORE INTO `groupes_residence` (`id`, `nom`, `ordre`) VALUES
-  (1, 'Paris 17e', 1),
-  (2, 'Arrondissements proches (8e, 9e, 16e, 18e)', 2),
-  (3, 'Autres arrondissements de Paris', 3),
-  (4, 'Communes limitrophes (Clichy, Saint-Ouen, Levallois)', 4);
-
-INSERT IGNORE INTO `groupes_residence_codes` (`code`, `groupe_id`) VALUES
-  ('75017', 1),
-  ('75008', 2), ('75009', 2), ('75016', 2), ('75018', 2),
-  ('75', 3),
-  ('92110', 4), ('93400', 4), ('92300', 4);
+-- Aucun groupe n'est créé à l'installation : chaque association définit les
+-- siens (Paramètres > Options > Statistiques).
