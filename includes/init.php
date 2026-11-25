@@ -5,7 +5,7 @@ declare(strict_types=1);
 /**
  * Porte d'entrée unique de toutes les pages (sauf install.php) :
  * chargement des fonctions, configuration, gestion des erreurs,
- * session sécurisée, en-têtes de sécurité.
+ * session sécurisée, en-têtes de sécurité, contrôle de la mise à jour de la base.
  *
  * Une page commence toujours par :
  *     require __DIR__ . '/_chemins.php';
@@ -33,6 +33,7 @@ require_once DOSSIER_PRIVE . '/includes/fonctions_exports.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_statistiques.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_rgpd.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_version.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_mise_a_jour.php';
 
 // Bibliothèques installées par Composer (PHPMailer, Dompdf)
 if (is_file(DOSSIER_PRIVE . '/vendor/autoload.php')) {
@@ -76,3 +77,6 @@ demarrer_session(rtrim(is_string($chemin_cookie) ? $chemin_cookie : '', '/') . '
 unset($chemin_cookie);
 
 envoyer_entetes_securite();
+
+// Base en retard sur le code (migration non passée) : seuls les administrateurs entrent, pour la mettre à jour.
+mise_a_jour_controler();

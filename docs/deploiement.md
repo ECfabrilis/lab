@@ -82,12 +82,27 @@ d'hébergement ou de réglage du domaine.
 ## Mise à jour (à chaque nouvelle version)
 
 1. Pousser les commits sur GitHub.
-2. **Si la version contient un nouveau fichier dans `sql/migrations/`** : faire
-   une sauvegarde de la base, puis passer ce fichier dans phpMyAdmin.
-3. Panneau Hostinger → Avancé → Git → bouton « Déployer ».
+2. Panneau Hostinger → Avancé → Git → bouton « Déployer ».
+3. **Si la version contient un nouveau fichier dans `sql/migrations/`** :
+   l'application le détecte seule. Elle se ferme aux utilisateurs (page « Mise
+   à jour en cours ») jusqu'à ce qu'un administrateur se connecte : il arrive
+   sur la page « Mise à jour » et clique sur « Sauvegarder puis mettre à
+   jour ». Une sauvegarde de la base est faite, puis les migrations sont
+   passées dans l'ordre. Il n'y a plus rien à passer dans phpMyAdmin.
 4. Si `composer.json` a changé (rare) : refaire l'étape 3 de la première installation.
    C'est le cas de la version « étape 3 » (cotisations et paiements), qui ajoute
    Dompdf : sans lui, tout fonctionne sauf le reçu en PDF.
+
+**Passage à la version 0.14** (première version avec le suivi des
+migrations) : la base n'a pas encore la table de suivi. La page « Mise à jour »
+la crée et considère que toutes les migrations antérieures (jusqu'au
+17/11/2026) ont déjà été passées à la main.
+
+**Si une migration échoue**, la page affiche l'erreur et l'application reste
+fermée. Les migrations déjà passées le restent. Corriger la cause puis
+relancer, ou restaurer la sauvegarde faite juste avant (son nom est affiché) et
+revenir à la version précédente du code. Le détail est aussi dans
+`logs/mise_a_jour.log`.
 
 La mise à jour ne touche jamais à `config.php`, `public/_chemins.php`, `logs/`,
 `sauvegardes/`, ni au logo et à la couleur enregistrés depuis les options : ces
@@ -95,8 +110,8 @@ fichiers ne sont pas versionnés.
 
 **Déploiement automatique.** Le panneau propose une adresse (« webhook ») à
 ajouter dans GitHub pour déployer à chaque `git push`. À n'activer qu'en
-connaissance de cause : le code part alors en ligne avant qu'une éventuelle
-migration SQL ait été passée.
+connaissance de cause : dès qu'une version contient une migration,
+l'application se ferme aux utilisateurs jusqu'au passage d'un administrateur.
 
 ## En cas de problème
 

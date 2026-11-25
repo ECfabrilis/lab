@@ -289,6 +289,7 @@ Règles :
 - **Verrouillage** : `config.php` est écrit dès la fin de l'étape 2, avec le réglage `INSTALLATION_TERMINEE` à `false`, ce qui permet de reprendre une installation interrompue. Ce réglage passe à `true` à la fin de l'étape 5 : `install.php` refuse alors de s'exécuter. Une fois l'installation réussie, `install.php` **se supprime lui-même** du serveur si c'est possible ; sinon un message demande de le supprimer à la main.
 - En cas d'erreur à une étape, on peut reprendre sans repartir de zéro ; les tables existantes ne sont jamais écrasées sans confirmation explicite.
 - Les mises à jour ultérieures de structure passent par des fichiers de migration datés (voir `CLAUDE.md`), pas par `install.php`.
+- **Mise à jour de la base** (Paramètres > La base de données > Mise à jour, `admin`) : l'application note les migrations déjà passées. Quand une nouvelle version apporte une migration, elle le détecte seule : elle est **fermée à tous sauf aux administrateurs** (les autres voient « Mise à jour en cours »), et l'administrateur qui se connecte arrive sur la page « Mise à jour ». Il clique sur « Sauvegarder puis mettre à jour » : une **sauvegarde est toujours faite avant** (si elle échoue, rien n'est lancé), puis les migrations sont passées dans l'ordre. À la première erreur tout s'arrête, l'erreur est affichée et l'application reste fermée jusqu'à la correction ou la restauration de la sauvegarde. Chaque migration passée est journalisée. L'installation inscrit d'office toutes les migrations existantes.
 
 ### 12.2 Formulaire d'inscription (`ajout_adherent.php`)
 
@@ -362,7 +363,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 |---|---|
 | Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
 | Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Options des activités (une seule page : types d'activité et récurrences) ; Options des paiements (une seule page : types de tarif et modes de paiement) ; Option des statistiques (une seule page : tranches d'âge, groupes de lieu de résidence et couleurs des graphiques, voir section 10) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul. Une zone peut aussi être **supprimée** : tous ses quartiers sont retirés de la table, après une case de confirmation ; l'action est journalisée, les adresses déjà saisies gardent leur quartier, et la zone se retrouve en la réimportant dans « Données de référence ») |
-| La base de données | Saisons ; Données de référence (pays, quartiers, QP, QPV, codes postaux ; pour les quartiers : « Remplacer la table » ou « Ajouter à la table ») ; Logs ; Sauvegarde ; RGPD (anonymisation) |
+| La base de données | Saisons ; Données de référence (pays, quartiers, QP, QPV, codes postaux ; pour les quartiers : « Remplacer la table » ou « Ajouter à la table ») ; Logs ; Sauvegarde ; RGPD (anonymisation) ; Mise à jour (migrations de la base) |
 | Configuration | Paramètres des mails (avec l'essai d'envoi) |
 
 **Règles**

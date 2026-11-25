@@ -22,6 +22,7 @@ require_once DOSSIER_PRIVE . '/includes/fonctions_utilisateurs.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_saisons.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_courriel.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_installation.php';
+require_once DOSSIER_PRIVE . '/includes/fonctions_mise_a_jour.php';
 if (is_file(DOSSIER_PRIVE . '/vendor/autoload.php')) {
     require_once DOSSIER_PRIVE . '/vendor/autoload.php';
 }
@@ -244,6 +245,8 @@ if (est_post()) {
                 flash('avertissement', 'Les tables existantes ont été supprimées puis recréées.');
             }
             sql_executer_fichier($pdo_install, DOSSIER_PRIVE . '/sql/structure.sql');
+            // structure.sql contient déjà toutes les migrations : elles sont inscrites comme passées.
+            migrations_inscrire_toutes($pdo_install);
             flash('succes', 'La structure de la base est en place (' . count($tables_attendues) . ' tables).');
             $_SESSION['install_etape'] = 4;
         } catch (Throwable $exception) {

@@ -2,7 +2,7 @@
 -- bddv3 : structure de la base — schéma de référence
 -- Cible : MariaDB 11.8, InnoDB, utf8mb4 / utf8mb4_unicode_ci
 --
--- État : étape 6 (statistiques : groupes de lieu de résidence). Chaque étape ajoute ses tables par un
+-- État : version 0.14.0 (suivi des migrations). Chaque évolution ajoute ses tables par un
 -- fichier daté dans sql/migrations/, et ce fichier est mis à jour.
 --
 -- Ce script est exécuté par install.php (étape 3). Il ne supprime rien :
@@ -658,3 +658,19 @@ CREATE TABLE IF NOT EXISTS `groupes_residence_codes` (
 
 -- Aucun groupe n'est créé à l'installation : chaque association définit les
 -- siens (Paramètres > Options > Statistiques).
+
+-- ----------------------------------------------------------------------------
+-- 15. Suivi des migrations (version 0.14.0)
+--     Une ligne par fichier de sql/migrations/ déjà passé. L'installation y
+--     inscrit toutes les migrations présentes (structure.sql les contient
+--     déjà) ; ensuite, la page « Mise à jour » applique celles qui manquent.
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `migrations` (
+  `fichier`       VARCHAR(150) NOT NULL COMMENT 'Nom du fichier de sql/migrations/',
+  `appliquee_le`  DATETIME NOT NULL DEFAULT current_timestamp(),
+  `appliquee_par` INT UNSIGNED DEFAULT NULL,
+  `est_reprise`   TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = inscrite sans etre rejouee (installation, ou passee a la main avant la version 0.14)',
+  PRIMARY KEY (`fichier`),
+  KEY `idx_migrations_appliquee_par` (`appliquee_par`),
+  CONSTRAINT `fk_migrations_appliquee_par` FOREIGN KEY (`appliquee_par`) REFERENCES `utilisateurs` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.13.1';
+const APP_VERSION = '0.14.0';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,15 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.14.0',
+            'date'        => '2026-11-25',
+            'changements' => [
+                'Mise à jour de la base : après l\'installation d\'une nouvelle version, l\'application détecte elle-même les changements à apporter à la base. Un administrateur les applique d\'un clic depuis Paramètres > La base de données > Mise à jour.',
+                'Une sauvegarde de la base est toujours faite juste avant la mise à jour.',
+                'Tant que la mise à jour n\'est pas faite, l\'application est fermée aux autres utilisateurs, qui voient « Mise à jour en cours ».',
+            ],
+        ],
         [
             'version'     => '0.13.1',
             'date'        => '2026-11-25',
