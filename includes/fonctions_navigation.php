@@ -130,6 +130,7 @@ function cards_parametres(): array
             'role'  => 'admin',
             'cards' => [
                 ['titre' => 'Paramètres des mails', 'texte' => 'Serveur d\'envoi, expéditeur, essai d\'envoi.', 'icone' => 'envelope-circle-check', 'page' => 'config_mails.php', 'role' => 'admin'],
+                ['titre' => 'État du système', 'texte' => 'Versions, contrôles du serveur et protection de la partie privée.', 'icone' => 'stethoscope', 'page' => 'etat_systeme.php', 'role' => 'admin'],
             ],
         ],
     ];

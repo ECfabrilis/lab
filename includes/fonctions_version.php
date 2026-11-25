@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.14.1';
+const APP_VERSION = '0.15.0';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,15 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.15.0',
+            'date'        => '2026-11-25',
+            'changements' => [
+                'Nouvelle page Paramètres > Configuration > État du système : versions, contrôles du serveur et protection de la partie privée (réglages, journaux, sauvegardes).',
+                'Installation : l\'assistant vérifie le serveur avant de commencer (version de PHP, extensions, dossiers accessibles en écriture) et refuse un serveur de base de données qui n\'est pas MariaDB.',
+                'Installation : elle ne peut pas se terminer si la partie privée de l\'application est visible depuis le web.',
+            ],
+        ],
         [
             'version'     => '0.14.1',
             'date'        => '2026-11-25',

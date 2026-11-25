@@ -256,3 +256,125 @@ function installation_importer_codes_postaux(PDO $pdo, string $chemin = '', bool
     }
     return $nombre;
 }
+
+// ---------------------------------------------------------------------------
+// Contrôles du serveur (assistant d'installation et page « État du système »)
+// ---------------------------------------------------------------------------
+
+/** Version minimale de PHP. */
+const SYSTEME_PHP_MINIMUM = '8.3.0';
+
+/** En dessous de cette version de MariaDB, l'application n'a pas été essayée : simple avertissement. */
+const SYSTEME_MARIADB_CONSEILLEE = '10.11';
+
+/**
+ * Première ligne de includes/temoin_protection.txt. Le navigateur tente de
+ * lire ce fichier (js/protection.js) : s'il y trouve ce texte, la partie
+ * privée est visible depuis le web.
+ */
+const PROTECTION_MARQUEUR = 'bddv3-partie-privee';
+
+/**
+ * Contrôles du serveur : version de PHP, extensions, bibliothèques, dossiers
+ * où l'application écrit.
+ *
+ * @return list<array{libelle: string, ok: bool, obligatoire: bool, detail: string, conseil: string}>
+ *         obligatoire : sans lui, l'installation ne commence pas ; conseil : que faire en cas d'échec
+ */
+function systeme_controles(): array
+{
+    $controles = [[
+        'libelle'     => 'PHP ' . implode('.', array_slice(explode('.', SYSTEME_PHP_MINIMUM), 0, 2)) . ' ou plus',
+        'ok'          => version_compare(PHP_VERSION, SYSTEME_PHP_MINIMUM, '>='),
+        'obligatoire' => true,
+        'detail'      => 'PHP ' . PHP_VERSION,
+        'conseil'     => 'Choisissez une version de PHP plus récente dans le panneau de l\'hébergeur.',
+    ]];
+
+    $extensions = [
+        'pdo_mysql' => [true, 'connexion à la base de données'],
+        'mbstring'  => [true, 'textes accentués'],
+        'openssl'   => [true, 'envoi des courriels et connexions sécurisées'],
+        'dom'       => [true, 'documents PDF'],
+        'curl'      => [false, 'vérification des adresses'],
+        'gd'        => [false, 'logo au format PNG dans les documents PDF'],
+    ];
+    foreach ($extensions as $extension => [$obligatoire, $usage]) {
+        $controles[] = [
+            'libelle'     => 'Extension PHP « ' . $extension . ' » (' . $usage . ')',
+            'ok'          => extension_loaded($extension),
+            'obligatoire' => $obligatoire,
+            'detail'      => extension_loaded($extension) ? 'présente' : 'absente',
+            'conseil'     => 'Activez l\'extension « ' . $extension . ' » dans la configuration PHP de l\'hébergeur.',
+        ];
+    }
+
+    $controles[] = [
+        'libelle'     => 'Bibliothèques PHP (dossier vendor/)',
+        'ok'          => is_file(DOSSIER_PRIVE . '/vendor/autoload.php'),
+        'obligatoire' => true,
+        'detail'      => is_file(DOSSIER_PRIVE . '/vendor/autoload.php') ? 'présentes' : 'absentes',
+        'conseil'     => 'Déposez le dossier vendor/ de l\'archive, ou lancez « composer install --no-dev ».',
+    ];
+
+    // Dossier des pages : celui de la page en cours (voir dossier_public()).
+    $public = dirname(texte($_SERVER['SCRIPT_FILENAME'] ?? ''));
+    $dossiers = [
+        // config.php est écrit par un fichier temporaire puis renommé : c'est le dossier qui doit être accessible.
+        [DOSSIER_PRIVE, 'Écriture de config.php (dossier de la partie privée)', true],
+        [DOSSIER_PRIVE . '/logs', 'Écriture dans logs/ (journaux)', true],
+        [DOSSIER_PRIVE . '/sauvegardes', 'Écriture dans sauvegardes/', true],
+        [$public . '/css', 'Écriture dans le dossier css/ des pages (couleur principale)', false],
+        [$public . '/img', 'Écriture dans le dossier img/ des pages (logo)', false],
+    ];
+    foreach ($dossiers as [$chemin, $libelle, $obligatoire]) {
+        $accessible = is_writable($chemin);
+        $controles[] = [
+            'libelle'     => $libelle,
+            'ok'          => $accessible,
+            'obligatoire' => $obligatoire,
+            'detail'      => $accessible ? 'possible' : 'impossible',
+            'conseil'     => 'Donnez au serveur web le droit d\'écrire à cet endroit (droits du dossier, chez l\'hébergeur).',
+        ];
+    }
+    return $controles;
+}
+
+/** Vrai si tous les contrôles obligatoires sont réussis. */
+function systeme_pret(): bool
+{
+    foreach (systeme_controles() as $controle) {
+        if ($controle['obligatoire'] && !$controle['ok']) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * Serveur de base de données : l'application demande MariaDB (contours des
+ * quartiers, migrations relançables) et ne fonctionne pas sur MySQL.
+ *
+ * @return array{texte: string, est_mariadb: bool, est_ancienne: bool} texte : version telle que le serveur la donne ;
+ *         est_ancienne : MariaDB antérieure à la version conseillée
+ */
+function systeme_base(PDO $pdo): array
+{
+    $requete = $pdo->query('SELECT VERSION()');
+    $texte = $requete === false ? '' : texte($requete->fetchColumn());
+    $est_mariadb = stripos($texte, 'mariadb') !== false;
+    $numero = preg_match('/(\d+\.\d+)(?:\.\d+)?-MariaDB/i', $texte, $trouve) === 1 ? $trouve[1] : '';
+    return [
+        'texte'        => $texte,
+        'est_mariadb'  => $est_mariadb,
+        'est_ancienne' => $est_mariadb && $numero !== '' && version_compare($numero, SYSTEME_MARIADB_CONSEILLEE, '<'),
+    ];
+}
+
+/** Vrai si l'adresse du site n'est pas en https alors qu'elle n'est pas locale. */
+function systeme_adresse_sans_https(string $adresse): bool
+{
+    $hote = texte(parse_url($adresse, PHP_URL_HOST));
+    $locale = in_array($hote, ['localhost', '127.0.0.1', '::1'], true) || str_ends_with($hote, '.test') || str_ends_with($hote, '.localhost');
+    return !$locale && !str_starts_with($adresse, 'https://');
+}

@@ -77,6 +77,10 @@ if (!$verrouille && $config_install !== null) {
     }
 }
 
+// Contrôles du serveur : un contrôle obligatoire en échec empêche de commencer.
+$systeme_controles = systeme_controles();
+$systeme_pret = systeme_pret();
+
 // Étape affichée
 if ($config_install === null) {
     $etape = is_array($_SESSION['install_base'] ?? null) ? 2 : 1;
@@ -109,6 +113,10 @@ if (est_post()) {
 
     // --- Étape 1 : connexion à la base ------------------------------------
     if ($action === 'base' && $config_install === null) {
+        if (!$systeme_pret) {
+            flash('erreur', 'Le serveur ne remplit pas les conditions indiquées ci-dessous : corrigez-les avant de continuer.');
+            install_rediriger();
+        }
         $base = [
             'hote'        => post('db_hote'),
             'port'        => entier(post('db_port')),
@@ -122,14 +130,22 @@ if (est_post()) {
             install_rediriger();
         }
         try {
-            db_connecter($base['hote'], $base['port'], $base['nom'], $base['utilisateur'], $base['mdp']);
+            $serveur_base = systeme_base(db_connecter($base['hote'], $base['port'], $base['nom'], $base['utilisateur'], $base['mdp']));
         } catch (PDOException $exception) {
             flash('erreur', 'Connexion impossible : ' . $exception->getMessage());
             ancien_memoriser();
             install_rediriger();
         }
+        if (!$serveur_base['est_mariadb']) {
+            flash('erreur', 'Ce serveur n\'est pas MariaDB (version annoncée : ' . $serveur_base['texte'] . '). L\'application ne fonctionne qu\'avec MariaDB : choisissez un serveur MariaDB, ou son port s\'il y en a plusieurs.');
+            ancien_memoriser();
+            install_rediriger();
+        }
         $_SESSION['install_base'] = $base;
-        flash('succes', 'La connexion à la base fonctionne.');
+        flash('succes', 'La connexion à la base fonctionne (' . $serveur_base['texte'] . ').');
+        if ($serveur_base['est_ancienne']) {
+            flash('avertissement', 'Cette version de MariaDB est antérieure à la ' . SYSTEME_MARIADB_CONSEILLEE . ' : l\'application n\'y a pas été essayée. L\'installation peut continuer.');
+        }
         install_rediriger();
     }
 
@@ -235,6 +251,9 @@ if (est_post()) {
         // Les mots de passe ne restent pas en session une fois config.php écrit.
         unset($_SESSION['install_base'], $_SESSION['install_courriel'], $_SESSION['install_smtp_mdp']);
         flash('succes', 'Le fichier config.php est écrit dans la partie privée.');
+        if (systeme_adresse_sans_https($courriel['app_url'])) {
+            flash('avertissement', 'L\'adresse du site ne commence pas par https:// : les mots de passe et les données circuleraient en clair. Activez le certificat chez l\'hébergeur avant la mise en service.');
+        }
         install_rediriger();
     }
 
@@ -299,6 +318,15 @@ if (est_post()) {
 
     // --- Étape 5 : premier administrateur et première saison ----------------
     if ($action === 'final' && $pdo_install !== null && $tables_manquantes === []) {
+        // Le navigateur a tenté de lire un fichier de la partie privée (js/protection.js) :
+        // l'installation ne se termine pas si elle est visible, ni si le contrôle n'a pas eu lieu.
+        if (post('protection') !== 'ok') {
+            flash('erreur', post('protection') === 'expose'
+                ? 'La partie privée de l\'application est visible depuis le web : l\'installation ne peut pas se terminer. Suivez les indications ci-dessous.'
+                : 'Le contrôle de protection n\'a pas pu se faire : JavaScript doit être activé dans le navigateur pour cette étape.');
+            ancien_memoriser();
+            install_rediriger();
+        }
         $faut_admin = installation_compter($pdo_install, 'utilisateurs') === 0;
         $faut_saison = installation_compter($pdo_install, 'saisons') === 0;
         $erreurs = [];
@@ -426,8 +454,32 @@ if ($verrouille) {
         <div>
 
 <?php if ($etape === 1) : ?>
+            <h2 class="h5 card-title">Vérification du serveur</h2>
+            <?php if (!$systeme_pret) : ?>
+                <div class="alert alert-danger" role="alert">Le serveur ne remplit pas toutes les conditions : l'installation ne peut pas commencer. Corrigez les lignes marquées « à corriger », puis rechargez cette page.</div>
+            <?php endif; ?>
+            <ul class="list-group mb-4">
+                <?php foreach ($systeme_controles as $controle_systeme) : ?>
+                    <li class="list-group-item">
+                        <div class="d-flex justify-content-between gap-3">
+                            <span><?= e($controle_systeme['libelle']) ?> <span class="text-body-secondary small">— <?= e($controle_systeme['detail']) ?></span></span>
+                            <?php if ($controle_systeme['ok']) : ?>
+                                <span class="badge text-bg-success align-self-start">bon</span>
+                            <?php elseif ($controle_systeme['obligatoire']) : ?>
+                                <span class="badge text-bg-danger align-self-start">à corriger</span>
+                            <?php else : ?>
+                                <span class="badge text-bg-warning align-self-start">conseillé</span>
+                            <?php endif; ?>
+                        </div>
+                        <?php if (!$controle_systeme['ok']) : ?>
+                            <div class="small mt-1"><?= e($controle_systeme['conseil']) ?></div>
+                        <?php endif; ?>
+                    </li>
+                <?php endforeach; ?>
+            </ul>
+<?php if ($systeme_pret) : ?>
             <h2 class="h5 card-title">1. Connexion à la base de données</h2>
-            <p class="text-body-secondary">La base doit déjà exister (créée dans phpMyAdmin ou dans le panneau de l'hébergeur). La connexion est testée avant de continuer.</p>
+            <p class="text-body-secondary">La base doit déjà exister (créée dans phpMyAdmin ou dans le panneau de l'hébergeur), sur un serveur <strong>MariaDB</strong>. La connexion est testée avant de continuer.</p>
             <form method="post" action="install.php" autocomplete="off">
                 <?= csrf_champ() ?>
                 <input type="hidden" name="action" value="base">
@@ -455,6 +507,7 @@ if ($verrouille) {
                 </div>
                 <button class="btn btn-primary mt-4" type="submit">Tester la connexion et continuer</button>
             </form>
+<?php endif; ?>
 
 <?php elseif ($etape === 2) : ?>
             <h2 class="h5 card-title">2. Courriel et adresse du site</h2>
@@ -600,9 +653,24 @@ if ($verrouille) {
             $faut_saison_affichage = installation_compter($pdo_install, 'saisons') === 0;
             ?>
             <h2 class="h5 card-title">5. Premier administrateur et première saison</h2>
+            <div class="mb-4" data-protection-url="../includes/temoin_protection.txt" data-protection-marqueur="<?= e(PROTECTION_MARQUEUR) ?>">
+                <div class="alert alert-secondary mb-0" role="status" data-protection-etat="attente">Contrôle de la protection de la partie privée… (JavaScript doit être activé.)</div>
+                <div class="alert alert-success mb-0 d-none" role="status" data-protection-etat="ok">La partie privée de l'application (réglages, journaux, sauvegardes) n'est pas visible depuis cette adresse.</div>
+                <div class="alert alert-warning mb-0 d-none" role="status" data-protection-etat="inconnu">Le contrôle de protection n'a pas pu se faire (réseau). Vérifiez-le après l'installation, dans Paramètres &gt; État du système.</div>
+                <div class="alert alert-danger mb-0 d-none" role="alert" data-protection-etat="expose">
+                    <p><strong>La partie privée de l'application est visible depuis le web.</strong> Les réglages, les journaux et les sauvegardes de la base pourraient être lus par n'importe qui : l'installation ne peut pas se terminer.</p>
+                    <p class="mb-1">Deux remèdes, au choix :</p>
+                    <ul class="mb-2">
+                        <li>faire pointer le domaine (ou le sous-domaine) sur le dossier <code>public/</code> de l'application, et non sur le dossier qui le contient ;</li>
+                        <li>remettre à la racine de l'application le fichier <code>.htaccess</code> fourni (il interdit tout sauf <code>public/</code>) : il a pu être oublié lors du dépôt des fichiers, ou l'hébergeur n'utilise pas Apache.</li>
+                    </ul>
+                    <p class="mb-0">Rechargez ensuite cette page.</p>
+                </div>
+            </div>
             <form method="post" action="install.php" autocomplete="off">
                 <?= csrf_champ() ?>
                 <input type="hidden" name="action" value="final">
+                <input type="hidden" name="protection" value="" data-protection-champ>
                 <div class="row g-3">
                     <div class="col-12">
                         <label class="form-label" for="nom_association">Nom de l'association</label>
@@ -642,7 +710,7 @@ if ($verrouille) {
                         <div class="col-12"><div class="alert alert-info mb-0">Une saison existe déjà : aucune saison ne sera créée.</div></div>
                     <?php endif; ?>
                 </div>
-                <button class="btn btn-primary mt-4" type="submit">Terminer l'installation</button>
+                <button class="btn btn-primary mt-4" type="submit" data-protection-bouton>Terminer l'installation</button>
             </form>
             <form method="post" action="install.php" class="mt-2">
                 <?= csrf_champ() ?>
@@ -655,6 +723,7 @@ if ($verrouille) {
     </div>
 <?php endif; ?>
 </main>
+<script src="js/protection.js"></script>
 </body>
 </html>
 <?php ancien_oublier(); ?>

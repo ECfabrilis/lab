@@ -72,8 +72,11 @@ d'hébergement ou de réglage du domaine.
    par l'assistant : ils s'importent ensuite dans Paramètres > Données de
    référence (voir `sql/quartiers/LISEZMOI.md`).
 
-7. **Contrôler la protection** de la partie privée. Ces deux adresses doivent
-   répondre « 403 Forbidden » :
+7. **Contrôler la protection** de la partie privée. L'assistant le fait
+   lui-même pour l'adresse du site (il refuse de terminer si la partie privée
+   est visible), et la page Paramètres > État du système refait ce contrôle à
+   tout moment. Il reste à vérifier à la main l'autre adresse, celle du
+   domaine principal. Ces deux adresses doivent répondre « 403 Forbidden » :
 
    - `https://monsite.com/mon_application/config.exemple.php`
    - `https://monsite.com/mon_application/.git/config`
@@ -140,7 +143,9 @@ trouver.
    dossier de l'application (par FTP ou par le gestionnaire de fichiers), en
    gardant le fichier `.htaccess` de la racine.
 3. Faire pointer le domaine ou le sous-domaine vers le dossier `public/`.
-4. Ouvrir `https://…/install.php` et suivre les 5 étapes.
+4. Ouvrir `https://…/install.php` : l'assistant vérifie d'abord le serveur
+   (PHP 8.3 ou plus, extensions, dossiers accessibles en écriture, base
+   MariaDB), puis déroule ses 5 étapes.
 5. Faire le contrôle de protection de l'étape 7 ci-dessus.
 
 **Mise à jour**

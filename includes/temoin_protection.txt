@@ -1,0 +1,6 @@
+bddv3-partie-privee
+
+Ce fichier sert au contrôle de protection de la partie privée (assistant
+d'installation et page « État du système »). Il ne contient rien de secret,
+mais il ne doit jamais s'afficher dans un navigateur : s'il s'affiche, les
+journaux et les sauvegardes de la base sont visibles de la même façon.
