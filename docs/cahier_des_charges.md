@@ -1,13 +1,13 @@
-# Cahier des charges — Application de gestion CEFIA
+# Cahier des charges — Application de gestion d'association
 
-Version 1 — rédigée à partir des réponses de l'association et du rapport d'activité 2025.
+Version 1 — rédigée à partir des réponses d'une première association (un centre social) et de son rapport d'activité, puis généralisée pour servir à d'autres associations : ce qui dépend de l'association se règle dans les paramètres.
 Les points marqués **[À TRANCHER]** sont des questions encore ouvertes (voir section 14).
 
 ---
 
 ## 1. Contexte et objectifs
 
-CEFIA est un centre social associatif parisien (17e arrondissement), présent sur plusieurs sites. L'application remplace l'outil actuel et sert à :
+L'application est destinée à une association qui accueille du public, adhérents et familles, sur un ou plusieurs sites (centre social, maison de quartier, association culturelle ou sportive…). Elle sert à :
 
 1. **Inscrire** les personnes (adhésion + activités) et **encaisser** les paiements, principalement à l'accueil.
 2. **Suivre** les activités : listes de participants, émargement, listes d'attente.
@@ -216,14 +216,14 @@ Filtres : **période** (dates libres), **saison**, **secteur**, **type d'activit
 
 **Calcul de l'âge** : à une **date de référence**, réglable par un administrateur (Paramètres > Options > Statistiques) : le **31 décembre** de l'année où commence la saison (fin de l'exercice, date du bilan ; c'est le réglage par défaut), le **premier jour** de la saison ou son **dernier jour**. Comme les tranches d'âge, ce réglage vaut pour toutes les saisons : le modifier change aussi les chiffres des saisons passées. L'âge est calculé à la demande, jamais stocké. Avec le réglage par défaut : Pour une saison à cheval sur deux années (ex. 2025-2026), la date retenue est le 31 décembre de l'année où elle commence ; pour une période libre, le 31 décembre de l'année de sa date de début. Les chiffres d'une saison passée ne changent donc pas d'une année sur l'autre.
 
-Indicateurs issus du rapport d'activité 2025 :
+Indicateurs (ceux d'un rapport d'activité de centre social) :
 
 **Adhérents**
 - Nombre d'adhérents (et évolution N / N-1) ; nouveaux adhérents / réadhésions.
 - Répartition par **sexe** ; **âge moyen** ; **tranches d'âge**, réglables par un administrateur (par défaut 0-6, 7-11, 12-17, 18-25, 26-59, 60 et +).
 - **Nationalité** : France, autres pays d'Europe, Afrique, Asie, Amériques.
-- **Lieu de résidence** : par **groupes de codes postaux**, réglables par un administrateur (aucun groupe à l'installation : chaque association crée les siens ; pour CEFIA : Paris 17e ; arrondissements proches (8, 9, 16, 18) ; autres arrondissements ; communes limitrophes (Clichy, Saint-Ouen, Levallois)) ; ce qui n'est dans aucun groupe est compté dans « Autres ».
-- **Quartier** (zone de compétence : Épinettes-Bessières et La Fourche-Guy Môquet), part en **QPV** / **QP**.
+- **Lieu de résidence** : par **groupes de codes postaux**, réglables par un administrateur (aucun groupe à l'installation : chaque association crée les siens ; exemple : la commune, les communes voisines, le reste du département) ; ce qui n'est dans aucun groupe est compté dans « Autres ».
+- **Quartier** (ceux des communes prises en compte), part en **QPV** / **QP**.
 
 **Activités**
 - Nombre d'activités par secteur et par type.

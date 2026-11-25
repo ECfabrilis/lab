@@ -1,5 +1,9 @@
 # Déploiement sur Hostinger
 
+Ce document est celui du développeur : il décrit le déploiement par Git. Le
+guide remis aux associations, à partir de l'archive, est
+[installation.md](installation.md).
+
 La mise en ligne se fait avec la fonction « Git » du panneau Hostinger : elle
 copie le dépôt GitHub dans un dossier de l'hébergement, puis le met à jour à la
 demande.
@@ -147,6 +151,9 @@ trouver.
    (PHP 8.3 ou plus, extensions, dossiers accessibles en écriture, base
    MariaDB), puis déroule ses 5 étapes.
 5. Faire le contrôle de protection de l'étape 7 ci-dessus.
+
+Le détail, tel qu'il est remis aux associations, est dans
+[installation.md](installation.md).
 
 **Mise à jour**
 

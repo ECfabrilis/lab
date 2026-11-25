@@ -1,0 +1,107 @@
+LICENCE D'UTILISATION
+
+Projet de texte : à faire relire par un juriste avant d'être remis à une
+association. Les passages entre crochets sont à compléter.
+
+Logiciel  : application de gestion d'association « bddv3 » (ci-après « le Logiciel »)
+Titulaire : [NOM DU TITULAIRE DES DROITS], [ADRESSE]
+Contact   : [ADRESSE DE COURRIEL]
+
+
+1. Objet
+
+Le Logiciel est une œuvre protégée par le droit d'auteur. Il n'est pas vendu :
+le Titulaire en concède un droit d'utilisation, dans les conditions de la
+présente licence. Installer ou utiliser le Logiciel vaut acceptation de ces
+conditions.
+
+
+2. Droit concédé
+
+Le Titulaire concède à l'association ou à la structure qui a reçu le Logiciel
+de sa part (ci-après « le Licencié ») un droit d'utilisation personnel, non
+exclusif, non cessible et non transmissible, pour la gestion de ses propres
+adhérents, activités et paiements.
+
+Ce droit couvre :
+  - l'installation du Logiciel sur un hébergement choisi par le Licencié, pour
+    une seule association ;
+  - son utilisation par les salariés et les bénévoles du Licencié ;
+  - les copies de sauvegarde nécessaires à la sécurité de ses données.
+
+
+3. Ce qui n'est pas permis
+
+Sauf accord écrit préalable du Titulaire, le Licencié ne peut pas :
+  - modifier, adapter ou traduire le Logiciel, ni en créer une œuvre dérivée ;
+  - le transmettre, le prêter, le louer ou le mettre à la disposition d'un
+    tiers, à titre gratuit ou onéreux, y compris une autre association ;
+  - l'utiliser pour gérer les données d'une autre structure que la sienne ;
+  - retirer ou modifier les mentions de propriété et de licence.
+
+Les droits que la loi réserve à l'utilisateur légitime d'un logiciel (article
+L. 122-6-1 du Code de la propriété intellectuelle), notamment la copie de
+sauvegarde, ne sont pas limités par la présente licence.
+
+
+4. Propriété
+
+Le Titulaire conserve tous les droits de propriété intellectuelle sur le
+Logiciel, sa documentation et ses versions successives. La présente licence
+ne transfère aucun de ces droits.
+
+Les données saisies dans le Logiciel appartiennent au Licencié. Il peut les
+exporter à tout moment par les fonctions de sauvegarde et d'export.
+
+
+5. Composants de tiers
+
+Le Logiciel est fourni avec des bibliothèques et des données de tiers, qui
+restent soumises à leurs propres licences. Elles sont énumérées dans le
+fichier LICENCES_TIERCES.txt. La présente licence ne restreint aucun des
+droits que ces licences accordent sur ces composants.
+
+
+6. Données personnelles
+
+Le Licencié est seul responsable des traitements de données personnelles
+qu'il réalise avec le Logiciel, au sens du règlement (UE) 2016/679 (RGPD) :
+information des personnes, durées de conservation, sécurité des accès,
+sauvegardes.
+
+Lorsque le Titulaire héberge le Logiciel pour le compte du Licencié, il agit
+comme sous-traitant ; un contrat distinct en fixe les conditions.
+
+
+7. Absence de garantie
+
+Le Logiciel est fourni « en l'état ». Le Titulaire ne garantit pas qu'il est
+exempt d'erreurs ni qu'il répond à un besoin particulier. Il appartient au
+Licencié de vérifier que le Logiciel lui convient et de sauvegarder
+régulièrement ses données.
+
+Sauf faute lourde ou dolosive, et dans les limites permises par la loi, la
+responsabilité du Titulaire ne peut pas être engagée pour une perte de
+données, une interruption d'activité ou tout dommage indirect.
+
+[À PRÉCISER AVEC UN JURISTE : plafond de responsabilité ; conditions de
+maintenance et d'assistance si elles sont proposées.]
+
+
+8. Durée et fin de la licence
+
+La licence est concédée pour [DURÉE, ou « une durée indéterminée »].
+
+Elle prend fin de plein droit si le Licencié ne respecte pas l'une de ses
+conditions et n'y remédie pas dans les trente jours suivant une mise en
+demeure. À la fin de la licence, le Licencié cesse d'utiliser le Logiciel et
+le supprime de ses serveurs, après avoir exporté ses données s'il le souhaite.
+
+
+9. Droit applicable
+
+La présente licence est soumise au droit français. À défaut d'accord amiable,
+tout litige relève des tribunaux compétents de [VILLE].
+
+
+[DATE]

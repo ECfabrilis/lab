@@ -1,0 +1,86 @@
+COMPOSANTS DE TIERS
+
+L'application est fournie avec les bibliothèques et les données ci-dessous.
+Chacune reste soumise à sa propre licence, qui prime sur la licence de
+l'application pour ce composant. Le texte complet de chaque licence se trouve
+dans le dossier indiqué, ou à l'adresse donnée.
+
+Ce fichier est à mettre à jour à chaque changement de version d'une
+bibliothèque (composer.lock, package.json) ou d'un fichier de données.
+
+
+1. Bibliothèques PHP (dossier vendor/)
+
+  PHPMailer 7.2.0                 LGPL 2.1          vendor/phpmailer/phpmailer/LICENSE
+    Envoi des courriels.
+  Dompdf 3.1.6                    LGPL 2.1          vendor/dompdf/dompdf/LICENSE.LGPL
+    Documents PDF. Fourni avec les polices DejaVu (vendor/dompdf/dompdf/lib/fonts/),
+    sous leur propre licence libre.
+  php-font-lib 1.0.2              LGPL 2.1 ou ultérieure   vendor/dompdf/php-font-lib/LICENSE
+  php-svg-lib 1.0.2               LGPL 3.0 ou ultérieure   vendor/dompdf/php-svg-lib/LICENSE
+  Masterminds HTML5 2.12.0        MIT               vendor/masterminds/html5/LICENSE.txt
+  PHP CSS Parser 9.5.0            MIT               vendor/sabberworm/php-css-parser/LICENSE
+
+  Ces bibliothèques sont fournies sous leur forme d'origine, non modifiée, dans
+  le dossier vendor/. Conformément à la LGPL, chacune peut être remplacée par
+  une autre version compatible : il suffit de remplacer son dossier.
+
+
+2. Bibliothèques du navigateur (dossier public/)
+
+  Bootstrap 5.3.9                 MIT
+    public/js/bootstrap.bundle.min.js ; styles compilés dans public/css/bddv3.css
+    Copyright The Bootstrap Authors — https://getbootstrap.com
+  Chart.js 4.6.1                  MIT
+    public/js/chart.umd.min.js
+    Copyright Chart.js Contributors — https://www.chartjs.org
+  Font Awesome Free 7.3.1         icônes : CC BY 4.0 ; polices : SIL OFL 1.1 ; code : MIT
+    public/css/fontawesome.min.css, public/webfonts/
+    Copyright Fonticons, Inc. — https://fontawesome.com/license/free
+
+
+3. Données (dossier sql/)
+
+  Base officielle des codes postaux (sql/019HexaSmal.csv)
+    Producteur : La Poste.
+    Licence Ouverte / Open Licence version 2.0.
+    https://www.data.gouv.fr/datasets/base-officielle-des-codes-postaux
+
+  Quartiers prioritaires de la politique de la ville, QPV (sql/donnees_reference.sql)
+    Producteur : Agence nationale de la cohésion des territoires (ANCT).
+    Licence Ouverte / Open Licence (la fiche du jeu de données n'en précise pas
+    la version).
+    https://www.data.gouv.fr/datasets/quartiers-prioritaires-de-la-politique-de-la-ville-qpv
+
+  Exemple : quartiers du 17e arrondissement de Paris
+  (sql/quartiers/paris_17_quartiers.geojson)
+    Base dérivée, établie par le titulaire des droits de l'application à
+    partir du jeu « quartier_paris » (quartiers administratifs) des données
+    ouvertes de la Ville de Paris : contours modifiés pour suivre les
+    quartiers du 17e arrondissement.
+    Open Database License (ODbL).
+    https://opendata.paris.fr/explore/dataset/quartier_paris/information/
+    Ce fichier reste sous ODbL, et non sous la licence de l'application : il
+    peut être copié, modifié et transmis aux conditions de l'ODbL (mention de
+    la source, partage aux mêmes conditions).
+
+  Exemple : quartiers prioritaires de Paris
+  (sql/quartiers/paris_quartiers_prioritaires.geojson)
+    Source : données ouvertes de la Ville de Paris, jeu « quartiers-prioritaires »
+    (titre : « Quartiers populaires » ; origine indiquée : Atelier parisien
+    d'urbanisme, opendata.apur.org).
+    https://opendata.paris.fr/explore/dataset/quartiers-prioritaires/information/
+    [LICENCE À CONFIRMER : la fiche de ce jeu de données n'indique pas de
+    licence (vérifié le 26/11/2026).]
+
+  La liste des pays, avec leur continent et leur région
+  (sql/donnees_reference.sql), n'est pas un composant de tiers : elle a été
+  établie par le titulaire des droits et fait partie de l'application.
+
+
+4. Services appelés pendant l'utilisation
+
+  Géoplateforme de l'IGN, service de géocodage (https://data.geopf.fr)
+    Vérification des adresses à partir de la Base Adresse Nationale. Aucune
+    donnée de ce service n'est fournie avec l'application ; l'adresse saisie
+    lui est envoyée pour être vérifiée.

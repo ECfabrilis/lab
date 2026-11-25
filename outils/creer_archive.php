@@ -26,7 +26,8 @@ if (PHP_SAPI !== 'cli') {
 /**
  * Ce qui entre dans l'archive : seulement ce qui sert à faire tourner
  * l'application. Tout fichier absent de cette liste reste hors de l'archive
- * (CLAUDE.md, cahier des charges, scss/, fichiers Node, ce script…).
+ * (CLAUDE.md, cahier des charges, guide de déploiement par Git, modèles de
+ * contrat, scss/, fichiers Node, ce script…).
  * vendor/ est ajouté à part, sans les outils de développement.
  */
 const ARCHIVE_CONTENU = [
@@ -38,8 +39,10 @@ const ARCHIVE_CONTENU = [
     'logs',
     'sauvegardes',
     'outils/mise_a_jour.php',
-    'docs/deploiement.md',
+    'docs/installation.md',
+    'docs/guide_utilisation.md',
     'LICENCE.txt',
+    'LICENCES_TIERCES.txt',
 ];
 
 /** Dossier racine à l'intérieur de l'archive. */

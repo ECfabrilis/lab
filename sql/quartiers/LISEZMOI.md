@@ -28,3 +28,17 @@ sont enregistrées sans quartier.
 
 Les quartiers de la politique de la ville (QPV) couvrent toute la France : ils
 sont remplis à l'installation.
+
+**Source et licence.**
+
+- `paris_17_quartiers.geojson` : base dérivée du jeu « quartier_paris »
+  (quartiers administratifs) des données ouvertes de la Ville de Paris
+  (<https://opendata.paris.fr/explore/dataset/quartier_paris/information/>),
+  dont les contours ont été modifiés pour suivre les quartiers du 17e.
+  Open Database License (ODbL) : le fichier reste sous cette licence, quelle
+  que soit celle de l'application.
+- `paris_quartiers_prioritaires.geojson` : jeu « quartiers-prioritaires »
+  (« Quartiers populaires ») des données ouvertes de la Ville de Paris
+  (<https://opendata.paris.fr/explore/dataset/quartiers-prioritaires/information/>).
+  La fiche de ce jeu n'indique pas de licence : à confirmer avant de
+  transmettre ce fichier.
