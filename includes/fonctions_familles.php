@@ -118,7 +118,8 @@ function familles_criteres(int $saison_id): array
 {
     $criteres = $_SESSION['recherche_familles'] ?? [];
     $criteres = is_array($criteres) ? $criteres : [];
-    $quartier = texte($criteres['quartier'] ?? '');
+    // Les filtres d'une information non recueillie sont ignorés.
+    $quartier = champ_actif('quartier') ? texte($criteres['quartier'] ?? '') : '';
     if ($quartier !== '' && !in_array($quartier, familles_quartiers($saison_id), true)) {
         $quartier = '';
     }
@@ -128,8 +129,8 @@ function familles_criteres(int $saison_id): array
         'filtres' => [
             'non_inscrites' => ($criteres['non_inscrites'] ?? false) === true,
             'quartier'      => $quartier,
-            'qp'            => ($criteres['qp'] ?? false) === true,
-            'qpv'           => ($criteres['qpv'] ?? false) === true,
+            'qp'            => champ_actif('qp') && ($criteres['qp'] ?? false) === true,
+            'qpv'           => champ_actif('qpv') && ($criteres['qpv'] ?? false) === true,
             'enfants'       => in_array($enfants, [FAMILLES_AGE_PETITS, FAMILLES_AGE_MOYENS], true) ? $enfants : 0,
         ],
     ];

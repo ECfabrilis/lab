@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 // Informations recueillies (administrateurs seulement) : les informations
 // facultatives que l'association choisit de demander ou non (bénévolat,
-// scolarité). Une information non recueillie n'est plus demandée ni affichée ;
-// ce qui a déjà été saisi reste dans la base.
+// scolarité, quartier, QP, QPV). Une information non recueillie n'est plus
+// demandée ni affichée ; ce qui a déjà été saisi reste dans la base.
+// Quartier, QP et QPV sont calculés à partir de l'adresse : non recueillis,
+// ils ne sont plus calculés pour les adresses enregistrées ensuite.
 
 require __DIR__ . '/_chemins.php';
 require DOSSIER_PRIVE . '/includes/init.php';
@@ -49,6 +51,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
             <li>Une information que vous ne recueillez pas n'est plus demandée ni affichée : formulaires, listes, filtres, statistiques et exports.</li>
             <li>Rien n'est effacé : ce qui a déjà été saisi reste dans la base et réapparaît si vous recueillez de nouveau l'information.</li>
+            <li>Le quartier, le QP et le QPV sont calculés à partir de l'adresse, au moment où elle est enregistrée. Non recueillis, ils ne sont plus calculés : une adresse saisie ou modifiée pendant ce temps n'en aura pas.</li>
             <li>Ne recueillez que ce qui vous sert : c'est aussi une règle de la protection des données (RGPD).</li>
         </ul>
     </div>

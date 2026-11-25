@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.16.0';
+const APP_VERSION = '0.17.0';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,14 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.17.0',
+            'date'        => '2026-11-25',
+            'changements' => [
+                'Informations recueillies : trois nouveaux interrupteurs, pour le quartier, le quartier prioritaire (QP) et le QPV. Non recueillis, ils disparaissent de la fiche, des filtres des listes, des statistiques et de l\'export.',
+                'Un quartier, un QP ou un QPV non recueilli n\'est plus calculé à l\'enregistrement d\'une adresse ; les adresses déjà enregistrées gardent les leurs.',
+            ],
+        ],
         [
             'version'     => '0.16.0',
             'date'        => '2026-11-25',

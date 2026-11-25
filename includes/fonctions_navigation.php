@@ -107,7 +107,7 @@ function cards_parametres(): array
             'role'  => 'admin',
             'cards' => [
                 ['titre' => 'Options d\'affichage', 'texte' => 'Nom de la structure, logo et couleur principale.', 'icone' => 'display', 'page' => 'options.php', 'role' => 'admin'],
-                ['titre' => 'Informations recueillies', 'texte' => 'Les informations facultatives demandées ou non : bénévolat, scolarité.', 'icone' => 'list-check', 'page' => 'options_fiche.php', 'role' => 'admin'],
+                ['titre' => 'Informations recueillies', 'texte' => 'Les informations facultatives demandées ou non : bénévolat, scolarité, quartiers.', 'icone' => 'list-check', 'page' => 'options_fiche.php', 'role' => 'admin'],
                 ['titre' => 'Options des activités', 'texte' => 'Types d\'activité et récurrences : les listes proposées pour les activités.', 'icone' => 'heart-pulse', 'page' => 'options_activites.php', 'role' => 'admin'],
                 ['titre' => 'Options des paiements', 'texte' => 'Types de tarif et modes de paiement : les listes proposées pour les tarifs et les paiements.', 'icone' => 'file-invoice-dollar', 'page' => 'options_paiements.php', 'role' => 'admin'],
                 ['titre' => 'Option des statistiques', 'texte' => 'Tranches d\'âge, groupes de lieu de résidence et couleurs des graphiques.', 'icone' => 'chart-line', 'page' => 'options_statistiques.php', 'role' => 'admin'],

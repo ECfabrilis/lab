@@ -263,17 +263,28 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <div class="col-12">
                         <?php stats_afficher_repartition('Lieu de résidence', stats_lignes($chiffres['residence'], $chiffres_precedents['residence'] ?? null), $chiffres['total'], 'bar', $nom_serie, $nom_precedent); ?>
                     </div>
+                    <?php if (champ_actif('quartier')) : ?>
                     <div class="col-lg-6">
                         <?php stats_afficher_repartition('Quartier', stats_lignes($chiffres['quartier'], $chiffres_precedents['quartier'] ?? null), $chiffres['total'], '', $nom_serie, $nom_precedent); ?>
                     </div>
+                    <?php endif; ?>
+                    <?php
+                    // QP et QPV : seulement ceux que l'association recueille.
+                    $lignes_prioritaires = [];
+                    $lignes_prioritaires_avant = [];
+                    foreach (['qp' => 'En quartier prioritaire (QP)', 'qpv' => 'En quartier de la politique de la ville (QPV)'] as $champ_prioritaire => $libelle_prioritaire) {
+                        if (champ_actif($champ_prioritaire)) {
+                            $lignes_prioritaires[$libelle_prioritaire] = $chiffres[$champ_prioritaire];
+                            $lignes_prioritaires_avant[$libelle_prioritaire] = $chiffres_precedents[$champ_prioritaire] ?? 0;
+                        }
+                    }
+                    ?>
+                    <?php if ($lignes_prioritaires !== []) : ?>
                     <div class="col-lg-6">
                         <?php
                         stats_afficher_repartition(
                             'Quartiers prioritaires',
-                            stats_lignes(
-                                ['En quartier prioritaire (QP)' => $chiffres['qp'], 'En quartier de la politique de la ville (QPV)' => $chiffres['qpv']],
-                                $chiffres_precedents === null ? null : ['En quartier prioritaire (QP)' => $chiffres_precedents['qp'], 'En quartier de la politique de la ville (QPV)' => $chiffres_precedents['qpv']]
-                            ),
+                            stats_lignes($lignes_prioritaires, $chiffres_precedents === null ? null : $lignes_prioritaires_avant),
                             $chiffres['total'],
                             '',
                             $nom_serie,
@@ -281,6 +292,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         );
                         ?>
                     </div>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
 

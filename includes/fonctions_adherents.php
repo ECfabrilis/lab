@@ -577,7 +577,8 @@ function adherents_criteres(int $saison_id): array
 {
     $criteres = $_SESSION['recherche_adherents'] ?? [];
     $criteres = is_array($criteres) ? $criteres : [];
-    $quartier = texte($criteres['quartier'] ?? '');
+    // Les filtres d'une information non recueillie sont ignorés.
+    $quartier = champ_actif('quartier') ? texte($criteres['quartier'] ?? '') : '';
     if ($quartier !== '' && !in_array($quartier, adherents_quartiers($saison_id), true)) {
         $quartier = '';
     }
@@ -589,8 +590,8 @@ function adherents_criteres(int $saison_id): array
             // Le filtre « bénévoles » est ignoré quand le bénévolat n'est pas recueilli.
             'benevoles' => champ_actif('benevole') && ($criteres['benevoles'] ?? false) === true,
             'quartier'  => $quartier,
-            'qp'        => ($criteres['qp'] ?? false) === true,
-            'qpv'       => ($criteres['qpv'] ?? false) === true,
+            'qp'        => champ_actif('qp') && ($criteres['qp'] ?? false) === true,
+            'qpv'       => champ_actif('qpv') && ($criteres['qpv'] ?? false) === true,
         ],
         'par_page'     => in_array($criteres['par_page'] ?? 0, ADHERENTS_PAR_PAGE_CHOIX, true) ? entier($criteres['par_page']) : ADHERENTS_PAR_PAGE,
     ];

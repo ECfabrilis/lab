@@ -114,6 +114,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <option value="tous" <?= $perimetre === 'tous' ? 'selected' : '' ?>>Tous les adhérents, toutes saisons</option>
                 </select>
             </div>
+            <?php if (champ_actif('benevole') || champ_actif('qp') || champ_actif('qpv')) : ?>
             <fieldset class="mb-3">
                 <legend class="form-label fs-6">Filtrer</legend>
                 <?php if (champ_actif('benevole')) : ?>
@@ -122,25 +123,34 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <label class="form-check-label" for="benevoles">Les bénévoles uniquement</label>
                     </div>
                 <?php endif; ?>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="qp" name="qp" value="1" <?= $filtre_qp ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="qp">En quartier prioritaire (QP)</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="qpv" name="qpv" value="1" <?= $filtre_qpv ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="qpv">En quartier de la politique de la ville (QPV)</label>
-                </div>
+                <?php if (champ_actif('qp')) : ?>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="qp" name="qp" value="1" <?= $filtre_qp ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="qp">En quartier prioritaire (QP)</label>
+                    </div>
+                <?php endif; ?>
+                <?php if (champ_actif('qpv')) : ?>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="qpv" name="qpv" value="1" <?= $filtre_qpv ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="qpv">En quartier de la politique de la ville (QPV)</label>
+                    </div>
+                <?php endif; ?>
             </fieldset>
-            <div class="mb-3">
-                <label class="form-label" for="quartier">Quartier</label>
-                <select class="form-select" id="quartier" name="quartier" aria-describedby="aide_quartier">
-                    <option value="">Tous les quartiers</option>
-                    <?php foreach ($quartiers_saison as $nom_quartier) : ?>
-                        <option value="<?= e($nom_quartier) ?>" <?= $filtre_quartier === $nom_quartier ? 'selected' : '' ?>><?= e($nom_quartier) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <div class="form-text" id="aide_quartier">Quartier, QP et QPV sont ceux de l'adresse de la saison <?= e($saison_affichee['nom'] ?? '') ?>.</div>
-            </div>
+            <?php endif; ?>
+            <?php if (champ_actif('quartier')) : ?>
+                <div class="mb-3">
+                    <label class="form-label" for="quartier">Quartier</label>
+                    <select class="form-select" id="quartier" name="quartier">
+                        <option value="">Tous les quartiers</option>
+                        <?php foreach ($quartiers_saison as $nom_quartier) : ?>
+                            <option value="<?= e($nom_quartier) ?>" <?= $filtre_quartier === $nom_quartier ? 'selected' : '' ?>><?= e($nom_quartier) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            <?php endif; ?>
+            <?php if (champ_actif('quartier') || champ_actif('qp') || champ_actif('qpv')) : ?>
+                <p class="form-text mt-0"><?= e(quartiers_phrase('est celui', 'sont ceux')) ?> de l'adresse de la saison <?= e($saison_affichee['nom'] ?? '') ?>.</p>
+            <?php endif; ?>
             <div class="mb-3">
                 <label class="form-label" for="par_page">Nombre par page</label>
                 <select class="form-select" id="par_page" name="par_page">

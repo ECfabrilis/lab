@@ -109,9 +109,9 @@ if (est_post()) {
             default => ', ainsi que pour ' . $nb_membres_modifies . ' autres membres de la famille.',
         });
         if (!$adresse_reconnue && adresse_api_indisponible()) {
-            flash('avertissement', MESSAGE_API_ADRESSE_INDISPONIBLE . ' Le quartier n\'a pas pu être déterminé.');
+            flash('avertissement', trim(MESSAGE_API_ADRESSE_INDISPONIBLE . ' ' . quartiers_phrase('n\'a pas pu être déterminé.', 'n\'ont pas pu être déterminés.')));
         } elseif (!$adresse_reconnue) {
-            flash('avertissement', 'L\'adresse n\'est pas certifiée (elle n\'a pas été trouvée au numéro près) : le quartier n\'a pas pu être déterminé.');
+            flash('avertissement', trim('L\'adresse n\'est pas certifiée (elle n\'a pas été trouvée au numéro près). ' . quartiers_phrase('n\'a pas pu être déterminé.', 'n\'ont pas pu être déterminés.')));
         }
         rediriger($page_fiche);
     }
@@ -298,13 +298,13 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <?php else : ?>
                         <span class="badge text-bg-warning">Adresse non certifiée</span>
                     <?php endif; ?>
-                    <?php if (texte($adresse_saison['quartier']) !== '') : ?>
+                    <?php if (champ_actif('quartier') && texte($adresse_saison['quartier']) !== '') : ?>
                         <span class="badge text-bg-light border">Quartier : <?= e($adresse_saison['quartier']) ?></span>
                     <?php endif; ?>
-                    <?php if (entier($adresse_saison['est_qp']) === 1) : ?>
+                    <?php if (champ_actif('qp') && entier($adresse_saison['est_qp']) === 1) : ?>
                         <span class="badge text-bg-primary">QP : <?= e($adresse_saison['qp_nom']) ?></span>
                     <?php endif; ?>
-                    <?php if (entier($adresse_saison['est_qpv']) === 1) : ?>
+                    <?php if (champ_actif('qpv') && entier($adresse_saison['est_qpv']) === 1) : ?>
                         <span class="badge text-bg-primary">QPV : <?= e($adresse_saison['qpv_nom']) ?></span>
                     <?php endif; ?>
                 </p>

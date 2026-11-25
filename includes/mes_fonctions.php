@@ -575,6 +575,18 @@ function champs_recueillis(): array
             'libelle' => 'Scolarité',
             'aide'    => 'Établissement scolaire et niveau des personnes de moins de 18 ans, et la partie « Scolarité » des statistiques.',
         ],
+        'quartier' => [
+            'libelle' => 'Quartier',
+            'aide'    => 'Quartier de l\'adresse, cherché parmi les quartiers des communes prises en compte (Options > Quartiers) : pastille de la fiche, filtre des listes, colonne de l\'export, répartition des statistiques.',
+        ],
+        'qp' => [
+            'libelle' => 'Quartier prioritaire (QP)',
+            'aide'    => 'Quartiers prioritaires définis par la commune, à importer dans « Données de référence » : pastille, filtre, colonne de l\'export, chiffre des statistiques.',
+        ],
+        'qpv' => [
+            'libelle' => 'Quartier de la politique de la ville (QPV)',
+            'aide'    => 'Quartiers de la politique de la ville, fournis pour toute la France : pastille, filtre, colonne de l\'export, chiffre des statistiques.',
+        ],
     ];
 }
 

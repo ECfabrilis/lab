@@ -555,7 +555,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
             <?= jeton_unique_champ('inscription') ?>
             <?php if (!$adresse_certifiee) : ?>
                 <div class="alert alert-warning">
-                    <p class="mb-2">L'adresse n'a pas été reconnue au numéro près : elle n'est pas certifiée. Le quartier, le QP et le QPV resteront vides.</p>
+                    <p class="mb-2">L'adresse n'a pas été reconnue au numéro près : elle n'est pas certifiée. <?= e(quartiers_phrase('restera vide.', 'resteront vides.')) ?></p>
                     <div class="form-check mb-0">
                         <input class="form-check-input" type="checkbox" id="confirmer_adresse" name="confirmer_adresse" value="1" required>
                         <label class="form-check-label" for="confirmer_adresse">Enregistrer quand même avec cette adresse.</label>

@@ -102,27 +102,37 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <input class="form-check-input" type="checkbox" role="switch" id="non_inscrites" name="non_inscrites" value="1" <?= $filtre_non_inscrites ? 'checked' : '' ?>>
                 <label class="form-check-label" for="non_inscrites">Afficher aussi les familles non inscrites pour la saison <?= e($saison_affichee['nom'] ?? '') ?></label>
             </div>
+            <?php if (champ_actif('qp') || champ_actif('qpv')) : ?>
             <fieldset class="mb-3">
                 <legend class="form-label fs-6">Filtrer</legend>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="qp" name="qp" value="1" <?= $filtre_qp ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="qp">En quartier prioritaire (QP)</label>
-                </div>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="qpv" name="qpv" value="1" <?= $filtre_qpv ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="qpv">En quartier de la politique de la ville (QPV)</label>
-                </div>
+                <?php if (champ_actif('qp')) : ?>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="qp" name="qp" value="1" <?= $filtre_qp ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="qp">En quartier prioritaire (QP)</label>
+                    </div>
+                <?php endif; ?>
+                <?php if (champ_actif('qpv')) : ?>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="qpv" name="qpv" value="1" <?= $filtre_qpv ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="qpv">En quartier de la politique de la ville (QPV)</label>
+                    </div>
+                <?php endif; ?>
             </fieldset>
-            <div class="mb-3">
-                <label class="form-label" for="quartier">Quartier</label>
-                <select class="form-select" id="quartier" name="quartier" aria-describedby="aide_quartier">
-                    <option value="">Tous les quartiers</option>
-                    <?php foreach ($quartiers_saison as $nom_quartier) : ?>
-                        <option value="<?= e($nom_quartier) ?>" <?= $filtre_quartier === $nom_quartier ? 'selected' : '' ?>><?= e($nom_quartier) ?></option>
-                    <?php endforeach; ?>
-                </select>
-                <div class="form-text" id="aide_quartier">Quartier, QP et QPV : au moins un membre de la famille y habite, d'après son adresse de la saison <?= e($saison_affichee['nom'] ?? '') ?>. Une famille non inscrite pour la saison n'y répond pas.</div>
-            </div>
+            <?php endif; ?>
+            <?php if (champ_actif('quartier')) : ?>
+                <div class="mb-3">
+                    <label class="form-label" for="quartier">Quartier</label>
+                    <select class="form-select" id="quartier" name="quartier">
+                        <option value="">Tous les quartiers</option>
+                        <?php foreach ($quartiers_saison as $nom_quartier) : ?>
+                            <option value="<?= e($nom_quartier) ?>" <?= $filtre_quartier === $nom_quartier ? 'selected' : '' ?>><?= e($nom_quartier) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            <?php endif; ?>
+            <?php if (champ_actif('quartier') || champ_actif('qp') || champ_actif('qpv')) : ?>
+                <p class="form-text mt-0"><?= e(quartiers_phrase(':', ':')) ?> au moins un membre de la famille y habite, d'après son adresse de la saison <?= e($saison_affichee['nom'] ?? '') ?>. Une famille non inscrite pour la saison n'y répond pas.</p>
+            <?php endif; ?>
             <div class="mb-3">
                 <label class="form-label" for="enfants">Enfants</label>
                 <select class="form-select" id="enfants" name="enfants" aria-describedby="aide_enfants">

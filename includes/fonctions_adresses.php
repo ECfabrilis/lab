@@ -167,9 +167,14 @@ function quartiers_du_point(float $latitude, float $longitude): array
     // Les géométries sont enregistrées en longitude puis latitude.
     $point = sprintf('POINT(%.6F %.6F)', $longitude, $latitude);
     // Seuls les quartiers pris en compte (Paramètres > Options > Quartiers) sont cherchés.
-    $quartier = db_valeur('SELECT nom FROM quartiers WHERE est_actif = 1 AND ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
-    $qp = db_ligne('SELECT code_quartier, nom FROM quartiers_prioritaires WHERE ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
-    $qpv = db_ligne('SELECT code_quartier, nom FROM quartiers_qpv WHERE ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
+    // Une information que l'association ne recueille pas (Paramètres > Options >
+    // Informations recueillies) n'est pas cherchée : elle reste vide pour cette adresse.
+    $quartier = !champ_actif('quartier') ? null
+        : db_valeur('SELECT nom FROM quartiers WHERE est_actif = 1 AND ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
+    $qp = !champ_actif('qp') ? null
+        : db_ligne('SELECT code_quartier, nom FROM quartiers_prioritaires WHERE ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
+    $qpv = !champ_actif('qpv') ? null
+        : db_ligne('SELECT code_quartier, nom FROM quartiers_qpv WHERE ST_Contains(geom, ST_GeomFromText(?)) LIMIT 1', [$point]);
     return [
         'quartier' => $quartier === null ? null : texte($quartier),
         'est_qp'   => $qp === null ? 0 : 1,
@@ -391,7 +396,8 @@ function adresse_appliquer_aux_membres(int $dossier_id, int $adherent_id, array 
 }
 
 /**
- * Phrase qui résume le quartier, le QP et le QPV d'une adresse préparée ou enregistrée.
+ * Phrase qui résume le quartier, le QP et le QPV d'une adresse préparée ou enregistrée
+ * (seulement les informations recueillies ; '' si aucune ne l'est).
  *
  * @param array<string, mixed> $adresse
  */
@@ -400,10 +406,41 @@ function quartiers_resume(array $adresse): string
     if (entier($adresse['est_validee'] ?? 0) !== 1) {
         return '';
     }
-    $morceaux = ['Quartier : ' . (texte($adresse['quartier'] ?? '') !== '' ? texte($adresse['quartier']) : 'hors des quartiers connus')];
-    $morceaux[] = 'QP : ' . (entier($adresse['est_qp'] ?? 0) === 1 ? texte($adresse['qp_nom'] ?? '') : 'non');
-    $morceaux[] = 'QPV : ' . (entier($adresse['est_qpv'] ?? 0) === 1 ? texte($adresse['qpv_nom'] ?? '') : 'non');
+    $morceaux = [];
+    if (champ_actif('quartier')) {
+        $morceaux[] = 'Quartier : ' . (texte($adresse['quartier'] ?? '') !== '' ? texte($adresse['quartier']) : 'hors des quartiers connus');
+    }
+    if (champ_actif('qp')) {
+        $morceaux[] = 'QP : ' . (entier($adresse['est_qp'] ?? 0) === 1 ? texte($adresse['qp_nom'] ?? '') : 'non');
+    }
+    if (champ_actif('qpv')) {
+        $morceaux[] = 'QPV : ' . (entier($adresse['est_qpv'] ?? 0) === 1 ? texte($adresse['qpv_nom'] ?? '') : 'non');
+    }
     return implode(' — ', $morceaux);
+}
+
+/**
+ * Phrase sur les informations de quartier recueillies (quartier, QP, QPV),
+ * accordée selon leur nombre : « Le quartier et le QPV resteront vides. »
+ * Renvoie '' quand aucune n'est recueillie : il n'y a alors rien à dire.
+ *
+ * @param string $singulier fin de la phrase pour une seule information (« restera vide. »)
+ * @param string $pluriel   fin de la phrase pour plusieurs (« resteront vides. »)
+ */
+function quartiers_phrase(string $singulier, string $pluriel): string
+{
+    $noms = [];
+    foreach (['quartier' => 'le quartier', 'qp' => 'le QP', 'qpv' => 'le QPV'] as $champ => $nom) {
+        if (champ_actif($champ)) {
+            $noms[] = $nom;
+        }
+    }
+    if ($noms === []) {
+        return '';
+    }
+    $dernier = array_pop($noms);
+    $liste = $noms === [] ? $dernier : implode(', ', $noms) . ' et ' . $dernier;
+    return mb_strtoupper(mb_substr($liste, 0, 1)) . mb_substr($liste, 1) . ' ' . ($noms === [] ? $singulier : $pluriel);
 }
 
 /**

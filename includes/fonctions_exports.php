@@ -88,8 +88,11 @@ function export_adherents_entetes(): array
     ]);
 }
 
-/** Rang (à partir de 0) de la colonne « Bénévole » dans l'export de la liste des adhérents. */
-const EXPORT_ADHERENTS_RANG_BENEVOLE = 6;
+/**
+ * Colonnes de l'export de la liste des adhérents qui portent une information
+ * facultative : clé de champs_recueillis() => rang de la colonne (à partir de 0).
+ */
+const EXPORT_ADHERENTS_RANGS = ['benevole' => 6, 'quartier' => 13, 'qp' => 14, 'qpv' => 15];
 
 /**
  * Retire d'une ligne de l'export (en-têtes ou données) les colonnes des
@@ -100,8 +103,11 @@ const EXPORT_ADHERENTS_RANG_BENEVOLE = 6;
  */
 function export_adherents_colonnes(array $ligne): array
 {
-    if (!champ_actif('benevole')) {
-        array_splice($ligne, EXPORT_ADHERENTS_RANG_BENEVOLE, 1);
+    // Du dernier rang au premier : retirer une colonne ne décale pas celles qui restent à retirer.
+    foreach (array_reverse(EXPORT_ADHERENTS_RANGS, true) as $champ => $rang) {
+        if (!champ_actif($champ)) {
+            array_splice($ligne, $rang, 1);
+        }
     }
     return $ligne;
 }
