@@ -52,8 +52,10 @@ d'hébergement ou de réglage du domaine.
    - sans SSH : lancer `composer install --no-dev` dans une copie du projet sur
      le poste local, puis envoyer le dossier `vendor/` obtenu par FTP.
 
-4. **Créer `_chemins.php`** : dans `mon_application/public/`, copier
-   `_chemins.exemple.php` sous le nom `_chemins.php`, sans le modifier.
+4. **`_chemins.php`** : rien à faire. L'assistant de l'étape 6 crée lui-même
+   `mon_application/public/_chemins.php` à partir de `_chemins.exemple.php`.
+   S'il n'y arrive pas (dossier non accessible en écriture), il demande de
+   faire cette copie à la main.
 
 5. **Créer le sous-domaine** `mon_application.monsite.com` et le faire pointer
    vers `public_html/mon_application/public`.
@@ -112,6 +114,64 @@ fichiers ne sont pas versionnés.
 ajouter dans GitHub pour déployer à chaque `git push`. À n'activer qu'en
 connaissance de cause : dès qu'une version contient une migration,
 l'application se ferme aux utilisateurs jusqu'au passage d'un administrateur.
+
+## Sans Git : installer et mettre à jour avec l'archive
+
+Chaque version existe aussi sous la forme d'une archive, `bddv3-X.Y.Z.zip`, qui
+contient tout ce qu'il faut (bibliothèques PHP comprises) : ni Git, ni
+Composer sur le serveur. Elle convient à tout hébergement PHP 8.3 ou plus avec
+MariaDB et Apache.
+
+**Fabriquer l'archive** (sur le poste de développement, une fois la version
+commitée et étiquetée `vX.Y.Z`) :
+
+```
+php outils/creer_archive.php
+```
+
+Le résultat est dans `livraisons/`, avec son empreinte SHA-256. Le script part
+du dernier commit : ni `config.php`, ni journaux, ni sauvegardes ne peuvent s'y
+trouver.
+
+**Première installation**
+
+1. Créer la base de données chez l'hébergeur (nom, utilisateur, mot de passe).
+2. Décompresser l'archive et déposer le contenu du dossier `bddv3/` dans le
+   dossier de l'application (par FTP ou par le gestionnaire de fichiers), en
+   gardant le fichier `.htaccess` de la racine.
+3. Faire pointer le domaine ou le sous-domaine vers le dossier `public/`.
+4. Ouvrir `https://…/install.php` et suivre les 5 étapes.
+5. Faire le contrôle de protection de l'étape 7 ci-dessus.
+
+**Mise à jour**
+
+1. Faire une sauvegarde (Paramètres > Sauvegarde) et la télécharger.
+2. Remplacer les dossiers `includes/`, `sql/`, `vendor/`, `outils/` et `docs/`
+   par ceux de l'archive (supprimer les anciens, déposer les nouveaux).
+3. Dans `public/`, remplacer tout **sauf** `_chemins.php`,
+   `css/couleur.css` et `img/logo_association.*` : ces trois fichiers sont
+   propres au site.
+4. Ne pas toucher à `config.php`, `logs/` ni `sauvegardes/`.
+5. Se connecter avec un compte administrateur : si la version apporte une
+   migration, la page « Mise à jour » s'affiche d'elle-même.
+
+## Mise à jour en ligne de commande
+
+Avec un accès SSH, la base se met à jour sans ouvrir le site :
+
+```
+php outils/mise_a_jour.php
+```
+
+La commande fait une sauvegarde, passe les migrations en attente et affiche le
+résultat (code de retour 0 si la base est à jour, 1 sinon). Pour plusieurs
+instances déposées côte à côte :
+
+```
+for dossier in ~/domains/monsite.com/public_html/*/; do
+    [ -f "$dossier/outils/mise_a_jour.php" ] && php "$dossier/outils/mise_a_jour.php"
+done
+```
 
 ## En cas de problème
 

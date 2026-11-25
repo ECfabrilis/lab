@@ -3,6 +3,7 @@ parameters:
     paths:
         - includes
         - public
+        - outils
         - config.exemple.php
     excludePaths:
         - public/_chemins.php (?)

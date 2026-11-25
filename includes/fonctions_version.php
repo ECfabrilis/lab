@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.14.0';
+const APP_VERSION = '0.14.1';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,15 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.14.1',
+            'date'        => '2026-11-25',
+            'changements' => [
+                'Installation : l\'application peut être installée à partir d\'une archive prête à déposer, sans outil particulier sur le serveur.',
+                'Installation : le fichier de chemins (_chemins.php) est créé par l\'assistant, il n\'est plus à copier à la main.',
+                'Mise à jour de la base : elle peut aussi être lancée en ligne de commande sur le serveur.',
+            ],
+        ],
         [
             'version'     => '0.14.0',
             'date'        => '2026-11-25',

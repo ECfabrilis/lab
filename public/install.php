@@ -15,6 +15,14 @@ declare(strict_types=1);
  * existe un config.php d'un autre format), l'assistant refuse de s'exécuter.
  */
 
+// _chemins.php n'est ni versionné ni fourni dans l'archive : à la première
+// installation, il est créé à partir du modèle. Une mise à jour ne l'écrase donc jamais.
+if (!is_file(__DIR__ . '/_chemins.php') && !@copy(__DIR__ . '/_chemins.exemple.php', __DIR__ . '/_chemins.php')) {
+    http_response_code(500);
+    header('Content-Type: text/plain; charset=utf-8');
+    exit('Le dossier public/ n\'est pas accessible en écriture : copiez public/_chemins.exemple.php sous le nom _chemins.php, puis rechargez cette page.');
+}
+
 require __DIR__ . '/_chemins.php';
 require_once DOSSIER_PRIVE . '/includes/mes_fonctions.php';
 require_once DOSSIER_PRIVE . '/includes/fonctions_auth.php';

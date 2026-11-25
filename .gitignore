@@ -26,3 +26,6 @@ sauvegardes/*
 public/css/couleur.css
 # Logo envoyé depuis les options
 public/img/logo_association.*
+
+# Archives des versions, fabriquées par outils/creer_archive.php
+livraisons/

@@ -150,7 +150,7 @@ function migrations_inscrire_toutes(PDO $pdo): void
  *
  * @return array{appliquees: list<string>, fichier_en_erreur: string, erreur: string} erreur : '' si tout est passé
  */
-function mise_a_jour_appliquer(int $utilisateur_id): array
+function mise_a_jour_appliquer(?int $utilisateur_id): array
 {
     $pdo = db();
     $appliquees = [];
