@@ -555,6 +555,35 @@ function parametre_enregistrer(string $cle, string $valeur, ?int $utilisateur_id
     parametres_tous(true);
 }
 
+/**
+ * Informations facultatives que l'association choisit de recueillir ou non
+ * (Paramètres > Options > Informations recueillies). Une information non
+ * recueillie n'est plus demandée ni affichée (formulaires, listes, filtres,
+ * statistiques, exports) ; ce qui a déjà été saisi reste dans la base et
+ * réapparaît si l'information est de nouveau recueillie.
+ *
+ * @return array<string, array{libelle: string, aide: string}> clé du champ => libellé et explication
+ */
+function champs_recueillis(): array
+{
+    return [
+        'benevole' => [
+            'libelle' => 'Bénévolat',
+            'aide'    => 'Mention « Est bénévole » sur la fiche d\'une personne, filtre de la liste des adhérents, colonne de l\'export, libellé « Bénévoles » des contacts.',
+        ],
+        'scolarite' => [
+            'libelle' => 'Scolarité',
+            'aide'    => 'Établissement scolaire et niveau des personnes de moins de 18 ans, et la partie « Scolarité » des statistiques.',
+        ],
+    ];
+}
+
+/** Vrai si l'association recueille cette information (voir champs_recueillis()) ; oui tant que rien n'a été réglé. */
+function champ_actif(string $champ): bool
+{
+    return parametre('champ_' . $champ, '1') === '1';
+}
+
 // ---------------------------------------------------------------------------
 // Journal des actions (table logs_bdd)
 // ---------------------------------------------------------------------------

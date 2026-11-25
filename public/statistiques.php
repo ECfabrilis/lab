@@ -17,6 +17,10 @@ exiger_connexion();
 
 // --- Filtres -------------------------------------------------------------------
 $vues = ['adherents' => 'Adhérents', 'activites' => 'Activités', 'scolarite' => 'Scolarité'];
+if (!champ_actif('scolarite')) {
+    // Scolarité non recueillie : la vue n'est pas proposée.
+    unset($vues['scolarite']);
+}
 $vue = texte($_GET['vue'] ?? '');
 $vue = array_key_exists($vue, $vues) ? $vue : 'adherents';
 

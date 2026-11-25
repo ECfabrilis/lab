@@ -53,24 +53,46 @@ function libelle_etat_saison(string $etat): string
     };
 }
 
+/** Mois de début de saison proposé à l'installation : septembre. */
+const SAISON_MOIS_DEBUT = 9;
+
 /**
- * Saison habituelle à une date donnée : du 1er septembre au 31 août.
- * À partir du 1er septembre de l'année N : saison « N-(N+1) » ; avant : « (N-1)-N ».
+ * Saison habituelle à une date donnée : un an à partir du 1er jour du mois de
+ * début (septembre par défaut : du 1er septembre au 31 août).
+ * À partir du 1er de ce mois de l'année N : saison « N-(N+1) » ; avant :
+ * « (N-1)-N ». Une saison qui commence en janvier porte le nom de l'année (« N »).
+ * Ne sert qu'à l'installation : les dates des saisons suivantes sont libres.
  *
  * @param string|null $date date AAAA-MM-JJ (aujourd'hui par défaut)
+ * @param int $mois_debut mois où commence la saison, de 1 (janvier) à 12
  * @return array{nom: string, date_debut: string, date_fin: string}
  */
-function saison_habituelle(?string $date = null): array
+function saison_habituelle(?string $date = null, int $mois_debut = SAISON_MOIS_DEBUT): array
 {
+    $mois_debut = max(1, min(12, $mois_debut));
     $jour = new DateTimeImmutable($date ?? 'today');
     $annee = (int) $jour->format('Y');
-    if ((int) $jour->format('n') < 9) {
+    if ((int) $jour->format('n') < $mois_debut) {
         $annee--;
     }
+    $debut = new DateTimeImmutable(sprintf('%04d-%02d-01', $annee, $mois_debut));
     return [
-        'nom'        => $annee . '-' . ($annee + 1),
-        'date_debut' => $annee . '-09-01',
-        'date_fin'   => ($annee + 1) . '-08-31',
+        'nom'        => $mois_debut === 1 ? (string) $annee : $annee . '-' . ($annee + 1),
+        'date_debut' => $debut->format('Y-m-d'),
+        'date_fin'   => $debut->modify('+1 year')->modify('-1 day')->format('Y-m-d'),
+    ];
+}
+
+/**
+ * Noms des mois, pour le choix du mois de début de saison.
+ *
+ * @return array<int, string> numéro du mois (1 à 12) => nom
+ */
+function mois_noms(): array
+{
+    return [
+        1 => 'janvier', 2 => 'février', 3 => 'mars', 4 => 'avril', 5 => 'mai', 6 => 'juin',
+        7 => 'juillet', 8 => 'août', 9 => 'septembre', 10 => 'octobre', 11 => 'novembre', 12 => 'décembre',
     ];
 }
 

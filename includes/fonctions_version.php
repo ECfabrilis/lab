@@ -11,7 +11,7 @@ declare(strict_types=1);
  */
 
 /** Version de l'application : majeure.mineure.correctif. */
-const APP_VERSION = '0.15.0';
+const APP_VERSION = '0.16.0';
 
 /** Version courte, sans le numéro de correctif (0.9 pour 0.9.3) : pages sans connexion. */
 function version_courte(): string
@@ -27,6 +27,15 @@ function version_courte(): string
 function notes_version(): array
 {
     return [
+        [
+            'version'     => '0.16.0',
+            'date'        => '2026-11-25',
+            'changements' => [
+                'Nouvelle page Paramètres > Options > Informations recueillies : le bénévolat et la scolarité peuvent ne plus être demandés. Ils disparaissent alors des formulaires, des listes, des statistiques et des exports ; ce qui a déjà été saisi est conservé.',
+                'Statistiques : la date à laquelle l\'âge est calculé se règle dans les options des statistiques (31 décembre de l\'année de début, premier jour ou dernier jour de la saison).',
+                'Installation : l\'assistant demande le mois où commence une saison (septembre proposé) pour créer la première saison.',
+            ],
+        ],
         [
             'version'     => '0.15.0',
             'date'        => '2026-11-25',

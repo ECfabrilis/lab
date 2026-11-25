@@ -357,8 +357,9 @@ if (est_post()) {
                 journaliser('creation', 'utilisateurs', $admin_id, 'Installation : premier administrateur', null, ['prenom' => post('prenom'), 'mail' => post('mail'), 'role' => 'admin']);
             }
             if ($faut_saison) {
-                // La saison en cours est créée sans rien demander (1er septembre → 31 août).
-                $premiere_saison = saison_habituelle();
+                // La saison en cours est créée : un an à partir du 1er jour du mois choisi (septembre par défaut).
+                $mois_debut_saison = entier(post('mois_debut'));
+                $premiere_saison = saison_habituelle(null, $mois_debut_saison >= 1 && $mois_debut_saison <= 12 ? $mois_debut_saison : SAISON_MOIS_DEBUT);
                 db_executer('INSERT INTO saisons (nom, date_debut, date_fin) VALUES (?, ?, ?)', [$premiere_saison['nom'], $premiere_saison['date_debut'], $premiere_saison['date_fin']]);
                 journaliser('creation', 'saisons', entier($pdo_install->lastInsertId()), 'Installation : première saison « ' . $premiere_saison['nom'] . ' »', null, $premiere_saison);
             }
@@ -700,11 +701,16 @@ if ($verrouille) {
                     <?php endif; ?>
 
                     <?php if ($faut_saison_affichage) : ?>
-                        <?php $saison_prevue = saison_habituelle(); ?>
-                        <div class="col-12">
-                            <div class="alert alert-info mb-0">
-                                La saison en cours, « <?= e($saison_prevue['nom']) ?> » (du <?= e(date_fr($saison_prevue['date_debut'])) ?> au <?= e(date_fr($saison_prevue['date_fin'])) ?>), sera créée automatiquement.
-                            </div>
+                        <?php $mois_debut_affiche = entier(ancien('mois_debut', (string) SAISON_MOIS_DEBUT)); ?>
+                        <div class="col-12"><h3 class="h6 mt-2 mb-0">Première saison</h3></div>
+                        <div class="col-md-6">
+                            <label class="form-label" for="mois_debut">Mois où commence une saison</label>
+                            <select class="form-select" id="mois_debut" name="mois_debut" aria-describedby="aide_mois_debut">
+                                <?php foreach (mois_noms() as $numero_mois => $nom_mois) : ?>
+                                    <option value="<?= $numero_mois ?>" <?= $numero_mois === $mois_debut_affiche ? 'selected' : '' ?>><?= e($nom_mois) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                            <div class="form-text" id="aide_mois_debut">La saison en cours est créée automatiquement : un an à partir du 1er jour de ce mois (janvier pour une année civile). Les dates des saisons suivantes seront libres.</div>
                         </div>
                     <?php else : ?>
                         <div class="col-12"><div class="alert alert-info mb-0">Une saison existe déjà : aucune saison ne sera créée.</div></div>

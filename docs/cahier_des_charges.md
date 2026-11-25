@@ -71,10 +71,12 @@ Modèle conservé : **famille → dossier (par saison) → adhérents → inscri
 | Code postal | oui | proposé à partir d'une table |
 | Quartier, quartier prioritaire (QP), QPV | calculés | déterminés automatiquement depuis l'adresse, conservés en **instantané** (API BAN). Le quartier est cherché parmi les quartiers des **communes et arrondissements pris en compte**, choisis par un administrateur (Paramètres > Options > Quartiers) |
 | Courriel, téléphone | non | |
-| Bénévole | oui/non | un bénévole est aussi un adhérent |
+| Bénévole | oui/non | un bénévole est aussi un adhérent ; information **facultative** (voir « Informations recueillies » ci-dessous) |
 | Consentement aux communications | oui/non | nécessaire pour l'export Google Contacts |
-| Établissement scolaire / niveau | non | facultatif, utile à l'accompagnement à la scolarité ; pourra être retiré s'il n'est pas utilisé |
+| Établissement scolaire / niveau | non | facultatif, utile à l'accompagnement à la scolarité ; information **facultative** (voir « Informations recueillies » ci-dessous) |
 | Notes | non | notes du dossier |
+
+**Informations recueillies** (Paramètres > Options > Informations recueillies, `admin`) : chaque association choisit, par un interrupteur, de recueillir ou non le **bénévolat** et la **scolarité** (les deux sont recueillis tant que rien n'est réglé). Une information non recueillie n'est plus demandée ni affichée nulle part : formulaires, fiche, liste et filtres, statistiques, exports. **Rien n'est effacé** : ce qui a déjà été saisi reste dans la base, n'est pas modifié par l'enregistrement d'une fiche, et réapparaît si l'information est de nouveau recueillie. Le changement est journalisé.
 
 **Mineur** : un seul **responsable adulte** avec nom, courriel et téléphone. Quand sa famille compte des adultes ayant un téléphone ou un courriel, une liste à cocher permet de **reprendre l'un d'eux** comme responsable ou de choisir « une autre personne » : à l'inscription (section 12.2, étape 3) comme dans la fenêtre « Modifier la fiche », où la partie « Responsable adulte » (liste et champs) apparaît **dès que la date de naissance saisie est celle d'une personne mineure**, sans attendre l'enregistrement, et disparaît pour une date de personne majeure. Les trois champs se remplissent et restent modifiables. Le responsable n'est gardé que pour une personne mineure : celui d'une **personne majeure est effacé à l'enregistrement de sa fiche** (pas automatiquement le jour de ses 18 ans).
 
@@ -89,7 +91,7 @@ Une structure (association, école, etc.) peut être adhérente : nom, adresse, 
 ## 4. Saisons
 
 - Pas de chevauchement ; **une seule saison à venir** à la fois ; saisons passées possibles avec confirmation ; durée maximale 2 ans ; nom unique.
-- L'installation crée la première saison **sans rien demander** : la saison en cours, du 1er septembre au 31 août (à partir du 1er septembre de l'année N : saison « N-(N+1) » ; avant : saison « (N-1)-N »).
+- L'installation crée la première saison, celle en cours. Elle demande seulement le **mois où commence une saison** (septembre proposé) : la saison dure un an à partir du 1er jour de ce mois (septembre : à partir du 1er septembre de l'année N, saison « N-(N+1) » ; avant : saison « (N-1)-N »). Une saison qui commence en janvier porte le nom de l'année (« N »). Ce mois n'est pas gardé : les dates des saisons suivantes sont libres.
 - Les tarifs, activités et cotisations sont rattachés à une saison.
 
 ---
@@ -212,7 +214,7 @@ Tous portent le **logo**, le **nom** et l'**adresse** de l'association ; certain
 
 Filtres : **période** (dates libres), **saison**, **secteur**, **type d'activité**, **récurrence**, **avec partenaire** (interrupteur : seulement les activités qui ont un partenaire). Graphiques (histogrammes, anneaux) quand c'est utile. Comparaison avec la saison précédente. **Tous les indicateurs sont conservés, sauf « montants encaissés ».**
 
-**Calcul de l'âge** : à la **fin de l'exercice, le 31 décembre**, date du bilan. Il est calculé à la demande, jamais stocké. Pour une saison à cheval sur deux années (ex. 2025-2026), la date retenue est le 31 décembre de l'année où elle commence ; pour une période libre, le 31 décembre de l'année de sa date de début. Les chiffres d'une saison passée ne changent donc pas d'une année sur l'autre.
+**Calcul de l'âge** : à une **date de référence**, réglable par un administrateur (Paramètres > Options > Statistiques) : le **31 décembre** de l'année où commence la saison (fin de l'exercice, date du bilan ; c'est le réglage par défaut), le **premier jour** de la saison ou son **dernier jour**. Comme les tranches d'âge, ce réglage vaut pour toutes les saisons : le modifier change aussi les chiffres des saisons passées. L'âge est calculé à la demande, jamais stocké. Avec le réglage par défaut : Pour une saison à cheval sur deux années (ex. 2025-2026), la date retenue est le 31 décembre de l'année où elle commence ; pour une période libre, le 31 décembre de l'année de sa date de début. Les chiffres d'une saison passée ne changent donc pas d'une année sur l'autre.
 
 Indicateurs issus du rapport d'activité 2025 :
 
@@ -282,7 +284,7 @@ Un assistant d'installation, à lancer une seule fois sur chaque environnement (
 2. **Courriel (PHPMailer)** : serveur SMTP, port, chiffrement, identifiant, mot de passe, adresse et nom d'expéditeur ; adresse publique du site (`APP_URL`). Un envoi d'essai est proposé.
 3. **Création de la structure** : toutes les tables, à partir de `sql/structure.sql`.
 4. **Remplissage des tables de référence** : pays, QPV, codes postaux, à partir de fichiers fournis dans `sql/`. Les **quartiers** et les **quartiers prioritaires (QP)** dépendent de la commune de l'association : l'installation ne les remplit pas, un administrateur les importe ensuite dans « Données de référence » (fichiers GeoJSON ; ceux de Paris sont fournis comme exemples dans `sql/quartiers/`).
-5. **Premier administrateur** (prénom, courriel, mot de passe) et **première saison**, créée automatiquement (voir section 4).
+5. **Premier administrateur** (prénom, courriel, mot de passe) et **première saison** : l'assistant demande le mois où commence une saison et crée la saison en cours (voir section 4).
 
 Règles :
 - L'assistant **écrit `config.php`** dans la partie privée (jamais dans `public/`), avec des droits restreints ; les mots de passe saisis ne sont ni affichés de nouveau ni journalisés.
@@ -365,7 +367,7 @@ Le formulaire se déroule en 4 étapes. Objectifs : saisie rapide, peu d'erreurs
 | Partie | Choix |
 |---|---|
 | Les utilisateurs | Liste des utilisateurs ; Nouvel utilisateur |
-| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Options des activités (une seule page : types d'activité et récurrences) ; Options des paiements (une seule page : types de tarif et modes de paiement) ; Option des statistiques (une seule page : tranches d'âge, groupes de lieu de résidence et couleurs des graphiques, voir section 10) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul. Une zone peut aussi être **supprimée** : tous ses quartiers sont retirés de la table, après une case de confirmation ; l'action est journalisée, les adresses déjà saisies gardent leur quartier, et la zone se retrouve en la réimportant dans « Données de référence ») |
+| Options | Options d'affichage (une seule card : nom de la structure, logo, couleur) ; Informations recueillies (un interrupteur par information facultative : bénévolat, scolarité ; voir section 3.2) ; Options des activités (une seule page : types d'activité et récurrences) ; Options des paiements (une seule page : types de tarif et modes de paiement) ; Option des statistiques (une seule page : tranches d'âge, date de référence de l'âge, groupes de lieu de résidence et couleurs des graphiques, voir section 10) ; Quartiers (une case à cocher par commune et arrondissement, par exemple « Paris 17ème », ou par commune seule quand l'arrondissement n'est pas renseigné : les quartiers d'une zone cochée sont pris en compte pour les adresses ; on ne coche jamais un quartier seul. Une zone peut aussi être **supprimée** : tous ses quartiers sont retirés de la table, après une case de confirmation ; l'action est journalisée, les adresses déjà saisies gardent leur quartier, et la zone se retrouve en la réimportant dans « Données de référence ») |
 | La base de données | Saisons ; Données de référence (pays, quartiers, QP, QPV, codes postaux ; pour les quartiers : « Remplacer la table » ou « Ajouter à la table ») ; Logs ; Sauvegarde ; RGPD (anonymisation) ; Mise à jour (migrations de la base) |
 | Configuration | Paramètres des mails (avec l'essai d'envoi) ; État du système (versions, contrôles du serveur, protection de la partie privée) |
 

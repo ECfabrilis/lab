@@ -43,6 +43,10 @@ if (est_post()) {
     // --- Identité, contact, responsable ------------------------------------
     if ($action === 'modifier') {
         $saisie = adherent_saisie($est_structure);
+        if (!champ_actif('benevole')) {
+            // Bénévolat non recueilli : le champ n'est pas dans le formulaire, la valeur déjà enregistrée est gardée.
+            $saisie['est_benevole'] = entier($fiche['est_benevole']) === 1 ? '1' : '0';
+        }
         $erreurs = erreurs_adherent($saisie);
         if ($erreurs !== []) {
             foreach ($erreurs as $erreur) {
@@ -69,6 +73,12 @@ if (est_post()) {
         if (!est_mineur(texte($fiche['date_naissance']))) {
             $saisie_adresse['etablissement'] = '';
             $saisie_adresse['niveau'] = '';
+        } elseif (!champ_actif('scolarite')) {
+            // Scolarité non recueillie : les champs ne sont pas dans le formulaire, ce qui est déjà enregistré est gardé.
+            $dossier_actuel_id = dossier_id_de_adherent($fiche, $saison_affichee_id);
+            $adresse_actuelle = $dossier_actuel_id > 0 ? adresse_du_dossier($dossier_actuel_id, $fiche_id) : null;
+            $saisie_adresse['etablissement'] = texte($adresse_actuelle['etablissement'] ?? '');
+            $saisie_adresse['niveau'] = texte($adresse_actuelle['niveau'] ?? '');
         }
         $erreurs = erreurs_adresse($saisie_adresse);
         if ($erreurs !== []) {
@@ -182,7 +192,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
 ?>
 <h1 class="h3 mb-4"><?= e(nom_adherent($fiche)) ?>
     <?php if ($est_structure) : ?><span class="badge text-bg-secondary">Structure</span><?php endif; ?>
-    <?php if (entier($fiche['est_benevole']) === 1) : ?><span class="badge text-bg-info">Bénévole</span><?php endif; ?>
+    <?php if (champ_actif('benevole') && entier($fiche['est_benevole']) === 1) : ?><span class="badge text-bg-info">Bénévole</span><?php endif; ?>
     <?php if ($est_anonymise) : ?><span class="badge text-bg-secondary">Anonymisé</span><?php endif; ?>
 </h1>
 <div class="row g-4">
@@ -298,7 +308,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <span class="badge text-bg-primary">QPV : <?= e($adresse_saison['qpv_nom']) ?></span>
                     <?php endif; ?>
                 </p>
-                <?php if (texte($adresse_saison['etablissement']) !== '' || texte($adresse_saison['niveau']) !== '') : ?>
+                <?php if (champ_actif('scolarite') && (texte($adresse_saison['etablissement']) !== '' || texte($adresse_saison['niveau']) !== '')) : ?>
                     <p class="mt-2 mb-0"><span class="text-body-secondary">Scolarité :</span> <?= e(trim(texte($adresse_saison['etablissement']) . ' ' . texte($adresse_saison['niveau']))) ?></p>
                 <?php endif; ?>
             </div>
@@ -427,7 +437,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="toute_famille" name="toute_famille" value="1" <?= ancien('toute_famille') === '1' ? 'checked' : '' ?> aria-describedby="aide_toute_famille">
                                 <label class="form-check-label" for="toute_famille">Appliquer aussi cette adresse aux autres membres de la famille</label>
-                                <div class="form-text" id="aide_toute_famille">Inscrits pour la saison : <?= e(implode(', ', $prenoms_meme_adresse)) ?>.<?= $mineur ? ' L\'établissement scolaire et le niveau ne sont pas recopiés.' : '' ?></div>
+                                <div class="form-text" id="aide_toute_famille">Inscrits pour la saison : <?= e(implode(', ', $prenoms_meme_adresse)) ?>.<?= $mineur && champ_actif('scolarite') ? ' L\'établissement scolaire et le niveau ne sont pas recopiés.' : '' ?></div>
                             </div>
                         <?php endif; ?>
                     </div>

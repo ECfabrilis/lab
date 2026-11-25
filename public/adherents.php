@@ -116,10 +116,12 @@ require DOSSIER_PRIVE . '/includes/header.php';
             </div>
             <fieldset class="mb-3">
                 <legend class="form-label fs-6">Filtrer</legend>
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="benevoles" name="benevoles" value="1" <?= $filtre_benevoles ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="benevoles">Les bénévoles uniquement</label>
-                </div>
+                <?php if (champ_actif('benevole')) : ?>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="benevoles" name="benevoles" value="1" <?= $filtre_benevoles ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="benevoles">Les bénévoles uniquement</label>
+                    </div>
+                <?php endif; ?>
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="qp" name="qp" value="1" <?= $filtre_qp ? 'checked' : '' ?>>
                     <label class="form-check-label" for="qp">En quartier prioritaire (QP)</label>
@@ -197,7 +199,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
                             <tr>
                                 <td>
                                     <a href="<?= e(chemin_site('adherent.php?id=' . entier($ligne['id']))) ?>"><?= e(trim(texte($ligne['nom']) . ' ' . texte($ligne['prenom']))) ?></a>
-                                    <?php if (entier($ligne['est_benevole']) === 1) : ?>
+                                    <?php if (champ_actif('benevole') && entier($ligne['est_benevole']) === 1) : ?>
                                         <span class="badge text-bg-info">Bénévole</span>
                                     <?php endif; ?>
                                     <?php if ($perimetre === 'tous' && entier($ligne['dans_saison']) !== 1) : ?>

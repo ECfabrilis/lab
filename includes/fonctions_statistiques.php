@@ -12,8 +12,9 @@ declare(strict_types=1);
  *   - sur une période libre : les personnes inscrites pour une saison qui
  *     recoupe la période, si leur inscription a été faite avant la fin de la
  *     période ; chacune est comptée une fois, avec son adresse la plus récente ;
- *   - l'âge est calculé au 31 décembre de l'année où commence la saison (ou la
- *     période), jamais stocké ;
+ *   - l'âge est calculé à une date de référence (réglage « stats_age_reference » :
+ *     le 31 décembre de l'année où commence la saison ou la période, par
+ *     défaut, sinon son premier ou son dernier jour), jamais stocké ;
  *   - un participant a une inscription en cours ou inactive à une activité,
  *     hors liste d'attente et hors annulations (une inscription inactive a
  *     libéré sa place, mais la personne a participé : elle reste comptée) ;
@@ -435,10 +436,42 @@ function stats_afficher_pastilles(array $couleurs): void
 // une récurrence
 // ---------------------------------------------------------------------------
 
-/** Date à laquelle l'âge est calculé : le 31 décembre de l'année de début. */
-function stats_date_age(string $date_debut): string
+/** Date de référence de l'âge quand rien n'a été réglé : le 31 décembre de l'année de début. */
+const STATS_AGE_REFERENCE_DEFAUT = 'fin_annee';
+
+/**
+ * Dates de référence possibles pour l'âge (réglage « stats_age_reference »,
+ * Paramètres > Options > Statistiques).
+ *
+ * @return array<string, string> valeur du réglage => libellé
+ */
+function stats_age_references(): array
 {
-    return substr($date_debut, 0, 4) . '-12-31';
+    return [
+        'fin_annee' => 'Le 31 décembre de l\'année où commence la saison',
+        'debut'     => 'Le premier jour de la saison',
+        'fin'       => 'Le dernier jour de la saison',
+    ];
+}
+
+/** Date de référence de l'âge en vigueur (une clé de stats_age_references()). */
+function stats_age_reference(): string
+{
+    $reference = parametre('stats_age_reference', STATS_AGE_REFERENCE_DEFAUT);
+    return array_key_exists($reference, stats_age_references()) ? $reference : STATS_AGE_REFERENCE_DEFAUT;
+}
+
+/**
+ * Date à laquelle l'âge est calculé pour une saison ou une période, selon le
+ * réglage : le 31 décembre de l'année de début, le premier jour ou le dernier jour.
+ */
+function stats_date_age(string $date_debut, string $date_fin): string
+{
+    return match (stats_age_reference()) {
+        'debut' => $date_debut,
+        'fin'   => $date_fin,
+        default => substr($date_debut, 0, 4) . '-12-31',
+    };
 }
 
 /**
@@ -450,16 +483,17 @@ function stats_date_age(string $date_debut): string
 function stats_perimetre_saison(array $saison, int $secteur_id = 0, int $type_id = 0, int $recurrence_id = 0, bool $avec_partenaire = false): array
 {
     $debut = texte($saison['date_debut'] ?? '');
+    $fin = texte($saison['date_fin'] ?? '');
     return [
         'mode'          => 'saison',
         'saison_id'     => entier($saison['id'] ?? 0),
         'debut'         => $debut,
-        'fin'           => texte($saison['date_fin'] ?? ''),
+        'fin'           => $fin,
         'secteur_id'    => $secteur_id,
         'type_id'       => $type_id,
         'recurrence_id' => $recurrence_id,
         'avec_partenaire' => $avec_partenaire,
-        'date_age'      => stats_date_age($debut),
+        'date_age'      => stats_date_age($debut, $fin),
         'libelle'       => 'saison ' . texte($saison['nom'] ?? ''),
     ];
 }
@@ -480,7 +514,7 @@ function stats_perimetre_periode(string $debut, string $fin, int $secteur_id = 0
         'type_id'       => $type_id,
         'recurrence_id' => $recurrence_id,
         'avec_partenaire' => $avec_partenaire,
-        'date_age'      => stats_date_age($debut),
+        'date_age'      => stats_date_age($debut, $fin),
         'libelle'       => 'du ' . date_fr($debut) . ' au ' . date_fr($fin),
     ];
 }

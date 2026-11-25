@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 // Options des statistiques (administrateurs seulement) :
 //   - les tranches d'âge, définies par leurs âges de début ;
+//   - la date de référence de l'âge (31 décembre, premier ou dernier jour de la saison) ;
 //   - les groupes de lieu de résidence, définis par des codes postaux ;
 //   - les couleurs des graphiques : une palette prédéfinie ou personnalisée.
 // Ces réglages sont communs à toutes les saisons : les modifier change aussi
@@ -40,6 +41,32 @@ if (est_post()) {
                 ['stats_tranches_age' => implode(',', $debuts)]
             );
             flash('succes', 'Tranches d\'âge enregistrées : ' . implode(', ', array_column(stats_tranches_age($debuts), 'libelle')) . '.');
+        }
+        rediriger('options_statistiques.php');
+    }
+
+    // --- Date de référence de l'âge ---------------------------------------------
+    if ($action === 'age_reference') {
+        $references = stats_age_references();
+        $choisie = post('age_reference');
+        if (!array_key_exists($choisie, $references)) {
+            flash('erreur', 'Cette date de référence n\'existe pas.');
+            rediriger('options_statistiques.php');
+        }
+        $ancienne = stats_age_reference();
+        if ($ancienne === $choisie) {
+            flash('info', 'Aucune modification à enregistrer.');
+        } else {
+            parametre_enregistrer('stats_age_reference', $choisie, entier(utilisateur_courant()['id'] ?? 0));
+            journaliser(
+                'modification',
+                'parametres',
+                null,
+                'Date de référence de l\'âge des statistiques modifiée',
+                ['stats_age_reference' => $ancienne],
+                ['stats_age_reference' => $choisie]
+            );
+            flash('succes', 'Date de référence de l\'âge enregistrée : ' . mb_strtolower(mb_substr($references[$choisie], 0, 1)) . mb_substr($references[$choisie], 1) . '.');
         }
         rediriger('options_statistiques.php');
     }
@@ -155,7 +182,7 @@ require DOSSIER_PRIVE . '/includes/header.php';
         </div>
         <ul class="d-none d-lg-block text-body-secondary small mt-3 mb-0 ps-3">
             <li>Ces réglages valent pour toutes les saisons : les modifier change aussi les chiffres affichés pour les saisons passées.</li>
-            <li>L'âge est calculé au 31 décembre de l'année où commence la saison.</li>
+            <li>L'âge est calculé à la date de référence choisie ici, jamais à la date du jour : les chiffres d'une saison passée ne changent pas d'une année sur l'autre.</li>
             <li>Un code postal n'appartient qu'à un seul groupe. Un début de code (75) réunit tous les codes qui commencent ainsi ; le code le plus précis l'emporte (75017 avant 75).</li>
             <li>Une adresse qui n'est dans aucun groupe est comptée dans « <?= e(RESIDENCE_AUTRES) ?> ».</li>
             <li>Dans les histogrammes, les barres de la saison précédente restent grises, quelle que soit la palette.</li>
@@ -175,6 +202,23 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 </div>
             </div>
             <button class="btn btn-primary" type="submit">Enregistrer les tranches</button>
+        </form>
+
+        <h2 class="h5 mb-3">Date de référence de l'âge</h2>
+        <form class="mb-5" method="post" action="<?= e(chemin_site('options_statistiques.php')) ?>">
+            <?= csrf_champ() ?>
+            <input type="hidden" name="action" value="age_reference">
+            <fieldset class="mb-3">
+                <legend class="form-label fs-6">L'âge des adhérents est calculé à cette date</legend>
+                <?php foreach (stats_age_references() as $valeur_reference => $libelle_reference) : ?>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" id="age_<?= e($valeur_reference) ?>" name="age_reference" value="<?= e($valeur_reference) ?>" <?= stats_age_reference() === $valeur_reference ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="age_<?= e($valeur_reference) ?>"><?= e($libelle_reference) ?></label>
+                    </div>
+                <?php endforeach; ?>
+                <div class="form-text">Pour une période libre, le premier et le dernier jour sont ceux de la période. Une saison sur l'année civile se termine le 31 décembre : les deux réglages donnent alors le même âge.</div>
+            </fieldset>
+            <button class="btn btn-primary" type="submit">Enregistrer la date de référence</button>
         </form>
 
         <h2 class="h5 mb-3">Groupes de lieu de résidence</h2>

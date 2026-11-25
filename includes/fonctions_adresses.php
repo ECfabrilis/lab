@@ -466,7 +466,8 @@ function derniere_adresse_famille(int $famille_id): ?array
  * Le code postal est placé avant l'adresse : il limite les propositions d'adresses à la commune.
  *
  * @param array<string, mixed> $defauts   valeurs affichées quand rien n'a été saisi
- * @param bool                 $scolarite true pour proposer l'établissement scolaire et le niveau (moins de 18 ans)
+ * @param bool                 $scolarite true pour proposer l'établissement scolaire et le niveau (moins de 18 ans) ;
+ *                                        ils ne sont jamais proposés quand la scolarité n'est pas recueillie
  */
 function afficher_champs_adresse(array $defauts, bool $scolarite = true): void
 {
@@ -495,7 +496,7 @@ function afficher_champs_adresse(array $defauts, bool $scolarite = true): void
             <label class="form-label" for="complement">Complément <span class="text-body-secondary">(bâtiment, étage, chez… — facultatif)</span></label>
             <input class="form-control" type="text" id="complement" name="complement" maxlength="255" value="<?= e(ancien('complement', $defauts['complement'] ?? '')) ?>">
         </div>
-        <?php if ($scolarite) : ?>
+        <?php if ($scolarite && champ_actif('scolarite')) : ?>
             <div class="col-sm-8">
                 <label class="form-label" for="etablissement">Établissement scolaire <span class="text-body-secondary">(facultatif)</span></label>
                 <input class="form-control" type="text" id="etablissement" name="etablissement" maxlength="150" value="<?= e(ancien('etablissement', $defauts['etablissement'] ?? '')) ?>">

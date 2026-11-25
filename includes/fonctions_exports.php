@@ -80,12 +80,30 @@ function csv_nom_fichier(string ...$parties): string
  */
 function export_adherents_entetes(): array
 {
-    return [
+    return export_adherents_colonnes([
         'Nom', 'Prénom', 'Structure', 'Sexe', 'Date de naissance', 'Âge', 'Bénévole', 'Famille', 'Inscrit pour la saison',
         'Adresse', 'Complément', 'Code postal', 'Ville', 'Quartier', 'QP', 'QPV',
         'Courriel', 'Téléphone', 'Responsable', 'Courriel du responsable', 'Téléphone du responsable',
         'Communications acceptées le',
-    ];
+    ]);
+}
+
+/** Rang (à partir de 0) de la colonne « Bénévole » dans l'export de la liste des adhérents. */
+const EXPORT_ADHERENTS_RANG_BENEVOLE = 6;
+
+/**
+ * Retire d'une ligne de l'export (en-têtes ou données) les colonnes des
+ * informations que l'association ne recueille pas.
+ *
+ * @param list<string> $ligne
+ * @return list<string>
+ */
+function export_adherents_colonnes(array $ligne): array
+{
+    if (!champ_actif('benevole')) {
+        array_splice($ligne, EXPORT_ADHERENTS_RANG_BENEVOLE, 1);
+    }
+    return $ligne;
 }
 
 /**
@@ -113,7 +131,7 @@ function export_adherents_lignes(int $saison_id): array
     foreach ($adherents as $a) {
         $est_structure = entier($a['est_structure']) === 1;
         $naissance = texte($a['date_naissance']);
-        $lignes[] = [
+        $lignes[] = export_adherents_colonnes([
             texte($a['nom']),
             texte($a['prenom']),
             $oui($a['est_structure']),
@@ -136,7 +154,7 @@ function export_adherents_lignes(int $saison_id): array
             texte($a['responsable_mail']),
             texte($a['responsable_tel']),
             entier($a['a_consenti']) === 1 ? date_fr($a['consentement_le']) : '',
-        ];
+        ]);
     }
     return $lignes;
 }
@@ -240,7 +258,7 @@ function contacts_lignes(array $adherents, array $libelles, bool $libelle_benevo
     foreach ($adherents as $a) {
         $est_structure = entier($a['est_structure']) === 1;
         $libelles_contact = $libelles;
-        if ($libelle_benevoles && !$est_structure && entier($a['est_benevole']) === 1) {
+        if ($libelle_benevoles && champ_actif('benevole') && !$est_structure && entier($a['est_benevole']) === 1) {
             $libelles_contact[] = 'Bénévoles';
         }
         $mail = texte($a['mail']);

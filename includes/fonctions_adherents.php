@@ -586,7 +586,8 @@ function adherents_criteres(int $saison_id): array
         'saison_seule' => ($criteres['perimetre'] ?? '') !== 'tous',
         'filtres'      => [
             'lettre'    => preg_match('/^[A-Z]$/', texte($criteres['lettre'] ?? '')) === 1 ? texte($criteres['lettre']) : '',
-            'benevoles' => ($criteres['benevoles'] ?? false) === true,
+            // Le filtre « bénévoles » est ignoré quand le bénévolat n'est pas recueilli.
+            'benevoles' => champ_actif('benevole') && ($criteres['benevoles'] ?? false) === true,
             'quartier'  => $quartier,
             'qp'        => ($criteres['qp'] ?? false) === true,
             'qpv'       => ($criteres['qpv'] ?? false) === true,
@@ -751,7 +752,7 @@ function afficher_champs_adherent(array $defauts, array $adultes = []): void
             <input class="form-control" type="tel" id="tel" name="tel" maxlength="20" value="<?= e(ancien('tel', $defauts['tel'] ?? '')) ?>">
         </div>
     </div>
-    <?php if (!$est_structure) : ?>
+    <?php if (!$est_structure && champ_actif('benevole')) : ?>
         <div class="form-check form-switch mb-2">
             <input class="form-check-input" type="checkbox" role="switch" id="est_benevole" name="est_benevole" value="1" <?= $coche('est_benevole') ?>>
             <label class="form-check-label" for="est_benevole">Est bénévole</label>

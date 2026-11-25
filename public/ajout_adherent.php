@@ -344,10 +344,12 @@ require DOSSIER_PRIVE . '/includes/header.php';
                         <input class="form-control" type="text" id="nom" name="nom" maxlength="100" value="<?= e($identite['nom']) ?>" required autofocus>
                     </div>
                 <?php else : ?>
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" role="switch" id="est_benevole" name="est_benevole" value="1" <?= $identite['est_benevole'] === '1' ? 'checked' : '' ?>>
-                        <label class="form-check-label" for="est_benevole">Est bénévole</label>
-                    </div>
+                    <?php if (champ_actif('benevole')) : ?>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" role="switch" id="est_benevole" name="est_benevole" value="1" <?= $identite['est_benevole'] === '1' ? 'checked' : '' ?>>
+                            <label class="form-check-label" for="est_benevole">Est bénévole</label>
+                        </div>
+                    <?php endif; ?>
                     <div class="row g-3 mb-3">
                         <div class="col-sm-6">
                             <label class="form-label" for="nom">Nom <span class="text-danger">*</span></label>
@@ -452,16 +454,18 @@ require DOSSIER_PRIVE . '/includes/header.php';
 
             <?php if ($mineur) : ?>
                 <?php afficher_champs_responsable($contact, $adultes_famille); ?>
-                <div class="row g-3 mb-4">
-                    <div class="col-sm-8">
-                        <label class="form-label" for="etablissement">Établissement scolaire</label>
-                        <input class="form-control" type="text" id="etablissement" name="etablissement" maxlength="150" value="<?= e($contact['etablissement'] ?? '') ?>">
+                <?php if (champ_actif('scolarite')) : ?>
+                    <div class="row g-3 mb-4">
+                        <div class="col-sm-8">
+                            <label class="form-label" for="etablissement">Établissement scolaire</label>
+                            <input class="form-control" type="text" id="etablissement" name="etablissement" maxlength="150" value="<?= e($contact['etablissement'] ?? '') ?>">
+                        </div>
+                        <div class="col-sm-4">
+                            <label class="form-label" for="niveau">Niveau</label>
+                            <input class="form-control" type="text" id="niveau" name="niveau" maxlength="50" value="<?= e($contact['niveau'] ?? '') ?>">
+                        </div>
                     </div>
-                    <div class="col-sm-4">
-                        <label class="form-label" for="niveau">Niveau</label>
-                        <input class="form-control" type="text" id="niveau" name="niveau" maxlength="50" value="<?= e($contact['niveau'] ?? '') ?>">
-                    </div>
-                </div>
+                <?php endif; ?>
             <?php endif; ?>
 
             <h2 class="h5">Notes</h2>
@@ -492,8 +496,10 @@ require DOSSIER_PRIVE . '/includes/header.php';
                     <dd class="col-sm-8"><?= e(date_fr($fiche['date_naissance'])) ?> (<?= age_ans($fiche['date_naissance']) ?> ans)</dd>
                     <dt class="col-sm-4">Nationalité</dt>
                     <dd class="col-sm-8"><?= e(pays_liste()[$fiche['nationalite_iso3']] ?? 'Non renseignée') ?></dd>
-                    <dt class="col-sm-4">Bénévole</dt>
-                    <dd class="col-sm-8"><?= $fiche['est_benevole'] === '1' ? 'Oui' : 'Non' ?></dd>
+                    <?php if (champ_actif('benevole')) : ?>
+                        <dt class="col-sm-4">Bénévole</dt>
+                        <dd class="col-sm-8"><?= $fiche['est_benevole'] === '1' ? 'Oui' : 'Non' ?></dd>
+                    <?php endif; ?>
                 <?php endif; ?>
             </dl>
         </div>
@@ -534,6 +540,8 @@ require DOSSIER_PRIVE . '/includes/header.php';
                 <?php if ($mineur) : ?>
                     <dt class="col-sm-4">Responsable</dt>
                     <dd class="col-sm-8"><?= e(implode(' — ', array_filter([$fiche['responsable_nom'], $fiche['responsable_tel'], $fiche['responsable_mail']]))) ?></dd>
+                <?php endif; ?>
+                <?php if ($mineur && champ_actif('scolarite')) : ?>
                     <dt class="col-sm-4">Scolarité</dt>
                     <dd class="col-sm-8"><?= e(trim(texte($brouillon['adresse']['etablissement'] ?? '') . ' ' . texte($brouillon['adresse']['niveau'] ?? '')) ?: '—') ?></dd>
                 <?php endif; ?>
